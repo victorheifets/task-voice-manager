@@ -1,0 +1,47 @@
+{
+  "app": {
+    "title": "Gestionnaire de Tâches",
+    "settings": "Paramètres"
+  },
+  "tabs": {
+    "tasks": "Tâches",
+    "notes": "Notes",
+    "config": "Configuration"
+  },
+  "actions": {
+    "add": "Ajouter",
+    "edit": "Modifier",
+    "delete": "Supprimer",
+    "save": "Enregistrer",
+    "cancel": "Annuler",
+    "close": "Fermer",
+    "search": "Rechercher"
+  },
+  "filters": {
+    "all": "Toutes",
+    "today": "Aujourd'hui",
+    "tomorrow": "Demain",
+    "nextweek": "Semaine Prochaine",
+    "overdue": "En Retard",
+    "completed": "Terminées"
+  },
+  "search": {
+    "placeholder": "Rechercher des tâches..."
+  },
+  "theme": {
+    "light": "Clair",
+    "dark": "Sombre"
+  },
+  "language": {
+    "select": "Sélectionner la Langue",
+    "en": "Anglais",
+    "es": "Espagnol",
+    "fr": "Français"
+  },
+  "settings": {
+    "account": "Paramètres du Compte",
+    "appearance": "Apparence",
+    "notifications": "Notifications",
+    "help": "Aide"
+  }
+} 

@@ -1,0 +1,19 @@
+{
+  "title": "Notes",
+  "placeholder": "Write your notes here...",
+  "tabs": {
+    "general": "General",
+    "work": "Work",
+    "personal": "Personal",
+    "new": "Note {{number}}",
+    "addNew": "Add new note"
+  },
+  "actions": {
+    "edit": "Edit title",
+    "delete": "Delete note"
+  },
+  "deleteConfirm": {
+    "title": "Delete Note",
+    "message": "Are you sure you want to delete this note?"
+  }
+} 

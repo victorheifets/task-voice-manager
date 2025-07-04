@@ -1,0 +1,34 @@
+{
+  "input": {
+    "placeholder": "Add a task... (e.g., 'Call John tomorrow at 3pm')",
+    "recording": "Recording...",
+    "processing": "Processing audio..."
+  },
+  "list": {
+    "empty": "No tasks found",
+    "task": "Task",
+    "dueDate": "Due Date",
+    "assignee": "Assignee",
+    "tags": "Tags",
+    "lastUpdate": "Last Update",
+    "priority": "Priority",
+    "actions": "Actions",
+    "notAssigned": "Not assigned",
+    "notSet": "Not set"
+  },
+  "details": {
+    "title": "Task Details",
+    "created": "Created",
+    "updated": "Last Updated",
+    "dueDate": "Due Date",
+    "assignee": "Assignee",
+    "status": "Status",
+    "tags": "Tags",
+    "pending": "Pending",
+    "completed": "Completed"
+  },
+  "mobile": {
+    "swipeLeft": "Swipe left to complete",
+    "swipeRight": "Swipe right for options"
+  }
+} 

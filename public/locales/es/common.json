@@ -1,0 +1,47 @@
+{
+  "app": {
+    "title": "Gestor de Tareas",
+    "settings": "Configuración"
+  },
+  "tabs": {
+    "tasks": "Tareas",
+    "notes": "Notas",
+    "config": "Configuración"
+  },
+  "actions": {
+    "add": "Añadir",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "save": "Guardar",
+    "cancel": "Cancelar",
+    "close": "Cerrar",
+    "search": "Buscar"
+  },
+  "filters": {
+    "all": "Todas",
+    "today": "Hoy",
+    "tomorrow": "Mañana",
+    "nextweek": "Próxima Semana",
+    "overdue": "Atrasadas",
+    "completed": "Completadas"
+  },
+  "search": {
+    "placeholder": "Buscar tareas..."
+  },
+  "theme": {
+    "light": "Claro",
+    "dark": "Oscuro"
+  },
+  "language": {
+    "select": "Seleccionar Idioma",
+    "en": "Inglés",
+    "es": "Español",
+    "fr": "Francés"
+  },
+  "settings": {
+    "account": "Configuración de Cuenta",
+    "appearance": "Apariencia",
+    "notifications": "Notificaciones",
+    "help": "Ayuda"
+  }
+} 

@@ -1,0 +1,345 @@
+@import "tailwindcss";
+
+:root {
+  /* Light theme variables - Vibrant colors */
+  --background: #F8FAFC;
+  --foreground: #0F172A;
+  --primary: #2563EB;
+  --primary-light: #60A5FA;
+  --primary-dark: #1D4ED8;
+  --secondary: #7C3AED;
+  --accent: #0891B2;
+  --success: #059669;
+  --warning: #D97706;
+  --error: #DC2626;
+  --paper: #FFFFFF;
+  --paper-secondary: #F1F5F9;
+  --border: #CBD5E1;
+  --text-secondary: #475569;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-secondary: var(--secondary);
+  --color-accent: var(--accent);
+  --color-success: var(--success);
+  --color-warning: var(--warning);
+  --color-error: var(--error);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    /* Dark theme variables - Exact Veltrix UI colors */
+    --background: #1A1D2D;
+    --foreground: #EDF2F7;
+    --primary: #6658DD;
+    --primary-light: #8B7AE5;
+    --primary-dark: #4B3DBB;
+    --secondary: #4A5568;
+    --accent: #02C0CE;
+    --success: #0ACF97;
+    --warning: #FF8C00;
+    --error: #FA5C7C;
+    --paper: #242939;
+    --paper-secondary: #2A3042;
+    --border: #374151;
+    --text-secondary: #A0AEC0;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans, Arial, Helvetica, sans-serif);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Force theme colors */
+.light-mode {
+  --background: #F5F7FA;
+  --foreground: #263238;
+  --primary: #2196F3;
+  --primary-light: #64B5F6;
+  --primary-dark: #1976D2;
+  --secondary: #3F51B5;
+  --accent: #00BCD4;
+  --success: #4CAF50;
+  --warning: #FF9800;
+  --error: #F44336;
+  --paper: #FFFFFF;
+  --paper-secondary: #F9FAFC;
+  --border: #E0E0E0;
+  --text-secondary: #607D8B;
+}
+
+.dark-mode {
+  --background: #1A1D2D;
+  --foreground: #EDF2F7;
+  --primary: #6658DD;
+  --primary-light: #8B7AE5;
+  --primary-dark: #4B3DBB;
+  --secondary: #4A5568;
+  --accent: #02C0CE;
+  --success: #0ACF97;
+  --warning: #FF8C00;
+  --error: #FA5C7C;
+  --paper: #242939;
+  --paper-secondary: #2A3042;
+  --border: #374151;
+  --text-secondary: #A0AEC0;
+}
+
+/* Direct color overrides for MUI components */
+.light-mode .MuiAppBar-root {
+  background-color: #FFFFFF;
+}
+
+.dark-mode .MuiAppBar-root {
+  background-color: #242939;
+}
+
+.light-mode .MuiButton-containedPrimary {
+  background-color: #2196F3;
+}
+
+.dark-mode .MuiButton-containedPrimary {
+  background-color: #6658DD;
+}
+
+.light-mode .MuiIconButton-colorPrimary {
+  color: #2196F3;
+}
+
+.dark-mode .MuiIconButton-colorPrimary {
+  color: #6658DD;
+}
+
+/* Smooth transitions for theme switching */
+.MuiPaper-root,
+.MuiCard-root,
+.MuiAppBar-root,
+.MuiButton-root,
+.MuiChip-root,
+.MuiSwitch-root,
+.MuiTextField-root,
+.MuiTypography-root {
+  transition: all 0.3s ease-in-out !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--paper-secondary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--primary);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--primary-dark);
+}
+
+/* Card styles */
+.card-hover-effect {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover-effect:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+}
+
+/* Status indicators */
+.status-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  margin-right: 8px;
+}
+
+.status-active {
+  background-color: var(--success);
+}
+
+.status-pending {
+  background-color: var(--warning);
+}
+
+.status-inactive {
+  background-color: var(--error);
+}
+
+/* Table styles for consistent layout */
+.table-container {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.MuiTable-root {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.MuiTableCell-root {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Equal width columns for task list */
+.task-table .MuiTableCell-root:nth-child(1) { width: 5%; } /* Checkbox */
+.task-table .MuiTableCell-root:nth-child(2) { width: 30%; } /* Task */
+.task-table .MuiTableCell-root:nth-child(3) { width: 15%; } /* Due Date */
+.task-table .MuiTableCell-root:nth-child(4) { width: 15%; } /* Assignee */
+.task-table .MuiTableCell-root:nth-child(5) { width: 15%; } /* Tags */
+.task-table .MuiTableCell-root:nth-child(6) { width: 10%; } /* Last Update */
+.task-table .MuiTableCell-root:nth-child(7) { width: 5%; } /* Priority */
+.task-table .MuiTableCell-root:nth-child(8) { width: 5%; } /* Actions */
+
+/* Stats cards for dashboard */
+.stats-card {
+  border-radius: 8px;
+  padding: 1.5rem;
+  height: 100%;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.stats-card:hover {
+  transform: translateY(-4px);
+}
+
+.stats-card.primary {
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+  color: white;
+}
+
+.stats-card.secondary {
+  background: linear-gradient(135deg, var(--secondary) 0%, #5C6BC0 100%);
+  color: white;
+}
+
+.stats-card.accent {
+  background: linear-gradient(135deg, var(--accent) 0%, #4DD0E1 100%);
+  color: white;
+}
+
+.stats-card.success {
+  background: linear-gradient(135deg, var(--success) 0%, #66BB6A 100%);
+  color: white;
+}
+
+/* Mobile Responsive Design */
+@media (max-width: 768px) {
+  body {
+    font-size: 14px;
+  }
+  
+  .MuiContainer-root {
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  
+  .MuiAppBar-root {
+    min-height: 56px !important;
+  }
+  
+  .MuiToolbar-root {
+    min-height: 56px !important;
+    padding-left: 8px !important;
+    padding-right: 8px !important;
+  }
+  
+  .MuiCard-root {
+    margin: 8px 0 !important;
+  }
+  
+  .MuiButton-root {
+    min-width: auto !important;
+    padding: 8px 12px !important;
+  }
+  
+  .stats-card {
+    padding: 1rem;
+    margin-bottom: 1rem;
+  }
+  
+  /* Voice recorder mobile styles */
+  .voice-recorder-container {
+    padding: 16px !important;
+  }
+  
+  .voice-visualizer {
+    max-width: 200px !important;
+    height: 40px !important;
+  }
+  
+  .voice-controls {
+    gap: 12px !important;
+  }
+  
+  .voice-button {
+    width: 48px !important;
+    height: 48px !important;
+  }
+  
+  /* Table responsive */
+  .MuiTable-root {
+    font-size: 0.8rem;
+  }
+  
+  .task-table .MuiTableCell-root {
+    padding: 8px 4px !important;
+  }
+  
+  /* Hide less important columns on mobile */
+  .task-table .MuiTableCell-root:nth-child(6), /* Last Update */
+  .task-table .MuiTableCell-root:nth-child(5) { /* Tags */
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .task-table .MuiTableCell-root:nth-child(4) { /* Assignee */
+    display: none;
+  }
+  
+  .MuiTypography-h4 {
+    font-size: 1.5rem !important;
+  }
+  
+  .MuiTypography-h5 {
+    font-size: 1.25rem !important;
+  }
+  
+  .MuiTypography-h6 {
+    font-size: 1.1rem !important;
+  }
+}
+
+/* Touch-friendly interactive elements */
+@media (hover: none) and (pointer: coarse) {
+  .MuiIconButton-root {
+    min-width: 44px !important;
+    min-height: 44px !important;
+  }
+  
+  .MuiButton-root {
+    min-height: 44px !important;
+  }
+  
+  .MuiChip-root {
+    min-height: 36px !important;
+  }
+}

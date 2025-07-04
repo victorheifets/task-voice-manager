@@ -1,0 +1,52 @@
+{
+  "app": {
+    "title": "Task Manager",
+    "settings": "Settings"
+  },
+  "tabs": {
+    "tasks": "Tasks",
+    "notes": "Notes",
+    "config": "Config"
+  },
+  "actions": {
+    "add": "Add",
+    "edit": "Edit",
+    "delete": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "close": "Close",
+    "search": "Search"
+  },
+  "filters": {
+    "all": "All",
+    "today": "Today",
+    "tomorrow": "Tomorrow",
+    "nextweek": "Next Week",
+    "overdue": "Overdue",
+    "completed": "Completed"
+  },
+  "search": {
+    "placeholder": "Search tasks..."
+  },
+  "theme": {
+    "light": "Light",
+    "dark": "Dark"
+  },
+  "language": {
+    "select": "Select Language",
+    "en": "English",
+    "es": "Spanish",
+    "fr": "French"
+  },
+  "menu": {
+    "profile": "Profile",
+    "settings": "Settings",
+    "help": "Help"
+  },
+  "settings": {
+    "account": "Account Settings",
+    "appearance": "Appearance",
+    "notifications": "Notifications",
+    "help": "Help"
+  }
+} 
