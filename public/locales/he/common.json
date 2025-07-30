@@ -1,0 +1,53 @@
+{
+  "app": {
+    "title": "מנהל משימות",
+    "settings": "הגדרות"
+  },
+  "tabs": {
+    "tasks": "משימות",
+    "notes": "הערות",
+    "config": "תצורה"
+  },
+  "actions": {
+    "add": "הוסף",
+    "edit": "ערוך",
+    "delete": "מחק",
+    "save": "שמור",
+    "cancel": "בטל",
+    "close": "סגור",
+    "search": "חפש"
+  },
+  "filters": {
+    "all": "הכל",
+    "today": "היום",
+    "tomorrow": "מחר",
+    "nextweek": "השבוע הבא",
+    "overdue": "באיחור",
+    "completed": "הושלם"
+  },
+  "search": {
+    "placeholder": "חפש משימות..."
+  },
+  "theme": {
+    "light": "בהיר",
+    "dark": "כהה"
+  },
+  "language": {
+    "select": "בחר שפה",
+    "en": "אנגלית",
+    "es": "ספרדית",
+    "fr": "צרפתית",
+    "he": "עברית"
+  },
+  "menu": {
+    "profile": "פרופיל",
+    "settings": "הגדרות",
+    "help": "עזרה"
+  },
+  "settings": {
+    "account": "הגדרות חשבון",
+    "appearance": "מראה",
+    "notifications": "התראות",
+    "help": "עזרה"
+  }
+}

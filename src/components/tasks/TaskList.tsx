@@ -277,9 +277,9 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
       }
       
       const parsedDate = parseISO(dateString);
-      if (isPast(parsedDate) && !isToday(parsedDate)) return 'error.main';
-      if (isToday(parsedDate)) return 'warning.main';
-      if (isTomorrow(parsedDate)) return 'info.main';
+      if (isPast(parsedDate) && !isToday(parsedDate)) return theme.palette.error.main;
+      if (isToday(parsedDate)) return theme.palette.warning.main;
+      if (isTomorrow(parsedDate)) return theme.palette.info.main;
       return 'inherit';
     } catch (error) {
       console.error('Error parsing date for color:', dateString, error);
@@ -357,20 +357,19 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
             <Card 
               key={task.id} 
               sx={{ 
-                mb: 2, 
-                borderRadius: 10,
+                mb: 1.5, 
+                borderRadius: 2,
                 boxShadow: theme.palette.mode === 'dark' 
-                  ? '0 4px 12px rgba(0,0,0,0.5)' 
-                  : '0 2px 8px rgba(0,0,0,0.1)',
-                border: 'none',
+                  ? '0 2px 8px rgba(0,0,0,0.3)' 
+                  : '0 1px 4px rgba(0,0,0,0.1)',
+                border: `1px solid ${alpha(theme.palette.divider, 0.12)}`,
                 position: 'relative',
                 overflow: 'visible',
-                bgcolor: theme.palette.mode === 'dark' 
-                  ? alpha(theme.palette.background.paper, 0.7)
-                  : theme.palette.background.paper,
-                transition: 'all 0.3s ease',
+                bgcolor: theme.palette.background.paper,
+                transition: 'all 0.2s ease',
                 '&:active': {
-                  transform: 'scale(0.98)',
+                  transform: 'scale(0.99)',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
                 }
               }}
             >
@@ -381,24 +380,30 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
                   top: 0,
                   left: 0,
                   right: 0,
-                  height: 4,
+                  height: 3,
                   bgcolor: getPriorityLevel(task) === 3 
                     ? theme.palette.error.main 
                     : getPriorityLevel(task) === 2 
                       ? theme.palette.warning.main 
                       : theme.palette.info.main,
-                  borderTopLeftRadius: 10,
-                  borderTopRightRadius: 10,
+                  borderTopLeftRadius: 2,
+                  borderTopRightRadius: 2,
                 }} />
               )}
               
-              <CardContent sx={{ pb: 2, pt: getPriorityLevel(task) > 0 ? 2.5 : 2 }}>
-                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+              <CardContent sx={{ 
+                pb: 1.5, 
+                pt: getPriorityLevel(task) > 0 ? 2 : 1.5,
+                px: 2,
+                '&:last-child': { pb: 1.5 }
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
                   <Checkbox
                     checked={task.completed}
                     onChange={() => handleToggleComplete(task)}
                     sx={{ 
                       p: 0,
+                      mt: 0.25,
                       color: theme.palette.primary.main,
                       '&.Mui-checked': {
                         color: theme.palette.success.main,
@@ -410,17 +415,19 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
                       variant="body1" 
                       sx={{ 
                         fontWeight: 500,
+                        fontSize: '1rem',
+                        lineHeight: 1.4,
                         textDecoration: task.completed ? 'line-through' : 'none',
                         color: task.completed 
                           ? theme.palette.text.secondary 
                           : theme.palette.text.primary,
-                        mb: 1
+                        mb: 1.2
                       }}
                     >
                       {task.title}
                     </Typography>
                     
-                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.8, alignItems: 'center' }}>
                       <PrioritySelect
                         value={task.priority}
                         onChange={(newPriority) => handlePriorityChange(task.id, newPriority)}
@@ -429,14 +436,16 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
 
                       {task.dueDate && (
                         <Chip 
-                          icon={<TodayIcon />}
+                          icon={<TodayIcon sx={{ fontSize: '14px' }} />}
                           label={formatDate(task.dueDate)}
                           size="small" 
                           sx={{ 
                             bgcolor: alpha(getDateColor(task.dueDate), 0.1),
                             color: getDateColor(task.dueDate),
                             fontWeight: 500,
-                            fontSize: '0.75rem'
+                            fontSize: '0.75rem',
+                            height: 24,
+                            '& .MuiChip-icon': { fontSize: '14px' }
                           }}
                         />
                       )}
@@ -446,10 +455,10 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
                           avatar={
                             <Avatar 
                               sx={{ 
-                                width: 20, 
-                                height: 20,
+                                width: 18, 
+                                height: 18,
                                 bgcolor: theme.palette.primary.main,
-                                fontSize: '0.75rem'
+                                fontSize: '0.7rem'
                               }}
                             >
                               {task.assignee[0].toUpperCase()}
@@ -458,7 +467,11 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
                           label={task.assignee} 
                           size="small" 
                           variant="outlined"
-                          sx={{ fontSize: '0.75rem' }}
+                          sx={{ 
+                            fontSize: '0.75rem',
+                            height: 24,
+                            border: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`
+                          }}
                         />
                       )}
                       
@@ -469,9 +482,10 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
                           size="small" 
                           sx={{ 
                             fontSize: '0.7rem',
-                            height: 20,
+                            height: 22,
                             bgcolor: alpha(theme.palette.secondary.main, 0.1),
                             color: theme.palette.secondary.main,
+                            border: `1px solid ${alpha(theme.palette.secondary.main, 0.2)}`
                           }}
                         />
                       ))}
@@ -483,7 +497,11 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
                     onClick={(e) => handleMenuOpen(e, task.id)}
                     sx={{ 
                       p: 0.5,
-                      color: theme.palette.text.secondary
+                      mt: 0.25,
+                      color: theme.palette.text.secondary,
+                      '&:hover': {
+                        bgcolor: alpha(theme.palette.action.hover, 0.5)
+                      }
                     }}
                   >
                     <MoreVertIcon fontSize="small" />
@@ -500,7 +518,7 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
           onClose={handleMenuClose}
           TransitionComponent={Fade}
         >
-          <MenuItem onClick={() => menuTask && handleDeleteTask(menuTask)} sx={{ color: 'error.main' }}>
+          <MenuItem onClick={() => menuTask && handleDeleteTask(menuTask)} sx={{ color: theme.palette.error.main }}>
             <DeleteIcon fontSize="small" sx={{ mr: 1 }} /> Delete
           </MenuItem>
         </Menu>
@@ -561,7 +579,7 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
         sx={{ 
           borderRadius: '12px',
           overflow: 'hidden',
-          boxShadow: '0 8px 24px rgba(0,0,0,0.12)',
+          boxShadow: '0 0 12px rgba(0,0,0,0.15)',
           '& .MuiTableCell-root': {
             borderRadius: 0,
           }
@@ -572,31 +590,32 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
           className="task-table"
         >
           <TableHead>
-            <TableRow sx={{ bgcolor: alpha(theme.palette.primary.main, 0.15) }}>
-              <TableCell padding="checkbox" sx={{ borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.3)}` }}></TableCell>
-              <TableCell sx={{ borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`, fontWeight: 'bold' }}>
+            <TableRow sx={{ bgcolor: theme.palette.primary.main }}>
+              <TableCell padding="checkbox" sx={{ borderBottom: `1px solid ${theme.palette.primary.main}`, color: 'white' }}></TableCell>
+              <TableCell sx={{ borderBottom: `1px solid ${theme.palette.primary.main}`, fontWeight: 'bold', color: 'white', width: '30%' }}>
                 Task
               </TableCell>
-              <TableCell sx={{ borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`, fontWeight: 'bold' }}>
+              <TableCell sx={{ borderBottom: `1px solid ${theme.palette.primary.main}`, fontWeight: 'bold', color: 'white', width: '12%' }}>
                 <TableSortLabel
                   active={sortField === 'dueDate'}
                   direction={sortField === 'dueDate' ? sortDirection : 'asc'}
                   onClick={() => handleSort('dueDate')}
+                  sx={{ color: 'white !important', '& .MuiTableSortLabel-icon': { color: 'white !important' } }}
                 >
                   Due Date
                 </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`, fontWeight: 'bold' }}>
+              <TableCell sx={{ borderBottom: `1px solid ${theme.palette.primary.main}`, fontWeight: 'bold', color: 'white', width: '12%' }}>
                 Assignee
               </TableCell>
-              <TableCell sx={{ borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`, fontWeight: 'bold' }}>
+              <TableCell sx={{ borderBottom: `1px solid ${theme.palette.primary.main}`, fontWeight: 'bold', color: 'white', width: '10%' }}>
                 Priority
               </TableCell>
-              <TableCell sx={{ borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`, fontWeight: 'bold' }}>Tags</TableCell>
-              <TableCell sx={{ borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`, fontWeight: 'bold' }}>
+              <TableCell sx={{ borderBottom: `1px solid ${theme.palette.primary.main}`, fontWeight: 'bold', color: 'white', width: '12%' }}>Tags</TableCell>
+              <TableCell sx={{ borderBottom: `1px solid ${theme.palette.primary.main}`, fontWeight: 'bold', color: 'white', width: '13%' }}>
                 Last Update
               </TableCell>
-              <TableCell align="right" sx={{ borderBottom: `1px solid ${alpha(theme.palette.primary.main, 0.3)}`, fontWeight: 'bold' }}>Actions</TableCell>
+              <TableCell align="right" sx={{ borderBottom: `1px solid ${theme.palette.primary.main}`, fontWeight: 'bold', color: 'white', width: '13%' }}>Actions</TableCell>
             </TableRow>
           </TableHead>
           <TableBody>
@@ -612,25 +631,9 @@ export default function TaskList({ refreshTrigger, searchFilter = '', statusFilt
                   key={task.id}
                   sx={{ 
                     '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.08), textDecoration: 'none' },
-                    bgcolor: task.completed ? alpha(theme.palette.success.main, 0.08) : 'inherit',
-                    borderLeft: task.completed 
-                      ? `3px solid ${theme.palette.success.main}` 
-                      : task.priority !== 'none'
-                        ? `3px solid ${
-                            task.priority === 'urgent' 
-                              ? theme.palette.error.main 
-                              : task.priority === 'high'
-                                ? theme.palette.error.light
-                                : task.priority === 'medium'
-                                  ? theme.palette.warning.main
-                                  : theme.palette.info.main
-                          }` 
-                        : 'none',
+                    bgcolor: '#ffffff',
                     boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
                     height: '40px',
-                    '&:nth-of-type(odd)': {
-                      bgcolor: alpha(theme.palette.action.hover, 0.02),
-                    },
                     '& .MuiTableRow-root': {
                       height: '40px',
                     },

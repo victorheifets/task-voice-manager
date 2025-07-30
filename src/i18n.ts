@@ -10,6 +10,9 @@ import enTasks from '../public/locales/en/tasks.json';
 import enNotes from '../public/locales/en/notes.json';
 import esCommon from '../public/locales/es/common.json';
 import frCommon from '../public/locales/fr/common.json';
+import heCommon from '../public/locales/he/common.json';
+import heTasks from '../public/locales/he/tasks.json';
+import heNotes from '../public/locales/he/notes.json';
 
 // Initialize only once
 if (!i18n.isInitialized) {
@@ -33,10 +36,15 @@ if (!i18n.isInitialized) {
           tasks: enTasks, // Fallback to English
           notes: enNotes,  // Fallback to English
         },
+        he: {
+          common: heCommon,
+          tasks: heTasks,
+          notes: heNotes,
+        },
       },
       lng: 'en', // Set default language
       fallbackLng: 'en',
-      supportedLngs: ['en', 'es', 'fr'],
+      supportedLngs: ['en', 'es', 'fr', 'he'],
       debug: false, // Disable debug to reduce console noise
       detection: {
         order: ['localStorage', 'cookie', 'navigator'],

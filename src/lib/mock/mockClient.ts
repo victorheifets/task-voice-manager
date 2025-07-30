@@ -1,5 +1,6 @@
 import { mockTasks } from './mockData';
 import { v4 as uuidv4 } from 'uuid';
+import { Priority } from '@/components/tasks/PrioritySelect';
 
 // In-memory task storage
 let tasks = [...mockTasks];
@@ -15,10 +16,12 @@ export async function createTask(task: {
   dueDate: string | null;
   assignee: string | null;
   tags: string[];
+  priority?: Priority;
 }) {
   const newTask = {
     id: uuidv4(),
     ...task,
+    priority: task.priority || ('medium' as Priority),
     completed: false,
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),

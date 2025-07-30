@@ -1,0 +1,34 @@
+{
+  "input": {
+    "placeholder": "הוסף משימה... (למשל, 'התקשר לג'ון מחר ב-15:00')",
+    "recording": "מקליט...",
+    "processing": "מעבד שמע..."
+  },
+  "list": {
+    "empty": "לא נמצאו משימות",
+    "task": "משימה",
+    "dueDate": "תאריך יעד",
+    "assignee": "מוקצה ל",
+    "tags": "תגיות",
+    "lastUpdate": "עדכון אחרון",
+    "priority": "עדיפות",
+    "actions": "פעולות",
+    "notAssigned": "לא מוקצה",
+    "notSet": "לא הוגדר"
+  },
+  "details": {
+    "title": "פרטי משימה",
+    "created": "נוצר",
+    "updated": "עודכן לאחרונה",
+    "dueDate": "תאריך יעד",
+    "assignee": "מוקצה ל",
+    "status": "סטטוס",
+    "tags": "תגיות",
+    "pending": "ממתין",
+    "completed": "הושלם"
+  },
+  "mobile": {
+    "swipeLeft": "החלק שמאלה כדי להשלים",
+    "swipeRight": "החלק ימינה לאפשרויות"
+  }
+}

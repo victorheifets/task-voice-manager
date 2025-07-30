@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React from 'react';
 import { IconButton, Tooltip } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import StopIcon from '@mui/icons-material/Stop';
@@ -14,21 +14,20 @@ interface VoiceRecorderProps {
   language?: string;
   azureKey?: string;
   azureRegion?: string;
+  transcriptionService?: 'browser' | 'whisper' | 'azure' | 'hybrid';
 }
 
-const VoiceRecorder = ({
+const VoiceRecorder = React.forwardRef<
+  { startRecording: () => Promise<void>; stopRecording: () => Promise<void> },
+  VoiceRecorderProps
+>(({
   onTranscript,
   language = 'en-US',
   azureKey,
   azureRegion,
+  transcriptionService = 'browser',
   onRecordingStateChange
-}: VoiceRecorderProps): React.ReactElement => {
-  const config: SpeechConfig = {
-    defaultLanguage: language,
-    useAzureFallback: Boolean(azureKey && azureRegion),
-    azureKey,
-    azureRegion
-  };
+}, ref) => {
 
   const {
     isRecording,
@@ -36,23 +35,51 @@ const VoiceRecorder = ({
     error,
     startRecording: originalStartRecording,
     stopRecording: originalStopRecording
-  } = useSpeechRecognition(config);
-
-  const startRecording = () => {
-    onRecordingStateChange?.(true);
-    originalStartRecording();
-  };
-
-  const stopRecording = () => {
-    onRecordingStateChange?.(false);
-    originalStopRecording();
-  };
-
-  useEffect(() => {
-    if (transcript) {
-      onTranscript(transcript);
+  } = useSpeechRecognition({
+    defaultLanguage: language,
+    useAzureFallback: Boolean(azureKey && azureRegion),
+    azureKey,
+    azureRegion,
+    transcriptionService,
+    onTranscript: (text) => {
+      console.log('Transcript updated:', text);
+      onTranscript(text);
+    },
+    onError: (error) => {
+      console.log('Recording error:', error);
     }
-  }, [transcript, onTranscript]);
+  });
+
+  React.useImperativeHandle(ref, () => ({
+    startRecording: originalStartRecording,
+    stopRecording: originalStopRecording
+  }));
+
+  const startRecording = async () => {
+    console.log('Starting recording...');
+    try {
+      await originalStartRecording();
+      console.log('Recording started successfully');
+      onRecordingStateChange?.(true);
+    } catch (error) {
+      console.error('Failed to start recording:', error);
+      onRecordingStateChange?.(false);
+    }
+  };
+
+  const stopRecording = async () => {
+    console.log('Stopping recording...');
+    try {
+      await originalStopRecording();
+      console.log('Recording stopped successfully');
+      onRecordingStateChange?.(false);
+    } catch (error) {
+      console.error('Failed to stop recording:', error);
+    }
+  };
+
+  // Transcript handling is now done in the hook callback
+
 
   return (
     <div className="voice-recorder" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -120,6 +147,6 @@ const VoiceRecorder = ({
       )}
     </div>
   );
-};
+});
 
 export default VoiceRecorder;

@@ -21,7 +21,8 @@ export default function Layout({ children }: LayoutProps) {
         flexGrow: 1, 
         overflow: 'auto',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        bgcolor: '#ffffff'
       }}>
         {children}
       </Box>

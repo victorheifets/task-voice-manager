@@ -1,5 +1,6 @@
 import { Task } from '@/types/task';
 import { addDays, subDays, format } from 'date-fns';
+import { Priority } from '@/components/tasks/PrioritySelect';
 
 // Helper function to get ISO date string
 const toISODate = (date: Date) => format(date, 'yyyy-MM-dd');
@@ -15,6 +16,7 @@ export const mockTasks: Task[] = [
     dueDate: toISODate(addDays(now, 2)),
     assignee: 'John Doe',
     tags: ['work', 'priority'],
+    priority: 'high' as Priority,
     completed: false,
     createdAt: subDays(now, 2).toISOString(),
     updatedAt: subDays(now, 1).toISOString(),
@@ -25,6 +27,7 @@ export const mockTasks: Task[] = [
     dueDate: toISODate(now),
     assignee: null,
     tags: ['personal', 'shopping'],
+    priority: 'medium' as Priority,
     completed: false,
     createdAt: subDays(now, 3).toISOString(),
     updatedAt: subDays(now, 3).toISOString(),
@@ -35,6 +38,7 @@ export const mockTasks: Task[] = [
     dueDate: toISODate(addDays(now, 7)),
     assignee: null,
     tags: ['health', 'personal'],
+    priority: 'low' as Priority,
     completed: false,
     createdAt: subDays(now, 1).toISOString(),
     updatedAt: subDays(now, 1).toISOString(),
@@ -45,6 +49,7 @@ export const mockTasks: Task[] = [
     dueDate: toISODate(addDays(now, 1)),
     assignee: null,
     tags: ['family'],
+    priority: 'medium' as Priority,
     completed: false,
     createdAt: subDays(now, 4).toISOString(),
     updatedAt: subDays(now, 4).toISOString(),
@@ -55,6 +60,7 @@ export const mockTasks: Task[] = [
     dueDate: toISODate(subDays(now, 1)),
     assignee: 'Jane Smith',
     tags: ['work', 'finance'],
+    priority: 'high' as Priority,
     completed: true,
     createdAt: subDays(now, 5).toISOString(),
     updatedAt: subDays(now, 2).toISOString(),
@@ -65,6 +71,7 @@ export const mockTasks: Task[] = [
     dueDate: toISODate(addDays(now, 3)),
     assignee: 'John Doe',
     tags: ['work', 'meeting'],
+    priority: 'high' as Priority,
     completed: false,
     createdAt: subDays(now, 2).toISOString(),
     updatedAt: subDays(now, 2).toISOString(),
@@ -75,6 +82,7 @@ export const mockTasks: Task[] = [
     dueDate: toISODate(addDays(now, 14)),
     assignee: null,
     tags: ['travel', 'personal'],
+    priority: 'low' as Priority,
     completed: false,
     createdAt: subDays(now, 1).toISOString(),
     updatedAt: subDays(now, 1).toISOString(),

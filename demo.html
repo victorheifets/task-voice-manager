@@ -1,0 +1,717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Landing Page Editor Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            line-height: 1.6;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="25" cy="25" r="1" fill="white" opacity="0.1"/><circle cx="75" cy="75" r="1" fill="white" opacity="0.1"/><circle cx="50" cy="10" r="0.5" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            position: relative;
+            z-index: 1;
+        }
+        
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .nav-tabs {
+            display: flex;
+            background: #f8fafc;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .nav-tab {
+            flex: 1;
+            padding: 20px;
+            text-align: center;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            color: #64748b;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .nav-tab.active {
+            color: #2563eb;
+            background: white;
+            border-bottom-color: #2563eb;
+        }
+        
+        .nav-tab:hover {
+            background: #f1f5f9;
+            color: #2563eb;
+        }
+        
+        .tab-content {
+            display: none;
+            padding: 40px;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .template-card {
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            background: white;
+        }
+        
+        .template-card:hover {
+            transform: translateY(-8px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            border-color: #2563eb;
+        }
+        
+        .template-card.selected {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1);
+        }
+        
+        .template-preview {
+            height: 200px;
+            background-size: cover;
+            background-position: center;
+            position: relative;
+        }
+        
+        .template-preview::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 50px;
+            background: linear-gradient(transparent, rgba(0,0,0,0.3));
+        }
+        
+        .template-info {
+            padding: 20px;
+        }
+        
+        .template-name {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 5px;
+        }
+        
+        .template-desc {
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 15px;
+        }
+        
+        .template-colors {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .color-dot {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            border: 2px solid white;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .editor-section {
+            margin-bottom: 40px;
+        }
+        
+        .editor-title {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .editor-toolbar {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px 12px 0 0;
+            padding: 15px;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .toolbar-btn {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.2s ease;
+        }
+        
+        .toolbar-btn:hover {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        
+        .toolbar-btn.active {
+            background: #2563eb;
+            color: white;
+            border-color: #2563eb;
+        }
+        
+        .editor-content {
+            border: 1px solid #e2e8f0;
+            border-top: none;
+            border-radius: 0 0 12px 12px;
+            padding: 20px;
+            min-height: 200px;
+            background: white;
+            outline: none;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+        
+        .editor-content:focus {
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .preview-container {
+            border: 2px solid #e2e8f0;
+            border-radius: 16px;
+            overflow: hidden;
+            margin-top: 30px;
+            background: white;
+        }
+        
+        .preview-header {
+            background: #f8fafc;
+            padding: 15px 20px;
+            border-bottom: 1px solid #e2e8f0;
+            display: flex;
+            justify-content: between;
+            align-items: center;
+        }
+        
+        .preview-title {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        
+        .preview-content {
+            height: 600px;
+            overflow-y: auto;
+        }
+        
+        .landing-preview {
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            padding: 80px 40px;
+            text-align: center;
+            position: relative;
+        }
+        
+        .landing-preview h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 20px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .landing-preview p {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            opacity: 0.9;
+        }
+        
+        .cta-button {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 15px 40px;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .cta-button:hover {
+            background: rgba(255,255,255,0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .features-section {
+            padding: 60px 40px;
+            background: #f8fafc;
+        }
+        
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 30px;
+            margin-top: 40px;
+        }
+        
+        .feature-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, #2563eb, #1e40af);
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+        
+        .lead-form {
+            background: white;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15);
+            max-width: 400px;
+            margin: -100px auto 0;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #374151;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s ease;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .form-submit {
+            width: 100%;
+            background: linear-gradient(135deg, #2563eb 0%, #1e40af 100%);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .form-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(37, 99, 235, 0.3);
+        }
+        
+        .success-message {
+            text-align: center;
+            color: #059669;
+            font-weight: 600;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .landing-preview h1 {
+                font-size: 2rem;
+            }
+            
+            .landing-preview {
+                padding: 60px 20px;
+            }
+            
+            .template-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 Landing Page Editor Demo</h1>
+            <p>Professional landing pages in minutes - See the power of TipTap + Templates</p>
+        </div>
+        
+        <div class="nav-tabs">
+            <button class="nav-tab active" onclick="showTab('templates')">📐 Choose Template</button>
+            <button class="nav-tab" onclick="showTab('editor')">✏️ Edit Content</button>
+            <button class="nav-tab" onclick="showTab('preview')">👁️ Live Preview</button>
+        </div>
+        
+        <!-- Template Selection Tab -->
+        <div id="templates" class="tab-content active">
+            <h2 style="margin-bottom: 20px; color: #1e293b;">Choose Your Professional Template</h2>
+            <p style="color: #64748b; margin-bottom: 30px;">Each template is conversion-optimized and mobile-responsive. Your course providers can't make it look bad!</p>
+            
+            <div class="template-grid">
+                <div class="template-card selected" onclick="selectTemplate(this, 'professional')">
+                    <div class="template-preview" style="background-image: url('https://images.unsplash.com/photo-1553877522-43269d4ea984?w=400&h=200&fit=crop')"></div>
+                    <div class="template-info">
+                        <div class="template-name">Professional</div>
+                        <div class="template-desc">Clean, corporate design perfect for business courses</div>
+                        <div class="template-colors">
+                            <div class="color-dot" style="background: #2563eb;"></div>
+                            <div class="color-dot" style="background: #1e40af;"></div>
+                            <div class="color-dot" style="background: #3b82f6;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="template-card" onclick="selectTemplate(this, 'creative')">
+                    <div class="template-preview" style="background-image: url('https://images.unsplash.com/photo-1558655146-9f40138edfeb?w=400&h=200&fit=crop')"></div>
+                    <div class="template-info">
+                        <div class="template-name">Creative</div>
+                        <div class="template-desc">Bold, artistic design for creative and design courses</div>
+                        <div class="template-colors">
+                            <div class="color-dot" style="background: #7c3aed;"></div>
+                            <div class="color-dot" style="background: #5b21b6;"></div>
+                            <div class="color-dot" style="background: #a855f7;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="template-card" onclick="selectTemplate(this, 'minimal')">
+                    <div class="template-preview" style="background-image: url('https://images.unsplash.com/photo-1486312338219-ce68d2c6f44d?w=400&h=200&fit=crop')"></div>
+                    <div class="template-info">
+                        <div class="template-name">Minimal</div>
+                        <div class="template-desc">Clean, minimalist design focusing on content clarity</div>
+                        <div class="template-colors">
+                            <div class="color-dot" style="background: #059669;"></div>
+                            <div class="color-dot" style="background: #047857;"></div>
+                            <div class="color-dot" style="background: #10b981;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="template-card" onclick="selectTemplate(this, 'tech')">
+                    <div class="template-preview" style="background-image: url('https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400&h=200&fit=crop')"></div>
+                    <div class="template-info">
+                        <div class="template-name">Tech</div>
+                        <div class="template-desc">Modern, sleek design perfect for technology courses</div>
+                        <div class="template-colors">
+                            <div class="color-dot" style="background: #0ea5e9;"></div>
+                            <div class="color-dot" style="background: #0284c7;"></div>
+                            <div class="color-dot" style="background: #38bdf8;"></div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="template-card" onclick="selectTemplate(this, 'bold')">
+                    <div class="template-preview" style="background-image: url('https://images.unsplash.com/photo-1542744173-8e7e53415bb0?w=400&h=200&fit=crop')"></div>
+                    <div class="template-info">
+                        <div class="template-name">Bold</div>
+                        <div class="template-desc">High-contrast, attention-grabbing design for high-impact courses</div>
+                        <div class="template-colors">
+                            <div class="color-dot" style="background: #dc2626;"></div>
+                            <div class="color-dot" style="background: #b91c1c;"></div>
+                            <div class="color-dot" style="background: #ef4444;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Content Editor Tab -->
+        <div id="editor" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #1e293b;">Edit Your Content</h2>
+            <p style="color: #64748b; margin-bottom: 30px;">Use our rich text editor to create compelling content. No design skills needed!</p>
+            
+            <div class="editor-section">
+                <div class="editor-title">
+                    🚀 Hero Section
+                </div>
+                <div class="editor-toolbar">
+                    <button class="toolbar-btn active" onclick="toggleFormat(this, 'bold')"><b>B</b></button>
+                    <button class="toolbar-btn" onclick="toggleFormat(this, 'italic')"><i>I</i></button>
+                    <button class="toolbar-btn" onclick="toggleFormat(this, 'list')">• List</button>
+                    <button class="toolbar-btn" onclick="toggleFormat(this, 'number')">1. List</button>
+                    <div style="width: 1px; height: 20px; background: #d1d5db; margin: 0 5px;"></div>
+                    <button class="toolbar-btn" style="background: #e74c3c; color: white;" onclick="changeColor('#e74c3c')">A</button>
+                    <button class="toolbar-btn" style="background: #3498db; color: white;" onclick="changeColor('#3498db')">A</button>
+                    <button class="toolbar-btn" style="background: #2ecc71; color: white;" onclick="changeColor('#2ecc71')">A</button>
+                </div>
+                <div class="editor-content" contenteditable="true" id="heroEditor">
+                    <h1>Transform Your Career with Advanced Web Development</h1>
+                    <p>Join thousands of students who've mastered modern web technologies and landed their dream jobs. Our comprehensive course covers everything from React fundamentals to advanced full-stack development.</p>
+                    <p><strong>What makes us different:</strong></p>
+                    <ul>
+                        <li>🚀 <strong>Real-world projects</strong> - Build a complete portfolio</li>
+                        <li>👨‍💻 <strong>Expert mentorship</strong> - 1-on-1 code reviews</li>
+                        <li>🎯 <strong>Job placement assistance</strong> - 90% employment rate</li>
+                        <li>⏰ <strong>Flexible learning</strong> - Study at your own pace</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="editor-section">
+                <div class="editor-title">
+                    ⭐ Course Features
+                </div>
+                <div class="editor-toolbar">
+                    <button class="toolbar-btn" onclick="toggleFormat(this, 'bold')"><b>B</b></button>
+                    <button class="toolbar-btn" onclick="toggleFormat(this, 'italic')"><i>I</i></button>
+                    <button class="toolbar-btn" onclick="toggleFormat(this, 'list')">• List</button>
+                </div>
+                <div class="editor-content" contenteditable="true" id="featuresEditor">
+                    <h2>Master In-Demand Skills</h2>
+                    <h3>Frontend Development</h3>
+                    <p>Build beautiful, responsive user interfaces with <strong>React</strong>, <strong>TypeScript</strong>, and modern CSS frameworks. Learn component architecture, state management, and performance optimization.</p>
+                    <h3>Backend Development</h3>
+                    <p>Create robust APIs with <strong>Node.js</strong>, <strong>Express</strong>, and database integration. Master authentication, security best practices, and cloud deployment.</p>
+                    <h3>Full-Stack Integration</h3>
+                    <p>Connect frontend and backend seamlessly. Build complete applications from concept to deployment using industry-standard tools and workflows.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Live Preview Tab -->
+        <div id="preview" class="tab-content">
+            <h2 style="margin-bottom: 20px; color: #1e293b;">Live Preview</h2>
+            <p style="color: #64748b; margin-bottom: 30px;">This is what your students will see - a professional, conversion-optimized landing page!</p>
+            
+            <div class="preview-container">
+                <div class="preview-header">
+                    <div class="preview-title">🌐 Your Landing Page</div>
+                    <div style="font-size: 12px; color: #64748b;">yoursite.com/course-name</div>
+                </div>
+                <div class="preview-content">
+                    <div class="landing-preview">
+                        <h1 id="previewTitle">Transform Your Career with Advanced Web Development</h1>
+                        <p id="previewSubtitle">Join thousands of students who've mastered modern web technologies and landed their dream jobs.</p>
+                        <button class="cta-button">Start Learning Today</button>
+                    </div>
+                    
+                    <div class="lead-form">
+                        <h3 style="text-align: center; margin-bottom: 10px; color: #1e293b;">Enroll Now!</h3>
+                        <p style="text-align: center; color: #64748b; margin-bottom: 30px; font-size: 14px;">Join 5,247+ students worldwide</p>
+                        
+                        <div style="text-align: center; margin-bottom: 30px;">
+                            <div style="font-size: 2rem; font-weight: bold; color: #2563eb;">$299</div>
+                            <div style="text-decoration: line-through; color: #9ca3af;">$399</div>
+                            <div style="background: #dc2626; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; display: inline-block; margin-top: 5px;">Limited Time!</div>
+                        </div>
+                        
+                        <form onsubmit="submitForm(event)">
+                            <div class="form-group">
+                                <label>First Name *</label>
+                                <input type="text" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Last Name *</label>
+                                <input type="text" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Email Address *</label>
+                                <input type="email" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Phone Number</label>
+                                <input type="tel">
+                            </div>
+                            <button type="submit" class="form-submit">Enroll Now - Start Today!</button>
+                        </form>
+                        <div class="success-message" id="successMessage">
+                            🎉 Thank you! We'll contact you soon with enrollment details.
+                        </div>
+                    </div>
+                    
+                    <div class="features-section">
+                        <h2 style="text-align: center; margin-bottom: 20px; color: #1e293b;">Why Choose Our Course</h2>
+                        <p style="text-align: center; color: #64748b; margin-bottom: 0;">Everything you need to succeed in your learning journey</p>
+                        
+                        <div class="features-grid">
+                            <div class="feature-card">
+                                <div class="feature-icon">🎓</div>
+                                <h3 style="margin-bottom: 15px; color: #1e293b;">Expert Instruction</h3>
+                                <p style="color: #64748b; line-height: 1.6;">Learn from industry professionals with years of real-world experience</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">🚀</div>
+                                <h3 style="margin-bottom: 15px; color: #1e293b;">Hands-on Projects</h3>
+                                <p style="color: #64748b; line-height: 1.6;">Build a portfolio of real projects that showcase your skills to employers</p>
+                            </div>
+                            <div class="feature-card">
+                                <div class="feature-icon">💼</div>
+                                <h3 style="margin-bottom: 15px; color: #1e293b;">Career Support</h3>
+                                <p style="color: #64748b; line-height: 1.6;">Get job placement assistance and career guidance throughout your journey</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function showTab(tabName) {
+            // Hide all tabs
+            const tabs = document.querySelectorAll('.tab-content');
+            tabs.forEach(tab => tab.classList.remove('active'));
+            
+            const tabButtons = document.querySelectorAll('.nav-tab');
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+        
+        function selectTemplate(element, templateName) {
+            // Remove selection from all templates
+            const templates = document.querySelectorAll('.template-card');
+            templates.forEach(template => template.classList.remove('selected'));
+            
+            // Select clicked template
+            element.classList.add('selected');
+            
+            console.log('Selected template:', templateName);
+        }
+        
+        function toggleFormat(button, format) {
+            button.classList.toggle('active');
+            
+            if (format === 'bold') {
+                document.execCommand('bold');
+            } else if (format === 'italic') {
+                document.execCommand('italic');
+            } else if (format === 'list') {
+                document.execCommand('insertUnorderedList');
+            } else if (format === 'number') {
+                document.execCommand('insertOrderedList');
+            }
+        }
+        
+        function changeColor(color) {
+            document.execCommand('foreColor', false, color);
+        }
+        
+        function submitForm(event) {
+            event.preventDefault();
+            
+            // Hide form
+            event.target.style.display = 'none';
+            
+            // Show success message
+            document.getElementById('successMessage').style.display = 'block';
+            
+            // Reset after 3 seconds
+            setTimeout(() => {
+                event.target.style.display = 'block';
+                document.getElementById('successMessage').style.display = 'none';
+                event.target.reset();
+            }, 3000);
+        }
+        
+        // Update preview content when editing
+        document.getElementById('heroEditor').addEventListener('input', function() {
+            const content = this.innerHTML;
+            const titleMatch = content.match(/<h1>(.*?)<\/h1>/);
+            if (titleMatch) {
+                document.getElementById('previewTitle').innerHTML = titleMatch[1];
+            }
+        });
+    </script>
+</body>
+</html>

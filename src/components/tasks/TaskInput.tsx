@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { 
   Box, 
   Button, 
@@ -21,37 +21,32 @@ import { createTask } from '@/lib/supabase/client';
 import { ParsedTaskData } from '@/types/task';
 import { parseMultipleTasks } from '@/lib/openai/parser';
 
-import MicIcon from '@mui/icons-material/Mic';
-import InfoIcon from '@mui/icons-material/Info';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
-import AddIcon from '@mui/icons-material/Add';
 import SendIcon from '@mui/icons-material/Send';
-import StopIcon from '@mui/icons-material/Stop';
 
 interface TaskInputProps {
   onTaskAdded: () => void;
-  onRecordingStateChange?: (isRecording: boolean) => void;
-  externalRecordingTrigger?: boolean;
+  transcript?: string;
 }
 
-export default function TaskInput({ onTaskAdded, onRecordingStateChange, externalRecordingTrigger }: TaskInputProps) {
+export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
   const [input, setInput] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
-
   const [showNotes, setShowNotes] = useState(false);
   const [notes, setNotes] = useState('');
-  const [isAiProcessing, setIsAiProcessing] = useState(false);
+  const previousTranscriptRef = useRef('');
   const theme = useTheme();
-
-  // Handle external recording trigger
+  // Update input when transcript changes - simple direct update
   useEffect(() => {
-    if (externalRecordingTrigger !== undefined) {
-
+    if (transcript) {
+      setInput(transcript);
     }
-  }, [externalRecordingTrigger]);
+  }, [transcript]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInput(e.target.value);
+    const newValue = e.target.value;
+    setInput(newValue);
+    // Reset the previous transcript when user manually types
+    previousTranscriptRef.current = '';
   };
 
   const handleSubmit = async (e?: React.FormEvent) => {
@@ -59,40 +54,44 @@ export default function TaskInput({ onTaskAdded, onRecordingStateChange, externa
     if (!input.trim()) return;
 
     setIsSubmitting(true);
-    setIsAiProcessing(true);
 
     try {
-      // Create a single task
-      await createTask({
-        title: input.trim(),
-        dueDate: null,
-        assignee: null,
-        tags: [],
-        completed: false,
-        priority: 'none'
-      });
+      // Use AI to parse the tasks
+      const parsedTasks = await parseMultipleTasks(input.trim());
+      
+      // Create all parsed tasks
+      for (const taskData of parsedTasks) {
+        await createTask({
+          title: taskData.title,
+          dueDate: taskData.dueDate,
+          assignee: taskData.assignee,
+          tags: taskData.tags,
+          completed: false,
+          priority: 'none'
+        });
+      }
 
       setInput('');
+      previousTranscriptRef.current = '';
       onTaskAdded();
     } catch (error) {
       console.error('Error creating task:', error);
     } finally {
       setIsSubmitting(false);
-      setIsAiProcessing(false);
     }
   };
 
   return (
-    <Box sx={{ mb: 3 }}>
+    <Box sx={{ my: 3 }}>
       <Paper
         elevation={3}
         sx={{
-          p: 2,
+          py: 2,
+          px: 2,
           minHeight: '48px',
           gap: 2,
           borderRadius: 2,
-          boxShadow: theme.shadows[3],
-          padding: '8px 12px',
+          boxShadow: '0 0 12px rgba(0,0,0,0.15)',
           border: `1px solid ${theme.palette.divider}`
         }}
       >
@@ -117,19 +116,25 @@ export default function TaskInput({ onTaskAdded, onRecordingStateChange, externa
                 pr: '80px', // Make space for controls
               },
             }}
-            InputProps={{
-              endAdornment: (
-                <Box sx={{ display: 'flex', gap: 0.5 }}>
-                  <IconButton
-                    size="small"
-                    color="primary"
-                    onClick={handleSubmit}
-                    disabled={!input.trim()}
-                  >
-                    <SendIcon />
-                  </IconButton>
-                </Box>
-              ),
+            slotProps={{
+              input: {
+                endAdornment: (
+                  <Box sx={{ display: 'flex', gap: 0.5 }}>
+                    <IconButton
+                      size="small"
+                      color="primary"
+                      onClick={handleSubmit}
+                      disabled={!input.trim() || isSubmitting}
+                    >
+                      {isSubmitting ? (
+                        <CircularProgress size={20} />
+                      ) : (
+                        <SendIcon />
+                      )}
+                    </IconButton>
+                  </Box>
+                ),
+              },
             }}
           />
         </Box>

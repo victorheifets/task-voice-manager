@@ -22,6 +22,10 @@ const VoiceRecorderExample: React.FC<VoiceRecorderProps> = ({
 
     // Initialize speech recognition
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      setError('Speech recognition not supported in this browser');
+      return;
+    }
     const recognitionInstance = new SpeechRecognition();
     
     // Configure

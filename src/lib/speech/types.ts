@@ -15,5 +15,5 @@ export interface TranscriptionResult {
 export interface SpeechError {
   code: string;
   message: string;
-  source: 'webSpeech' | 'azure';
+  source: 'webSpeech' | 'azure' | 'fallback' | 'hook';
 }

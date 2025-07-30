@@ -36,7 +36,8 @@
     "select": "Select Language",
     "en": "English",
     "es": "Spanish",
-    "fr": "French"
+    "fr": "French",
+    "he": "Hebrew"
   },
   "menu": {
     "profile": "Profile",

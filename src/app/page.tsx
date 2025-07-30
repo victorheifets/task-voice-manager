@@ -1,5 +1,6 @@
 'use client';
 
+import './suppressHydrationWarning';
 import React, { useState, useEffect } from 'react';
 import {
   Box,
@@ -38,12 +39,24 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import LightModeIcon from '@mui/icons-material/LightMode';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import TaskIcon from '@mui/icons-material/Task';
+import NotesIcon from '@mui/icons-material/Notes';
+import PaletteIcon from '@mui/icons-material/Palette';
+import BottomNavigation from '@mui/material/BottomNavigation';
+import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import TaskInput from '@/components/tasks/TaskInput';
 import TaskList from '@/components/tasks/TaskList';
 import TaskFilters from '@/components/tasks/TaskFilters';
 import { getTasks } from '@/lib/supabase/client';
 import Layout from '@/components/layout/Layout';
 import { useTranslation } from 'react-i18next';
+import i18n from '@/i18n';
+import DynamicFloatingMicButton from '@/components/voice/DynamicFloatingMicButton';
+import { TranscriptionProvider, useTranscriptionConfig } from '@/contexts/TranscriptionContext';
+import ClientOnly from '@/components/ui/ClientOnly';
+import BrowserWarning from '@/components/ui/BrowserWarning';
+import DesignSwitcher from '@/components/designs/DesignSwitcher';
+import dynamic from 'next/dynamic';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -64,7 +77,7 @@ function TabPanel(props: TabPanelProps) {
       style={{ width: '100%' }}
     >
       {value === index && (
-        <Box sx={{ pt: 2, width: '100%' }}>
+        <Box sx={{ pt: 2, width: '100%', bgcolor: '#ffffff' }}>
           {children}
         </Box>
       )}
@@ -99,8 +112,9 @@ function NoteTabPanel(props: NoteTabPanelProps) {
   );
 }
 
-export default function Home() {
+function MainContent() {
   const { t } = useTranslation(['common', 'notes']);
+  const { service: transcriptionService, setService: setTranscriptionService } = useTranscriptionConfig();
   const [activeTab, setActiveTab] = useState(0);
   const [activeNoteTab, setActiveNoteTab] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -115,9 +129,13 @@ export default function Home() {
   const [editedNoteTitle, setEditedNoteTitle] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tabToDelete, setTabToDelete] = useState<number | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
-  const [triggerRecording, setTriggerRecording] = useState(false);
   const [showMobileTextInput, setShowMobileTextInput] = useState(false);
+  const [currentTranscript, setCurrentTranscript] = useState('');
+  const [selectedLanguage, setSelectedLanguage] = useState(i18n.language || 'en');
+  const [voiceRecognitionLanguage, setVoiceRecognitionLanguage] = useState('en');
+  const [apiKey, setApiKey] = useState('');
+  const [azureKey, setAzureKey] = useState('');
+  const [azureRegion, setAzureRegion] = useState('');
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -141,6 +159,48 @@ export default function Home() {
   const handleStatusFilterClick = (status: string) => {
     setStatusFilter(status);
   };
+
+  const handleTranscriptionServiceChange = (event: any) => {
+    setTranscriptionService(event.target.value);
+  };
+
+  const handleLanguageChange = (event: any) => {
+    setSelectedLanguage(event.target.value);
+  };
+
+  const handleVoiceLanguageChange = (event: any) => {
+    setVoiceRecognitionLanguage(event.target.value);
+  };
+
+  const handleSaveSettings = () => {
+    // Save interface language setting
+    i18n.changeLanguage(selectedLanguage);
+    
+    // Save voice recognition language
+    localStorage.setItem('voiceRecognitionLanguage', voiceRecognitionLanguage);
+    
+    // Save API keys to localStorage
+    if (apiKey) localStorage.setItem('openaiApiKey', apiKey);
+    if (azureKey) localStorage.setItem('azureApiKey', azureKey);
+    if (azureRegion) localStorage.setItem('azureRegion', azureRegion);
+    
+    // Show success message (you could add a toast notification here)
+    alert('Settings saved successfully!');
+  };
+
+  // Load saved settings on component mount
+  useEffect(() => {
+    const savedApiKey = localStorage.getItem('openaiApiKey') || '';
+    const savedAzureKey = localStorage.getItem('azureApiKey') || '';
+    const savedAzureRegion = localStorage.getItem('azureRegion') || '';
+    const savedVoiceLanguage = localStorage.getItem('voiceRecognitionLanguage') || 'en';
+    
+    setApiKey(savedApiKey);
+    setAzureKey(savedAzureKey);
+    setAzureRegion(savedAzureRegion);
+    setVoiceRecognitionLanguage(savedVoiceLanguage);
+    setSelectedLanguage(i18n.language || 'en');
+  }, []);
 
   const handleNoteContentChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const updatedTabs = noteTabs.map(tab => 
@@ -191,29 +251,23 @@ export default function Home() {
     }
   };
 
-  const handleRecordingStateChange = (recordingState: boolean) => {
-    setIsRecording(recordingState);
+  const handleFloatingMicTranscript = (text: string) => {
+    console.log('Received transcript:', text);
+    setCurrentTranscript(text);
   };
 
-  const handleFloatingMicClick = async () => {
-    try {
-      // Request microphone permission first
-      await navigator.mediaDevices.getUserMedia({ audio: true });
-      setTriggerRecording(!isRecording);
-    } catch (error) {
-      // Handle permission denied
-      console.error('Microphone permission denied:', error);
-    }
-  };
+
 
   return (
     <Layout>
       <Box sx={{ 
         flexGrow: 1, 
-        p: isMobile ? 1 : 2, 
+        p: isMobile ? 0 : 2, 
+        pb: isMobile ? 8 : 2, // Extra bottom padding for mobile nav
         overflow: 'auto',
         display: 'flex',
-        flexDirection: 'column'
+        flexDirection: 'column',
+        bgcolor: '#ffffff'
       }}>
         {!isMobile && (
           <Tabs 
@@ -224,7 +278,8 @@ export default function Home() {
               borderBottom: 1, 
               borderColor: 'divider',
               '& .MuiTab-root': {
-                py: 1.5
+                py: 1.5,
+                fontSize: '1rem'
               }
             }}
           >
@@ -235,27 +290,18 @@ export default function Home() {
         )}
         
         <TabPanel value={activeTab} index={0}>
-          {/* Tasks Tab */}
-          <Box sx={{ mb: 2 }}>
-            {!isMobile && (
-              <TaskInput 
-                onTaskAdded={handleTaskAdded} 
-                onRecordingStateChange={handleRecordingStateChange}
-                externalRecordingTrigger={triggerRecording}
-              />
-            )}
-            
-            <TaskFilters
-              searchFilter={searchFilter}
-              statusFilter={statusFilter}
-              onSearchChange={handleSearchChange}
-              onStatusFilterChange={handleStatusFilterClick}
-            />
-            
-            <TaskList 
-              refreshTrigger={refreshTrigger}
-              searchFilter={searchFilter}
-              statusFilter={statusFilter}
+          {/* Tasks Tab - Enhanced Design */}
+          <Box sx={{ 
+            height: 'calc(100vh - 120px)', 
+            overflow: 'hidden', 
+            m: -2,
+            mt: -2,
+            pt: 0,
+            bgcolor: '#ffffff'
+          }}>
+            <DesignSwitcher 
+              onTranscript={handleFloatingMicTranscript}
+              transcriptionService={transcriptionService}
             />
           </Box>
         </TabPanel>
@@ -267,17 +313,49 @@ export default function Home() {
             flexDirection: 'column', 
             height: '100%'
           }}>
-            <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Box sx={{ 
+              borderBottom: 'none',
+              bgcolor: 'transparent',
+              px: 0,
+              pt: 0
+            }}>
               <Tabs 
                 value={activeNoteTab} 
                 onChange={handleNoteTabChange}
                 variant="scrollable"
                 scrollButtons="auto"
                 sx={{ 
+                  minHeight: 'auto',
+                  '& .MuiTabs-indicator': {
+                    display: 'none'
+                  },
                   '& .MuiTab-root': {
-                    minHeight: 48,
+                    minHeight: 28,
                     textTransform: 'none',
-                    fontWeight: 500
+                    fontWeight: 400,
+                    fontSize: '0.8rem',
+                    bgcolor: 'transparent',
+                    color: '#888',
+                    borderRadius: '6px 6px 0 0',
+                    border: 'none',
+                    mx: 0.5,
+                    px: 2,
+                    py: 0.5,
+                    minWidth: 90,
+                    '&.Mui-selected': {
+                      bgcolor: '#ffffff',
+                      color: '#000',
+                      fontWeight: 600,
+                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+                      border: '1px solid #e0e0e0',
+                      borderBottom: '1px solid #ffffff',
+                      zIndex: 1,
+                      position: 'relative'
+                    },
+                    '&:hover:not(.Mui-selected)': {
+                      bgcolor: '#f8f8f8',
+                      color: '#666'
+                    }
                   }
                 }}
               >
@@ -365,11 +443,21 @@ export default function Home() {
               </Tabs>
             </Box>
             
-            <Box sx={{ flexGrow: 1, overflow: 'auto', height: '100%' }}>
+            <Box sx={{ 
+              flexGrow: 1, 
+              overflow: 'auto', 
+              height: '100%',
+              bgcolor: '#ffffff',
+              borderTop: '1px solid #e0e0e0',
+              position: 'relative',
+              zIndex: 0
+            }}>
               {noteTabs.map(tab => (
                 <NoteTabPanel key={tab.id} value={activeNoteTab} index={tab.id}>
                   <Box sx={{ 
                     height: '100%',
+                    width: '100%',
+                    bgcolor: '#ffffff',
                     p: 2
                   }}>
                     <TextField
@@ -383,15 +471,17 @@ export default function Home() {
                         disableUnderline: true,
                         sx: {
                           fontSize: '1rem',
-                          lineHeight: 1.8
+                          lineHeight: 1.6,
+                          color: '#333'
                         }
                       }}
                       sx={{ 
+                        height: '100%',
                         '& .MuiInputBase-root': {
                           height: '100%',
-                          alignItems: 'flex-start'
-                        },
-                        height: '100%'
+                          alignItems: 'flex-start',
+                          bgcolor: '#ffffff'
+                        }
                       }}
                     />
                   </Box>
@@ -403,39 +493,79 @@ export default function Home() {
         
         <TabPanel value={activeTab} index={2}>
           {/* Config Tab */}
-          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, maxWidth: 1200, mx: 'auto' }}>
-            <Typography variant="h5" fontWeight={600} sx={{ mb: 1 }}>
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column', 
+            gap: { xs: 2, md: 3 }, 
+            maxWidth: 1200, 
+            mx: { xs: 0, sm: 'auto' },
+            px: { xs: 0, sm: 2 }
+          }}>
+            <Typography 
+              variant="h5" 
+              fontWeight={600} 
+              sx={{ 
+                mb: 1,
+                fontSize: { xs: '1.5rem', sm: '2rem' },
+                px: { xs: 2, sm: 0 }
+              }}
+            >
               Settings
             </Typography>
             
-            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: 3 }}>
+            <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: { xs: 2, md: 3 } }}>
               {/* API Configuration */}
               <Card sx={{ 
                 boxShadow: '0 0 8px rgba(0, 0, 0, 0.1)', 
-                borderRadius: 2,
+                borderRadius: { xs: 0, sm: 2 },
+                mx: { xs: -2, sm: 0 },
                 '&:hover': {
                   boxShadow: '0 0 12px rgba(0, 0, 0, 0.15)',
                   transform: 'translateY(-1px)',
                   transition: 'all 0.2s ease-in-out'
                 }
               }}>
-                <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+                <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
                   <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 600, color: 'primary.main' }}>
                     API Configuration
                   </Typography>
                   <Divider sx={{ mb: 2.5 }} />
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 2.5 } }}>
                     <TextField
                       fullWidth
                       label="OpenAI API Key"
                       type="password"
                       placeholder="sk-..."
-                      defaultValue={process.env.NEXT_PUBLIC_OPENAI_API_KEY || ''}
+                      value={apiKey}
+                      onChange={(e) => setApiKey(e.target.value)}
                       helperText="Used for AI task parsing and voice transcription"
                       variant="outlined"
                       size="small"
                     />
-                    <Box sx={{ display: 'flex', gap: 2 }}>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
+                      <TextField
+                        fullWidth
+                        label="Azure Speech Key"
+                        type="password"
+                        placeholder="Azure API key..."
+                        value={azureKey}
+                        onChange={(e) => setAzureKey(e.target.value)}
+                        helperText="For Azure Speech Service"
+                        variant="outlined"
+                        size="small"
+                      />
+                      <TextField
+                        fullWidth
+                        label="Azure Region"
+                        placeholder="eastus, westus2, etc."
+                        value={azureRegion}
+                        onChange={(e) => setAzureRegion(e.target.value)}
+                        helperText="Azure service region"
+                        variant="outlined"
+                        size="small"
+                      />
+                    </Box>
+                    <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                       <TextField
                         fullWidth
                         label="Whisper Model"
@@ -460,28 +590,52 @@ export default function Home() {
               {/* Voice Recognition */}
               <Card sx={{ 
                 boxShadow: '0 0 8px rgba(0, 0, 0, 0.1)', 
-                borderRadius: 2,
+                borderRadius: { xs: 0, sm: 2 },
+                mx: { xs: -2, sm: 0 },
                 '&:hover': {
                   boxShadow: '0 0 12px rgba(0, 0, 0, 0.15)',
                   transform: 'translateY(-1px)',
                   transition: 'all 0.2s ease-in-out'
                 }
               }}>
-                <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+                <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
                   <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 600, color: 'primary.main' }}>
                     Voice Recognition
                   </Typography>
                   <Divider sx={{ mb: 2.5 }} />
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                     <FormControl fullWidth size="small">
-                      <InputLabel>Recognition Language</InputLabel>
-                      <Select defaultValue="en" label="Recognition Language">
+                      <InputLabel>Voice Recognition Language</InputLabel>
+                      <Select 
+                        value={voiceRecognitionLanguage} 
+                        label="Voice Recognition Language"
+                        onChange={handleVoiceLanguageChange}
+                      >
                         <MenuItem value="en">English</MenuItem>
                         <MenuItem value="he">Hebrew</MenuItem>
                         <MenuItem value="es">Spanish</MenuItem>
                         <MenuItem value="fr">French</MenuItem>
                       </Select>
                     </FormControl>
+                    <FormControl fullWidth size="small" sx={{ mt: 1 }}>
+                      <InputLabel>Transcription Service</InputLabel>
+                      <Select 
+                        value={transcriptionService} 
+                        label="Transcription Service"
+                        onChange={handleTranscriptionServiceChange}
+                      >
+                        <MenuItem value="browser">Browser Speech API (Real-time)</MenuItem>
+                        <MenuItem value="whisper">OpenAI Whisper (High Accuracy)</MenuItem>
+                        <MenuItem value="azure">Azure Speech Service</MenuItem>
+                        <MenuItem value="hybrid">Hybrid (Browser + Cloud Fallback)</MenuItem>
+                      </Select>
+                    </FormControl>
+                    <Typography variant="caption" color="text.secondary" sx={{ mt: 0.5, fontSize: '0.75rem' }}>
+                      {transcriptionService === 'browser' && 'Fast, real-time transcription using your browser. Works offline but may be less accurate.'}
+                      {transcriptionService === 'whisper' && 'High-accuracy cloud transcription using OpenAI Whisper. Requires internet and API key.'}
+                      {transcriptionService === 'azure' && 'Enterprise-grade transcription using Azure Speech Services. Requires Azure credentials.'}
+                      {transcriptionService === 'hybrid' && 'Uses browser for real-time feedback, then sends to cloud for final accuracy.'}
+                    </Typography>
                     <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                       <FormControlLabel
                         control={
@@ -541,14 +695,15 @@ export default function Home() {
               {/* Notifications */}
               <Card sx={{ 
                 boxShadow: '0 0 8px rgba(0, 0, 0, 0.1)', 
-                borderRadius: 2,
+                borderRadius: { xs: 0, sm: 2 },
+                mx: { xs: -2, sm: 0 },
                 '&:hover': {
                   boxShadow: '0 0 12px rgba(0, 0, 0, 0.15)',
                   transform: 'translateY(-1px)',
                   transition: 'all 0.2s ease-in-out'
                 }
               }}>
-                <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+                <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
                   <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 600, color: 'primary.main' }}>
                     {t('settings.notifications')}
                   </Typography>
@@ -641,13 +796,17 @@ export default function Home() {
               </Card>
               
               {/* Date & Time */}
-              <Card sx={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', borderRadius: 2 }}>
-                <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+              <Card sx={{ 
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', 
+                borderRadius: { xs: 0, sm: 2 },
+                mx: { xs: -2, sm: 0 }
+              }}>
+                <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
                   <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 600, color: 'primary.main' }}>
                     Date & Time Format
                   </Typography>
                   <Divider sx={{ mb: 2.5 }} />
-                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2.5 }}>
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: { xs: 2, md: 2.5 } }}>
                     <FormControl fullWidth size="small">
                       <InputLabel>Date Format</InputLabel>
                       <Select defaultValue="MM/DD/YYYY" label="Date Format">
@@ -677,13 +836,30 @@ export default function Home() {
               </Card>
               
               {/* Appearance */}
-              <Card sx={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', borderRadius: 2 }}>
-                <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+              <Card sx={{ 
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', 
+                borderRadius: { xs: 0, sm: 2 },
+                mx: { xs: -2, sm: 0 }
+              }}>
+                <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
                   <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 600, color: 'primary.main' }}>
                     Appearance
                   </Typography>
                   <Divider sx={{ mb: 2.5 }} />
                   <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <FormControl fullWidth size="small">
+                      <InputLabel>Interface Language</InputLabel>
+                      <Select 
+                        value={selectedLanguage} 
+                        label="Interface Language"
+                        onChange={handleLanguageChange}
+                      >
+                        <MenuItem value="en">{t('language.en')}</MenuItem>
+                        <MenuItem value="he">{t('language.he')}</MenuItem>
+                        <MenuItem value="es">{t('language.es')}</MenuItem>
+                        <MenuItem value="fr">{t('language.fr')}</MenuItem>
+                      </Select>
+                    </FormControl>
                     <FormControl fullWidth size="small">
                       <InputLabel>Theme</InputLabel>
                       <Select defaultValue="light" label="Theme">
@@ -732,8 +908,12 @@ export default function Home() {
               </Card>
               
               {/* Advanced */}
-              <Card sx={{ boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', borderRadius: 2 }}>
-                <CardContent sx={{ p: { xs: 2.5, sm: 3 } }}>
+              <Card sx={{ 
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', 
+                borderRadius: { xs: 0, sm: 2 },
+                mx: { xs: -2, sm: 0 }
+              }}>
+                <CardContent sx={{ p: { xs: 2, sm: 2.5, md: 3 } }}>
                   <Typography variant="h6" gutterBottom sx={{ fontSize: '1.1rem', fontWeight: 600, color: 'primary.main' }}>
                     Advanced
                   </Typography>
@@ -800,149 +980,76 @@ export default function Home() {
               </Card>
             </Box>
             
-            <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 2 }}>
+            <Box sx={{ 
+              display: 'flex', 
+              flexDirection: { xs: 'column', sm: 'row' },
+              justifyContent: 'flex-end', 
+              gap: 2, 
+              mt: 3,
+              '& .MuiButton-root': {
+                minHeight: { xs: 48, sm: 'auto' }
+              }
+            }}>
               <Button variant="outlined" size="medium">
-                Cancel
+                {t('actions.cancel')}
               </Button>
               <Button 
                 variant="contained" 
                 size="medium"
+                onClick={handleSaveSettings}
                 sx={{
                   background: 'linear-gradient(180deg, #2196F3 0%, #1976D2 100%)',
                   boxShadow: '0 2px 4px rgba(33, 150, 243, 0.25)',
                 }}
               >
-                Save Changes
+                {t('actions.save')}
               </Button>
             </Box>
           </Box>
         </TabPanel>
+        
       </Box>
 
       {/* Floating action buttons */}
-      {isMobile ? (
-        <>
-          <Fab 
-            color="primary"
-            aria-label="add task" 
-            sx={{ 
-              position: 'fixed', 
-              bottom: 80, 
-              right: 24,
-              background: 'linear-gradient(180deg, #2196F3 0%, #1976D2 100%)',
-              boxShadow: '0 4px 8px rgba(33, 150, 243, 0.25)',
-              '&:hover': {
-                boxShadow: '0 6px 12px rgba(33, 150, 243, 0.3)',
-                transform: 'translateY(-2px)',
-              }
-            }}
-            onClick={() => {
-              setShowMobileTextInput(true);
-            }}
-          >
-            <AddIcon />
-          </Fab>
-          <Tooltip title={isRecording ? 'Stop Recording' : 'Start Recording'}>
+      <ClientOnly>
+        {isMobile ? (
+          <Box component="div">
             <Fab 
-              color={isRecording ? "error" : "primary"}
-              aria-label="record" 
+              color="primary"
+              aria-label="add task" 
               sx={{ 
                 position: 'fixed', 
-                bottom: 24, 
-                right: 24,
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                bgcolor: '#fff',
-                color: isRecording ? 'error.main' : 'primary.main',
-                border: '2px solid',
-                borderColor: isRecording ? 'error.main' : 'primary.main',
-                boxShadow: isRecording ?
-                  '0 0 0 0 rgba(244, 67, 54, 0.4)' :
-                  '0 4px 8px rgba(0, 0, 0, 0.1)',
-                animation: isRecording ? 'pulse 2s infinite' : 'none',
-                '@keyframes pulse': {
-                  '0%': { 
-                    boxShadow: '0 0 0 0 rgba(244, 67, 54, 0.4)',
-                    transform: 'scale(1)'
-                  },
-                  '70%': { 
-                    boxShadow: '0 0 0 10px rgba(244, 67, 54, 0)',
-                    transform: 'scale(1.05)'
-                  },
-                  '100%': { 
-                    boxShadow: '0 0 0 0 rgba(244, 67, 54, 0)',
-                    transform: 'scale(1)'
-                  },
-                },
+                bottom: 90, 
+                right: 16,
+                width: 56,
+                height: 56,
+                background: 'linear-gradient(180deg, #2196F3 0%, #1976D2 100%)',
+                boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
                 '&:hover': {
-                  bgcolor: '#fff',
-                  boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)',
-                  transform: 'translateY(-2px)',
-                },
-                transition: 'all 0.2s ease-in-out'
+                  boxShadow: '0 6px 16px rgba(33, 150, 243, 0.4)',
+                  transform: 'translateY(-1px)',
+                }
               }}
-              onClick={handleFloatingMicClick}
-            >
-              {isRecording ? 
-                <StopIcon sx={{ fontSize: 28 }} /> : 
-                <MicIcon sx={{ fontSize: 28 }} />
-              }
-            </Fab>
-          </Tooltip>
-        </>
-      ) : (
-        activeTab === 0 && (
-          <Tooltip title={isRecording ? 'Stop Recording' : 'Start Recording'}>
-            <Fab 
-              color={isRecording ? "error" : "primary"}
-              aria-label="record" 
-              sx={{ 
-                position: 'fixed', 
-                bottom: 24, 
-                right: 24,
-                width: 64,
-                height: 64,
-                borderRadius: '50%',
-                bgcolor: '#fff',
-                color: isRecording ? 'error.main' : 'primary.main',
-                border: '2px solid',
-                borderColor: isRecording ? 'error.main' : 'primary.main',
-                boxShadow: isRecording ?
-                  '0 0 0 0 rgba(244, 67, 54, 0.4)' :
-                  '0 4px 8px rgba(0, 0, 0, 0.1)',
-                animation: isRecording ? 'pulse 2s infinite' : 'none',
-                '@keyframes pulse': {
-                  '0%': { 
-                    boxShadow: '0 0 0 0 rgba(244, 67, 54, 0.4)',
-                    transform: 'scale(1)'
-                  },
-                  '70%': { 
-                    boxShadow: '0 0 0 10px rgba(244, 67, 54, 0)',
-                    transform: 'scale(1.05)'
-                  },
-                  '100%': { 
-                    boxShadow: '0 0 0 0 rgba(244, 67, 54, 0)',
-                    transform: 'scale(1)'
-                  },
-                },
-                '&:hover': {
-                  bgcolor: '#fff',
-                  boxShadow: '0 6px 12px rgba(0, 0, 0, 0.15)',
-                  transform: 'translateY(-2px)',
-                },
-                transition: 'all 0.2s ease-in-out'
+              onClick={() => {
+                setShowMobileTextInput(true);
               }}
-              onClick={handleFloatingMicClick}
             >
-              {isRecording ? 
-                <StopIcon sx={{ fontSize: 28 }} /> : 
-                <MicIcon sx={{ fontSize: 28 }} />
-              }
+              <AddIcon />
             </Fab>
-          </Tooltip>
-        )
-      )}
+            <Box sx={{ position: 'fixed', bottom: 24, right: 16, zIndex: 1000 }}>
+              <Tooltip title="Start Recording">
+                <DynamicFloatingMicButton onTranscript={handleFloatingMicTranscript} transcriptionService={transcriptionService} />
+              </Tooltip>
+            </Box>
+          </Box>
+        ) : (
+          activeTab === 0 && !isMobile && (
+            <Box sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000 }}>
+              <DynamicFloatingMicButton onTranscript={handleFloatingMicTranscript} transcriptionService={transcriptionService} />
+            </Box>
+          )  
+        )}
+      </ClientOnly>
 
       {/* Delete Note Tab Dialog */}
       <Dialog
@@ -1024,11 +1131,65 @@ export default function Home() {
             onTaskAdded={() => {
               handleTaskAdded();
               setShowMobileTextInput(false);
-            }} 
-            onRecordingStateChange={handleRecordingStateChange}
+            }}
+            transcript={currentTranscript}
           />
         </DialogContent>
       </Dialog>
+
+      {/* Mobile Bottom Navigation */}
+      {isMobile && (
+        <BottomNavigation
+          value={activeTab}
+          onChange={handleTabChange}
+          sx={{
+            position: 'fixed',
+            bottom: 0,
+            left: 0,
+            right: 0,
+            zIndex: 1000,
+            bgcolor: '#ffffff',
+            borderTop: '1px solid',
+            borderColor: 'divider',
+            boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
+            '& .MuiBottomNavigationAction-root': {
+              minWidth: 'auto',
+              fontSize: '0.75rem',
+              '&.Mui-selected': {
+                color: theme.palette.primary.main,
+                '& .MuiBottomNavigationAction-label': {
+                  fontSize: '0.75rem',
+                  fontWeight: 600
+                }
+              }
+            }
+          }}
+        >
+          <BottomNavigationAction 
+            label="Tasks" 
+            icon={<TaskIcon />} 
+            value={0}
+          />
+          <BottomNavigationAction 
+            label="Notes" 
+            icon={<NotesIcon />} 
+            value={1}
+          />
+          <BottomNavigationAction 
+            label="Config" 
+            icon={<SettingsIcon />} 
+            value={2}
+          />
+        </BottomNavigation>
+      )}
     </Layout>
+  );
+}
+
+export default function Home() {
+  return (
+    <TranscriptionProvider>
+      <MainContent />
+    </TranscriptionProvider>
   );
 }
