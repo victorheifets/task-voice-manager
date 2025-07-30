@@ -2,6 +2,7 @@
 
 import React, { ReactNode, useEffect } from 'react';
 import { AppProvider } from './contexts/AppProvider';
+import { AuthProvider } from './components/auth/AuthProvider';
 import { I18nextProvider } from 'react-i18next';
 import i18n from './i18n';
 
@@ -19,7 +20,9 @@ export default function Providers({ children }: ProvidersProps) {
 
   return (
     <I18nextProvider i18n={i18n}>
-      <AppProvider>{children}</AppProvider>
+      <AuthProvider>
+        <AppProvider>{children}</AppProvider>
+      </AuthProvider>
     </I18nextProvider>
   );
 } 

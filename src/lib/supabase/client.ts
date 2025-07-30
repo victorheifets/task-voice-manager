@@ -1,75 +1,157 @@
-import { v4 as uuidv4 } from 'uuid';
-import { Task } from '@/types/task';
-import { Priority } from '@/components/tasks/PrioritySelect';
+import { createBrowserClient } from '@supabase/ssr'
+import { Task } from '@/types/task'
 
-// Mock data
-let tasks: Task[] = [
-  {
-    id: '1',
-    title: 'Complete project documentation',
-    dueDate: '2024-03-20',
-    assignee: 'John Doe',
-    tags: ['documentation', 'urgent'],
-    completed: false,
-    createdAt: '2024-03-15T10:00:00Z',
-    updatedAt: '2024-03-15T10:00:00Z',
-    priority: 'high'
-  },
-  {
-    id: '2',
-    title: 'Review pull requests',
-    dueDate: '2024-03-19',
-    assignee: null,
-    tags: ['code-review'],
-    completed: false,
-    createdAt: '2024-03-15T11:00:00Z',
-    updatedAt: '2024-03-15T11:00:00Z',
-    priority: 'medium'
-  }
-];
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const supabase = {
-  // Mock implementation
-};
+export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
+// Task management functions
 export async function getTasks(): Promise<Task[]> {
-  return tasks;
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .select('*')
+    .eq('user_id', user.id)
+    .order('created_at', { ascending: false })
+
+  if (error) throw error
+  return data || []
 }
 
 export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> {
-  const newTask: Task = {
-    ...task,
-    id: Math.random().toString(36).substr(2, 9),
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  };
-  
-  tasks.push(newTask);
-  return newTask;
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .insert({
+      ...task,
+      user_id: user.id,
+      due_date: task.dueDate,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString()
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+
+  return {
+    id: data.id,
+    title: data.title,
+    dueDate: data.due_date,
+    assignee: data.assignee,
+    tags: data.tags,
+    completed: data.completed,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+    priority: data.priority
+  }
 }
 
 export async function updateTask(taskId: string, updates: Partial<Task>) {
-  const taskIndex = tasks.findIndex(task => task.id === taskId);
-  
-  if (taskIndex === -1) {
-    throw new Error(`Task with ID ${taskId} not found`);
-  }
-  
-  tasks[taskIndex] = {
-    ...tasks[taskIndex],
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const updateData: any = {
     ...updates,
-    updatedAt: new Date().toISOString()
-  };
-  
-  return tasks[taskIndex];
+    updated_at: new Date().toISOString()
+  }
+
+  if (updates.dueDate !== undefined) {
+    updateData.due_date = updates.dueDate
+    delete updateData.dueDate
+  }
+
+  const { data, error } = await supabase
+    .from('tasks')
+    .update(updateData)
+    .eq('id', taskId)
+    .eq('user_id', user.id)
+    .select()
+    .single()
+
+  if (error) throw error
+
+  return {
+    id: data.id,
+    title: data.title,
+    dueDate: data.due_date,
+    assignee: data.assignee,
+    tags: data.tags,
+    completed: data.completed,
+    createdAt: data.created_at,
+    updatedAt: data.updated_at,
+    priority: data.priority
+  }
 }
 
 export async function deleteTask(id: string): Promise<void> {
-  const taskIndex = tasks.findIndex(task => task.id === id);
-  
-  if (taskIndex === -1) {
-    throw new Error(`Task with ID ${id} not found`);
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const { error } = await supabase
+    .from('tasks')
+    .delete()
+    .eq('id', id)
+    .eq('user_id', user.id)
+
+  if (error) throw error
+}
+
+// Usage tracking functions
+export async function trackAPIUsage(tokensUsed: number): Promise<void> {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const currentMonth = new Date().toISOString().substring(0, 7)
+
+  const { data: usage } = await supabase
+    .from('user_usage')
+    .select('api_calls, tokens_used')
+    .eq('user_id', user.id)
+    .eq('month', currentMonth)
+    .single()
+
+  if (usage) {
+    // Update existing usage
+    await supabase
+      .from('user_usage')
+      .update({
+        api_calls: usage.api_calls + 1,
+        tokens_used: usage.tokens_used + tokensUsed
+      })
+      .eq('user_id', user.id)
+      .eq('month', currentMonth)
+  } else {
+    // Create new usage record
+    await supabase
+      .from('user_usage')
+      .insert({
+        user_id: user.id,
+        month: currentMonth,
+        api_calls: 1,
+        tokens_used: tokensUsed
+      })
   }
-  
-  tasks = tasks.filter(task => task.id !== id);
+}
+
+export async function getUserUsage() {
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const currentMonth = new Date().toISOString().substring(0, 7)
+
+  const { data, error } = await supabase
+    .from('user_usage')
+    .select('api_calls, tokens_used')
+    .eq('user_id', user.id)
+    .eq('month', currentMonth)
+    .single()
+
+  if (error && error.code !== 'PGRST116') throw error
+  return data || { api_calls: 0, tokens_used: 0 }
 } 

@@ -29,6 +29,7 @@ import {
   MenuItem,
   FormControlLabel,
   Switch,
+  CircularProgress,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import MicIcon from '@mui/icons-material/Mic';
@@ -47,7 +48,7 @@ import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import TaskInput from '@/components/tasks/TaskInput';
 import TaskList from '@/components/tasks/TaskList';
 import TaskFilters from '@/components/tasks/TaskFilters';
-import { getTasks } from '@/lib/supabase/client';
+import { getTasks, supabase } from '@/lib/supabase/client';
 import Layout from '@/components/layout/Layout';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
@@ -56,6 +57,9 @@ import { TranscriptionProvider, useTranscriptionConfig } from '@/contexts/Transc
 import ClientOnly from '@/components/ui/ClientOnly';
 import BrowserWarning from '@/components/ui/BrowserWarning';
 import DesignSwitcher from '@/components/designs/DesignSwitcher';
+import { useAuth } from '@/components/auth/AuthProvider';
+import { LoginForm } from '@/components/auth/LoginForm';
+import { UsageDashboard } from '@/components/auth/UsageDashboard';
 import dynamic from 'next/dynamic';
 
 interface TabPanelProps {
@@ -1189,7 +1193,48 @@ function MainContent() {
 export default function Home() {
   return (
     <TranscriptionProvider>
-      <MainContent />
+      <AuthenticatedApp />
     </TranscriptionProvider>
   );
+}
+
+function AuthenticatedApp() {
+  const { user, loading } = useAuth()
+
+  if (loading) {
+    return (
+      <Box
+        sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          minHeight: '100vh'
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    )
+  }
+
+  if (!user) {
+    return <LoginForm />
+  }
+
+  return (
+    <Box>
+      <Box sx={{ 
+        display: 'flex', 
+        justifyContent: 'space-between', 
+        alignItems: 'center', 
+        p: 2,
+        borderBottom: '1px solid #e0e0e0'
+      }}>
+        <UsageDashboard />
+        <Button onClick={() => supabase.auth.signOut()} variant="outlined" size="small">
+          Sign Out
+        </Button>
+      </Box>
+      <MainContent />
+    </Box>
+  )
 }
