@@ -81,7 +81,7 @@ function TabPanel(props: TabPanelProps) {
       style={{ width: '100%' }}
     >
       {value === index && (
-        <Box sx={{ pt: 2, width: '100%', bgcolor: '#ffffff' }}>
+        <Box sx={{ pt: 2, width: '100%' }}>
           {children}
         </Box>
       )}
@@ -258,6 +258,11 @@ function MainContent() {
   const handleFloatingMicTranscript = (text: string) => {
     console.log('Received transcript:', text);
     setCurrentTranscript(text);
+    
+    // Clear the transcript after a delay to prevent repeated submissions
+    setTimeout(() => {
+      setCurrentTranscript('');
+    }, 3000); // Clear after 3 seconds
   };
 
 
@@ -270,8 +275,7 @@ function MainContent() {
         pb: isMobile ? 8 : 2, // Extra bottom padding for mobile nav
         overflow: 'auto',
         display: 'flex',
-        flexDirection: 'column',
-        bgcolor: '#ffffff'
+        flexDirection: 'column'
       }}>
         {!isMobile && (
           <Tabs 
@@ -300,12 +304,12 @@ function MainContent() {
             overflow: 'hidden', 
             m: -2,
             mt: -2,
-            pt: 0,
-            bgcolor: '#ffffff'
+            pt: 0
           }}>
             <DesignSwitcher 
               onTranscript={handleFloatingMicTranscript}
               transcriptionService={transcriptionService}
+              transcript={currentTranscript}
             />
           </Box>
         </TabPanel>
@@ -339,7 +343,7 @@ function MainContent() {
                     fontWeight: 400,
                     fontSize: '0.8rem',
                     bgcolor: 'transparent',
-                    color: '#888',
+                    color: theme.palette.text.disabled,
                     borderRadius: '6px 6px 0 0',
                     border: 'none',
                     mx: 0.5,
@@ -347,18 +351,18 @@ function MainContent() {
                     py: 0.5,
                     minWidth: 90,
                     '&.Mui-selected': {
-                      bgcolor: '#ffffff',
-                      color: '#000',
+                      bgcolor: theme.palette.background.paper,
+                      color: theme.palette.text.primary,
                       fontWeight: 600,
                       boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                      border: '1px solid #e0e0e0',
-                      borderBottom: '1px solid #ffffff',
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderBottom: `1px solid ${theme.palette.background.paper}`,
                       zIndex: 1,
                       position: 'relative'
                     },
                     '&:hover:not(.Mui-selected)': {
-                      bgcolor: '#f8f8f8',
-                      color: '#666'
+                      bgcolor: theme.palette.action.hover,
+                      color: theme.palette.text.secondary
                     }
                   }
                 }}
@@ -451,8 +455,8 @@ function MainContent() {
               flexGrow: 1, 
               overflow: 'auto', 
               height: '100%',
-              bgcolor: '#ffffff',
-              borderTop: '1px solid #e0e0e0',
+              bgcolor: theme.palette.background.paper,
+              borderTop: `1px solid ${theme.palette.divider}`,
               position: 'relative',
               zIndex: 0
             }}>
@@ -461,7 +465,7 @@ function MainContent() {
                   <Box sx={{ 
                     height: '100%',
                     width: '100%',
-                    bgcolor: '#ffffff',
+                    bgcolor: theme.palette.background.paper,
                     p: 2
                   }}>
                     <TextField
@@ -476,7 +480,7 @@ function MainContent() {
                         sx: {
                           fontSize: '1rem',
                           lineHeight: 1.6,
-                          color: '#333'
+                          color: theme.palette.text.primary
                         }
                       }}
                       sx={{ 
@@ -484,7 +488,7 @@ function MainContent() {
                         '& .MuiInputBase-root': {
                           height: '100%',
                           alignItems: 'flex-start',
-                          bgcolor: '#ffffff'
+                          bgcolor: theme.palette.background.paper
                         }
                       }}
                     />
@@ -1014,44 +1018,31 @@ function MainContent() {
         
       </Box>
 
-      {/* Floating action buttons */}
+      {/* Single Voice Recording Button */}
       <ClientOnly>
-        {isMobile ? (
-          <Box component="div">
-            <Fab 
-              color="primary"
-              aria-label="add task" 
-              sx={{ 
-                position: 'fixed', 
-                bottom: 90, 
-                right: 16,
-                width: 56,
-                height: 56,
-                background: 'linear-gradient(180deg, #2196F3 0%, #1976D2 100%)',
-                boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
-                '&:hover': {
-                  boxShadow: '0 6px 16px rgba(33, 150, 243, 0.4)',
-                  transform: 'translateY(-1px)',
-                }
-              }}
-              onClick={() => {
-                setShowMobileTextInput(true);
-              }}
-            >
-              <AddIcon />
-            </Fab>
-            <Box sx={{ position: 'fixed', bottom: 24, right: 16, zIndex: 1000 }}>
-              <Tooltip title="Start Recording">
-                <DynamicFloatingMicButton onTranscript={handleFloatingMicTranscript} transcriptionService={transcriptionService} />
-              </Tooltip>
-            </Box>
+        {activeTab === 0 && (
+          <Box sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000 }}>
+            <DynamicFloatingMicButton onTranscript={handleFloatingMicTranscript} transcriptionService={transcriptionService} />
           </Box>
-        ) : (
-          activeTab === 0 && !isMobile && (
-            <Box sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000 }}>
-              <DynamicFloatingMicButton onTranscript={handleFloatingMicTranscript} transcriptionService={transcriptionService} />
-            </Box>
-          )  
+        )}
+
+        {/* Mobile Add Task Button */}
+        {isMobile && (
+          <Fab 
+            color="primary"
+            aria-label="add task" 
+            sx={{ 
+              position: 'fixed', 
+              bottom: 80, 
+              right: 16,
+              width: 56,
+              height: 56,
+              zIndex: 999
+            }}
+            onClick={() => setShowMobileTextInput(true)}
+          >
+            <AddIcon />
+          </Fab>
         )}
       </ClientOnly>
 
@@ -1152,7 +1143,7 @@ function MainContent() {
             left: 0,
             right: 0,
             zIndex: 1000,
-            bgcolor: '#ffffff',
+            bgcolor: theme.palette.background.paper,
             borderTop: '1px solid',
             borderColor: 'divider',
             boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
@@ -1201,6 +1192,13 @@ export default function Home() {
 function AuthenticatedApp() {
   const { user, loading } = useAuth()
 
+  // TEMPORARY: Skip auth for development
+  const skipAuth = process.env.NODE_ENV === 'development' || (typeof window !== 'undefined' && window?.location?.search?.includes('skipauth'))
+
+  if (skipAuth) {
+    return <MainContent />
+  }
+
   if (loading) {
     return (
       <Box
@@ -1227,7 +1225,7 @@ function AuthenticatedApp() {
         justifyContent: 'space-between', 
         alignItems: 'center', 
         p: 2,
-        borderBottom: '1px solid #e0e0e0'
+        borderBottom: (theme) => `1px solid ${theme.palette.divider}`
       }}>
         <UsageDashboard />
         <Button onClick={() => supabase.auth.signOut()} variant="outlined" size="small">

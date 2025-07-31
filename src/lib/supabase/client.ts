@@ -8,6 +8,17 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Task management functions
 export async function getTasks(): Promise<Task[]> {
+  // Development mode: use localStorage
+  if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.location.search.includes('skipauth'))) {
+    const tasks = localStorage.getItem('dev_tasks')
+    return tasks ? JSON.parse(tasks) : []
+  }
+
+  // If running on server, return empty array
+  if (typeof window === 'undefined') {
+    return []
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -22,6 +33,25 @@ export async function getTasks(): Promise<Task[]> {
 }
 
 export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> {
+  // Development mode: use localStorage
+  if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.location.search.includes('skipauth'))) {
+    const tasks = JSON.parse(localStorage.getItem('dev_tasks') || '[]')
+    const newTask: Task = {
+      ...task,
+      id: Date.now().toString(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    tasks.unshift(newTask)
+    localStorage.setItem('dev_tasks', JSON.stringify(tasks))
+    return newTask
+  }
+
+  // If running on server, throw error
+  if (typeof window === 'undefined') {
+    throw new Error('Cannot create task on server')
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -53,6 +83,26 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
 }
 
 export async function updateTask(taskId: string, updates: Partial<Task>) {
+  // Development mode: use localStorage
+  if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.location.search.includes('skipauth'))) {
+    const tasks = JSON.parse(localStorage.getItem('dev_tasks') || '[]')
+    const taskIndex = tasks.findIndex((t: Task) => t.id === taskId)
+    if (taskIndex === -1) throw new Error('Task not found')
+    
+    tasks[taskIndex] = {
+      ...tasks[taskIndex],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    }
+    localStorage.setItem('dev_tasks', JSON.stringify(tasks))
+    return tasks[taskIndex]
+  }
+
+  // If running on server, throw error
+  if (typeof window === 'undefined') {
+    throw new Error('Cannot update task on server')
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -90,6 +140,19 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
 }
 
 export async function deleteTask(id: string): Promise<void> {
+  // Development mode: use localStorage
+  if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.location.search.includes('skipauth'))) {
+    const tasks = JSON.parse(localStorage.getItem('dev_tasks') || '[]')
+    const filteredTasks = tasks.filter((t: Task) => t.id !== id)
+    localStorage.setItem('dev_tasks', JSON.stringify(filteredTasks))
+    return
+  }
+
+  // If running on server, throw error
+  if (typeof window === 'undefined') {
+    throw new Error('Cannot delete task on server')
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 

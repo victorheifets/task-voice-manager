@@ -61,9 +61,11 @@ export class SpeechService {
     try {
       // Use the browser compatibility utility
       const browserInfo = detectBrowserCapabilities();
+      console.log('SpeechService: Browser info:', browserInfo);
       
       // Check if we're on HTTPS or localhost
       const isSecureContext = window.isSecureContext || location.hostname === 'localhost';
+      console.log('SpeechService: isSecureContext:', isSecureContext, 'hostname:', location.hostname);
       if (!isSecureContext) {
         console.log('Speech recognition requires HTTPS or localhost');
         return false;
@@ -90,7 +92,9 @@ export class SpeechService {
 
   private async initSpeechRecognition(): Promise<boolean> {
     try {
+      console.log('SpeechService: initSpeechRecognition starting...');
       const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      console.log('SpeechService: SpeechRecognition object:', !!SpeechRecognition);
       
       if (!SpeechRecognition) {
         console.log('Speech recognition not available');
@@ -343,6 +347,7 @@ export class SpeechService {
   }
 
   public async startRecording(): Promise<void> {
+    console.log('SpeechService: startRecording called');
     if (this.isRecording) {
       console.log('Already recording');
       return;
@@ -371,7 +376,7 @@ export class SpeechService {
 
     // First time initialization - choose service based on config
     if (!this.isInitialized) {
-      console.log(`Initializing transcription service: ${this.config.transcriptionService || 'browser'}`);
+      console.log(`SpeechService: Initializing transcription service: ${this.config.transcriptionService || 'browser'}`);
       
       // For browser and hybrid modes, try speech recognition first
       if (!this.config.transcriptionService || this.config.transcriptionService === 'browser' || this.config.transcriptionService === 'hybrid') {

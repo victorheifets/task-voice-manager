@@ -64,48 +64,50 @@ export default function TaskFilters({
     setMobileFilterOpen(!mobileFilterOpen);
   };
 
+  const isDarkMode = theme.palette.mode === 'dark';
+
   const filterOptions = [
     { 
       id: 'all', 
       label: t('filters.all'), 
       icon: <AllInclusiveIcon fontSize="small" />,
-      color: '#2196F3', // Blue
-      bgColor: '#E3F2FD'
+      color: isDarkMode ? '#818CF8' : '#2196F3', // Indigo 400 in dark mode
+      bgColor: isDarkMode ? '#1F2937' : '#E3F2FD'
     },
     { 
       id: 'today', 
       label: t('filters.today'), 
       icon: <TodayIcon fontSize="small" />,
-      color: '#4CAF50', // Green
-      bgColor: '#E8F5E9'
+      color: isDarkMode ? '#34D399' : '#4CAF50', // Emerald 400 in dark mode
+      bgColor: isDarkMode ? '#1F2937' : '#E8F5E9'
     },
     { 
       id: 'tomorrow', 
       label: t('filters.tomorrow'), 
       icon: <EventIcon fontSize="small" />,
-      color: '#FF9800', // Orange
-      bgColor: '#FFF3E0'
+      color: isDarkMode ? '#94A3B8' : '#FF9800', // Slate 400 in dark mode
+      bgColor: isDarkMode ? '#1F2937' : '#FFF3E0'
     },
     { 
       id: 'nextweek', 
       label: t('filters.nextweek'), 
       icon: <DateRangeIcon fontSize="small" />,
-      color: '#9C27B0', // Purple
-      bgColor: '#F3E5F5'
+      color: isDarkMode ? '#A78BFA' : '#9C27B0', // Violet 400 in dark mode
+      bgColor: isDarkMode ? '#1F2937' : '#F3E5F5'
     },
     { 
       id: 'overdue', 
       label: t('filters.overdue'), 
       icon: <ErrorOutlineIcon fontSize="small" />,
-      color: '#F44336', // Red
-      bgColor: '#FFEBEE'
+      color: isDarkMode ? '#94A3B8' : '#F44336', // Slate 400 in dark mode
+      bgColor: isDarkMode ? '#1F2937' : '#FFEBEE'
     },
     { 
       id: 'completed', 
       label: t('filters.completed'), 
       icon: <CheckCircleOutlineIcon fontSize="small" />,
-      color: '#4CAF50', // Green
-      bgColor: '#E8F5E9'
+      color: isDarkMode ? '#94A3B8' : '#4CAF50', // Slate 400 in dark mode
+      bgColor: isDarkMode ? '#1F2937' : '#E8F5E9'
     }
   ];
 
@@ -128,7 +130,9 @@ export default function TaskFilters({
               flex: 1,
               borderRadius: '20px',
               boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
-              border: '1px solid #e0e0e0'
+              border: `1px solid ${isDarkMode ? '#1E293B' : theme.palette.divider}`,
+              bgcolor: isDarkMode ? '#1F2937 !important' : undefined,
+              color: isDarkMode ? '#94A3B8' : undefined
             }}
           >
             <TextField
@@ -139,7 +143,7 @@ export default function TaskFilters({
               InputProps={{
                 startAdornment: (
                   <InputAdornment position="start">
-                    <SearchIcon color="action" />
+                    <SearchIcon color={isDarkMode ? 'inherit' : 'action'} sx={{ color: isDarkMode ? '#64748B' : undefined }} />
                   </InputAdornment>
                 ),
               }}
@@ -147,6 +151,21 @@ export default function TaskFilters({
                 width: 300,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
+                  bgcolor: isDarkMode ? '#1F2937 !important' : undefined,
+                  color: isDarkMode ? '#94A3B8' : undefined,
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderColor: isDarkMode ? '#1E293B' : undefined,
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: isDarkMode ? '#4B5563' : undefined,
+                  },
+                  '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                    borderColor: isDarkMode ? '#818CF8' : undefined,
+                  }
+                },
+                '& .MuiInputBase-input::placeholder': {
+                  color: isDarkMode ? '#64748B' : undefined,
+                  opacity: isDarkMode ? 1 : undefined
                 },
               }}
             />
@@ -154,11 +173,14 @@ export default function TaskFilters({
           
           <IconButton 
             onClick={toggleMobileFilter}
-            sx={{ 
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              color: theme.palette.primary.main,
+            sx={{
+              bgcolor: isDarkMode ? '#38BDF8' : theme.palette.primary.main,
+              color: isDarkMode ? '#111827' : '#fff',
+              border: 'none',
+              boxShadow: isDarkMode ? '0 0 8px rgba(56, 189, 248, 0.5)' : '0 0 8px rgba(0, 0, 0, 0.2)',
               '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.2),
+                bgcolor: isDarkMode ? '#0EA5E9' : theme.palette.primary.dark,
+                boxShadow: isDarkMode ? '0 0 12px rgba(56, 189, 248, 0.7)' : '0 0 12px rgba(0, 0, 0, 0.3)',
               }
             }}
           >
@@ -172,19 +194,32 @@ export default function TaskFilters({
           onClose={() => setMobileFilterOpen(false)}
           PaperProps={{
             sx: {
-              borderTopLeftRadius: 16,
-              borderTopRightRadius: 16,
-              maxHeight: '70vh',
-              boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.1)'
+              borderTopLeftRadius: 24,
+              borderTopRightRadius: 24,
+              maxHeight: '80vh',
+              boxShadow: isDarkMode ? '0 -4px 20px rgba(0, 0, 0, 0.5)' : '0 -4px 12px rgba(0, 0, 0, 0.1)',
+              bgcolor: isDarkMode ? '#111827 !important' : undefined,
+              color: isDarkMode ? '#F9FAFB' : undefined,
+              border: isDarkMode ? '1px solid #374151' : undefined
             }
           }}
         >
           <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+            mb: 3,
+            display: 'flex',
+            flexDirection: { xs: 'column', sm: 'row' },
+            gap: 2,
+            alignItems: { xs: 'stretch', sm: 'center' },
             justifyContent: 'space-between',
-            p: 2,
-            borderBottom: `1px solid ${theme.palette.divider}`
+            position: 'sticky',
+            top: 0,
+            zIndex: 10,
+            pt: 1,
+            pb: 2,
+            px: { xs: 1, sm: 0 },
+            backdropFilter: 'blur(8px)',
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(17, 24, 39, 0.85)' : 'rgba(255, 255, 255, 0.85)',
+            borderBottom: theme.palette.mode === 'dark' ? '1px solid rgba(75, 85, 99, 0.2)' : '1px solid rgba(0, 0, 0, 0.05)',
           }}>
             <Box sx={{ fontWeight: 600, color: theme.palette.primary.main }}>Filter Tasks</Box>
             <IconButton 
@@ -205,13 +240,15 @@ export default function TaskFilters({
                 sx={{
                   color: statusFilter === filter.id ? 
                     filter.color : 
-                    alpha(filter.color, 0.7),
+                    alpha(filter.color, isDarkMode ? 0.85 : 0.7),
+                  bgcolor: isDarkMode ? '#1F2937' : undefined,
                   '&:hover': {
                     color: filter.color,
-                    bgcolor: alpha(filter.color, 0.1)
+                    bgcolor: alpha(filter.color, isDarkMode ? 0.15 : 0.1)
                   },
                   '& .MuiButton-startIcon': {
-                    color: 'inherit'
+                    color: 'inherit',
+                    opacity: isDarkMode ? 0.85 : 1
                   }
                 }}
               >
@@ -226,7 +263,7 @@ export default function TaskFilters({
 
   // Desktop layout
   return (
-    <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <Box sx={{ mb: 1.5, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <Box
         sx={{
           display: 'flex',
@@ -243,26 +280,28 @@ export default function TaskFilters({
             startIcon={filter.icon}
             sx={{
               minWidth: 'auto',
-              px: 2,
+              px: 1.5,
               py: 0.5,
-              borderRadius: 20,
-              color: statusFilter === filter.id ? '#fff' : filter.color,
-              bgcolor: statusFilter === filter.id ? filter.color : '#fff',
-              borderColor: filter.color,
-              borderWidth: '1.5px',
-              boxShadow: statusFilter === filter.id ? 
-                `0 2px 8px ${alpha(filter.color, 0.4)}` : 
-                'none',
-              fontWeight: statusFilter === filter.id ? 600 : 400,
+              height: '28px',
+              borderRadius: '14px',
+              color: statusFilter === filter.id ? '#FFFFFF' : (isDarkMode ? '#F9FAFB' : filter.color),
+              bgcolor: statusFilter === filter.id ? filter.color : 'transparent',
+              border: statusFilter === filter.id ? 'none' : `1px solid ${isDarkMode ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)'}`,
+              boxShadow: 'none',
+              fontWeight: statusFilter === filter.id ? 600 : 500,
+              fontSize: '0.75rem',
+              textTransform: 'capitalize',
               '&:hover': {
-                bgcolor: statusFilter === filter.id ? filter.color : alpha(filter.color, 0.1),
-                color: statusFilter === filter.id ? '#fff' : filter.color,
-                borderColor: filter.color,
+                bgcolor: statusFilter === filter.id ? filter.color : (isDarkMode ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.04)'),
+                color: statusFilter === filter.id ? '#FFFFFF' : filter.color,
+                transform: 'none',
+                boxShadow: 'none',
               },
               '& .MuiButton-startIcon': {
                 color: 'inherit',
                 margin: 0,
-                marginRight: 0.5
+                marginRight: 0.5,
+                opacity: isDarkMode ? 0.85 : 1
               },
               transition: 'all 0.2s ease-in-out'
             }}
@@ -279,7 +318,7 @@ export default function TaskFilters({
         InputProps={{
           startAdornment: (
             <InputAdornment position="start">
-              <SearchIcon color="action" />
+              <SearchIcon color={isDarkMode ? 'inherit' : 'action'} sx={{ color: isDarkMode ? '#64748B' : undefined }} />
             </InputAdornment>
           ),
         }}
@@ -287,6 +326,21 @@ export default function TaskFilters({
           width: 300,
           '& .MuiOutlinedInput-root': {
             borderRadius: 2,
+            bgcolor: isDarkMode ? '#1F2937 !important' : undefined,
+            color: isDarkMode ? '#94A3B8' : undefined,
+            '& .MuiOutlinedInput-notchedOutline': {
+              borderColor: isDarkMode ? '#1E293B' : undefined,
+            },
+            '&:hover .MuiOutlinedInput-notchedOutline': {
+              borderColor: isDarkMode ? '#4B5563' : undefined,
+            },
+            '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+              borderColor: isDarkMode ? '#818CF8' : undefined,
+            }
+          },
+          '& .MuiInputBase-input::placeholder': {
+            color: isDarkMode ? '#64748B' : undefined,
+            opacity: isDarkMode ? 1 : undefined
           },
         }}
       />

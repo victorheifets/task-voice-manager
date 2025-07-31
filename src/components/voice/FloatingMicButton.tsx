@@ -96,14 +96,32 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({ onTranscript, tra
           color="primary"
           onClick={handleFloatingMicClick}
           sx={{
-            width: 56,
-            height: 56,
-            backgroundColor: isRecording ? 'error.main' : 'primary.main',
+            width: 60,
+            height: 60,
+            borderRadius: '50%',
+            backgroundColor: theme => isRecording 
+              ? (theme.palette.mode === 'dark' ? '#F87171' : 'error.main') 
+              : (theme.palette.mode === 'dark' ? '#818CF8' : 'primary.main'),
             color: 'white',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+            boxShadow: theme => theme.palette.mode === 'dark' 
+              ? '0 4px 20px rgba(0,0,0,0.4), 0 0 0 2px rgba(255,255,255,0.1)' 
+              : '0 4px 16px rgba(0,0,0,0.2)',
+            position: 'relative',
+            zIndex: 2,
             '&:hover': {
-              backgroundColor: isRecording ? 'error.dark' : 'primary.dark',
-              boxShadow: '0 6px 16px rgba(0,0,0,0.25)',
+              backgroundColor: theme => isRecording 
+                ? (theme.palette.mode === 'dark' ? '#EF4444' : 'error.dark') 
+                : (theme.palette.mode === 'dark' ? '#6366F1' : 'primary.dark'),
+              boxShadow: theme => theme.palette.mode === 'dark'
+                ? '0 8px 25px rgba(0,0,0,0.5), 0 0 0 2px rgba(255,255,255,0.15)'
+                : '0 8px 20px rgba(0,0,0,0.25)',
+              transform: 'translateY(-2px)',
+            },
+            '&:active': {
+              transform: 'translateY(0)',
+              boxShadow: theme => theme.palette.mode === 'dark'
+                ? '0 4px 12px rgba(0,0,0,0.4), 0 0 0 2px rgba(255,255,255,0.1)'
+                : '0 4px 8px rgba(0,0,0,0.2)',
             },
             ...(isRecording && {
               animation: 'pulse 2s infinite',
@@ -113,8 +131,27 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({ onTranscript, tra
           {isRecording ? <StopIcon /> : <MicIcon />}
         </Fab>
       </Tooltip>
+      
+      {/* Background glow effect */}
+      {isRecording && (
+        <Box
+          sx={{
+            position: 'absolute',
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
+            width: 80,
+            height: 80,
+            borderRadius: '50%',
+            backgroundColor: theme => theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.15)' : 'rgba(244, 67, 54, 0.15)',
+            filter: 'blur(8px)',
+            zIndex: 1,
+            animation: 'expandGlow 2s infinite',
+          }}
+        />
+      )}
 
-      {/* Pulse Animation */}
+      {/* Animations */}
       <style jsx>{`
         @keyframes pulse {
           0% {
@@ -125,6 +162,21 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({ onTranscript, tra
           }
           100% {
             box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+          }
+        }
+        
+        @keyframes expandGlow {
+          0% {
+            opacity: 0.7;
+            transform: translate(-50%, -50%) scale(0.8);
+          }
+          50% {
+            opacity: 0.3;
+            transform: translate(-50%, -50%) scale(1.2);
+          }
+          100% {
+            opacity: 0.7;
+            transform: translate(-50%, -50%) scale(0.8);
           }
         }
       `}</style>

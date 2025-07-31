@@ -18,7 +18,8 @@ import {
   useTheme,
   Avatar,
   Badge,
-  Button
+  Button,
+  alpha
 } from '@mui/material';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LightModeIcon from '@mui/icons-material/LightMode';
@@ -28,11 +29,18 @@ import PersonIcon from '@mui/icons-material/Person';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import HelpIcon from '@mui/icons-material/Help';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import FullscreenIcon from '@mui/icons-material/Fullscreen';
+import FullscreenExitIcon from '@mui/icons-material/FullscreenExit';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { useLanguageContext } from '../../contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
 
-export default function Header() {
+interface HeaderProps {
+  narrowMode?: boolean;
+  onToggleNarrowMode?: () => void;
+}
+
+export default function Header({ narrowMode = false, onToggleNarrowMode }: HeaderProps = {}) {
   const { t } = useTranslation(['common']);
   const { mode, toggleTheme } = useThemeContext();
   const { language, changeLanguage } = useLanguageContext();
@@ -41,9 +49,8 @@ export default function Header() {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Exact colors from designs
-  const LIGHT_PRIMARY = '#2196F3'; // Materialize UI Blue
-  const DARK_PRIMARY = '#6658DD'; // Veltrix UI Purple
+  // Use theme colors instead of hardcoded values
+  const primaryColor = theme.palette.primary.main;
 
   const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
     setSettingsAnchorEl(event.currentTarget);
@@ -73,24 +80,21 @@ export default function Header() {
       elevation={mode === 'light' ? 1 : 0}
       sx={{
         backdropFilter: 'blur(10px)',
-        backgroundColor: mode === 'light' 
-          ? 'rgba(255, 255, 255, 1)' 
-          : 'rgba(36, 41, 57, 1)',
+        backgroundColor: theme.palette.background.default,
         borderBottom: `1px solid ${theme.palette.divider}`
       }}
     >
       <Toolbar sx={{ 
         justifyContent: 'space-between', 
         py: 1,
-        maxWidth: '1600px',
-        width: '100%',
-        mx: 'auto'
+        px: 3,
+        width: '100%'
       }}>
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
           <TaskAltIcon 
             sx={{ 
               mr: 1.5, 
-              color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY,
+              color: primaryColor,
               fontSize: '2rem'
             }} 
           />
@@ -99,7 +103,7 @@ export default function Header() {
             component="h1" 
             sx={{ 
               fontWeight: 600,
-              color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY,
+              color: primaryColor,
               letterSpacing: '0.5px'
             }}
           >
@@ -115,25 +119,46 @@ export default function Header() {
               sx={{ 
                 borderRadius: '12px',
                 padding: '8px',
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}10`
-                  : `${DARK_PRIMARY}10`,
-                border: `1px solid ${mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY}40`,
+                backgroundColor: alpha(primaryColor, 0.1),
+                border: `1px solid ${alpha(primaryColor, 0.25)}`,
                 transition: 'all 0.2s',
                 '&:hover': {
-                  backgroundColor: mode === 'light' 
-                    ? `${LIGHT_PRIMARY}15`
-                    : `${DARK_PRIMARY}15`,
-                  borderColor: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY,
+                  backgroundColor: alpha(primaryColor, 0.15),
+                  borderColor: primaryColor,
                 }
               }}
             >
               {mode === 'light' 
-                ? <DarkModeIcon sx={{ color: LIGHT_PRIMARY }} /> 
+                ? <DarkModeIcon sx={{ color: primaryColor }} /> 
                 : <LightModeIcon sx={{ color: '#FFB74D' }} />
               }
             </IconButton>
           </Tooltip>
+          {!isMobile && onToggleNarrowMode && (
+            <Tooltip title={narrowMode ? "Wide Screen" : "Narrow Screen"}>
+              <IconButton 
+                onClick={onToggleNarrowMode} 
+                color="inherit" 
+                size="medium"
+                sx={{ 
+                  borderRadius: '12px',
+                  padding: '8px',
+                  backgroundColor: alpha(primaryColor, 0.1),
+                  border: `1px solid ${alpha(primaryColor, 0.25)}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    backgroundColor: alpha(primaryColor, 0.15),
+                    borderColor: primaryColor,
+                  }
+                }}
+              >
+                {narrowMode 
+                  ? <FullscreenIcon sx={{ color: primaryColor }} /> 
+                  : <FullscreenExitIcon sx={{ color: primaryColor }} />
+                }
+              </IconButton>
+            </Tooltip>
+          )}
           <Tooltip title={t('language.select')}>
             <IconButton 
               onClick={handleLangMenuOpen} 
@@ -142,19 +167,15 @@ export default function Header() {
               sx={{ 
                 borderRadius: '50%',
                 padding: '8px',
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}20`
-                  : `${DARK_PRIMARY}20`,
+                backgroundColor: alpha(primaryColor, 0.2),
                 transition: 'all 0.2s',
                 '&:hover': {
-                  backgroundColor: mode === 'light' 
-                    ? `${LIGHT_PRIMARY}30`
-                    : `${DARK_PRIMARY}30`,
+                  backgroundColor: alpha(primaryColor, 0.3),
                   transform: 'translateY(-2px)'
                 }
               }}
             >
-              <TranslateIcon sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+              <TranslateIcon sx={{ color: primaryColor }} />
             </IconButton>
           </Tooltip>
           {!isMobile && (
@@ -166,18 +187,18 @@ export default function Header() {
                   borderRadius: '50%',
                   padding: '8px',
                   backgroundColor: mode === 'light' 
-                    ? `${LIGHT_PRIMARY}20`
-                    : `${DARK_PRIMARY}20`,
+                    ? alpha(primaryColor, 0.2)
+                    : alpha(primaryColor, 0.2),
                   transition: 'all 0.2s',
                   '&:hover': {
                     backgroundColor: mode === 'light' 
-                      ? `${LIGHT_PRIMARY}30`
-                      : `${DARK_PRIMARY}30`,
+                      ? alpha(primaryColor, 0.3)
+                      : alpha(primaryColor, 0.3),
                     transform: 'translateY(-2px)'
                   }
                 }}
               >
-                <NotificationsIcon sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+                <NotificationsIcon sx={{ color: primaryColor }} />
               </IconButton>
             </Badge>
           )}
@@ -189,19 +210,15 @@ export default function Header() {
               sx={{ 
                 borderRadius: '50%',
                 padding: '8px',
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}20`
-                  : `${DARK_PRIMARY}20`,
+                backgroundColor: alpha(primaryColor, 0.2),
                 transition: 'all 0.2s',
                 '&:hover': {
-                  backgroundColor: mode === 'light' 
-                    ? `${LIGHT_PRIMARY}30`
-                    : `${DARK_PRIMARY}30`,
+                  backgroundColor: alpha(primaryColor, 0.3),
                   transform: 'translateY(-2px)'
                 }
               }}
             >
-              <SettingsIcon sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+              <SettingsIcon sx={{ color: primaryColor }} />
             </IconButton>
           </Tooltip>
           {!isMobile && (
@@ -210,10 +227,10 @@ export default function Header() {
                 ml: 1, 
                 width: 36, 
                 height: 36,
-                border: `2px solid ${mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY}`,
+                border: `2px solid ${primaryColor}`,
                 cursor: 'pointer',
                 transition: 'transform 0.2s',
-                backgroundColor: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY,
+                backgroundColor: primaryColor,
                 '&:hover': {
                   transform: 'scale(1.1)'
                 }
@@ -271,14 +288,10 @@ export default function Header() {
               mx: 0.5,
               my: 0.25,
               '&.Mui-selected': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}20`
-                  : `${DARK_PRIMARY}30`,
+                backgroundColor: alpha(primaryColor, mode === 'light' ? 0.2 : 0.3),
               },
               '&:hover': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}15`
-                  : `${DARK_PRIMARY}20`,
+                backgroundColor: alpha(primaryColor, mode === 'light' ? 0.15 : 0.2),
               }
             }}
           >
@@ -295,14 +308,12 @@ export default function Header() {
               mx: 0.5,
               my: 0.25,
               '&.Mui-selected': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}15`
-                  : `${DARK_PRIMARY}20`,
+                backgroundColor: alpha(primaryColor, mode === 'light' ? 0.15 : 0.2),
               },
               '&:hover': {
                 backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}10`
-                  : `${DARK_PRIMARY}15`,
+                  ? alpha(primaryColor, 0.1)
+                  : alpha(primaryColor, 0.15),
               }
             }}
           >
@@ -319,14 +330,10 @@ export default function Header() {
               mx: 0.5,
               my: 0.25,
               '&.Mui-selected': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}20`
-                  : `${DARK_PRIMARY}30`,
+                backgroundColor: alpha(primaryColor, mode === 'light' ? 0.2 : 0.3),
               },
               '&:hover': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}15`
-                  : `${DARK_PRIMARY}20`,
+                backgroundColor: alpha(primaryColor, mode === 'light' ? 0.15 : 0.2),
               }
             }}
           >
@@ -379,20 +386,20 @@ export default function Header() {
         >
           <MenuItem onClick={handleSettingsClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
-              <PersonIcon fontSize="small" sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+              <PersonIcon fontSize="small" sx={{ color: primaryColor }} />
             </ListItemIcon>
             <ListItemText>{t('menu.profile')}</ListItemText>
           </MenuItem>
           <MenuItem onClick={handleSettingsClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
-              <SettingsIcon fontSize="small" sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+              <SettingsIcon fontSize="small" sx={{ color: primaryColor }} />
             </ListItemIcon>
             <ListItemText>{t('menu.settings')}</ListItemText>
           </MenuItem>
           <Divider sx={{ my: 1 }} />
           <MenuItem onClick={handleSettingsClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
-              <HelpIcon fontSize="small" sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+              <HelpIcon fontSize="small" sx={{ color: primaryColor }} />
             </ListItemIcon>
             <ListItemText>{t('menu.help')}</ListItemText>
           </MenuItem>

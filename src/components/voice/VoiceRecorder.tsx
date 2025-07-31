@@ -42,7 +42,8 @@ const VoiceRecorder = React.forwardRef<
     azureRegion,
     transcriptionService,
     onTranscript: (text) => {
-      console.log('Transcript updated:', text);
+      console.log('VoiceRecorder: Transcript updated:', text);
+      console.log('VoiceRecorder: Calling onTranscript prop with:', text);
       onTranscript(text);
     },
     onError: (error) => {

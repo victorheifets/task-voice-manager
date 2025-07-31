@@ -27,7 +27,7 @@ interface ThemeProviderProps {
 
 export const ThemeProvider = ({ children }: ThemeProviderProps) => {
   // Get theme from localStorage or use system preference
-  const [mode, setMode] = useState<ThemeMode>('light');
+  const [mode, setMode] = useState<ThemeMode>('dark'); // Default to dark mode
 
   useEffect(() => {
     const storedTheme = localStorage.getItem('themeMode') as ThemeMode | null;
@@ -41,17 +41,23 @@ export const ThemeProvider = ({ children }: ThemeProviderProps) => {
     }
   }, []);
 
-  // Update localStorage and body class when theme changes
+  // Update localStorage and apply theme classes when theme changes
   useEffect(() => {
     localStorage.setItem('themeMode', mode);
     
-    // Apply CSS class to body for direct CSS variable access
+    // Apply CSS class to HTML and body for direct CSS variable access
+    const htmlElement = document.documentElement;
+    
     if (mode === 'light') {
       document.body.classList.add('light-mode');
       document.body.classList.remove('dark-mode');
+      htmlElement.classList.add('light-mode');
+      htmlElement.classList.remove('dark-mode');
     } else {
       document.body.classList.add('dark-mode');
       document.body.classList.remove('light-mode');
+      htmlElement.classList.add('dark-mode');
+      htmlElement.classList.remove('light-mode');
     }
   }, [mode]);
 

@@ -34,9 +34,11 @@ export const useSpeechRecognition = (options: UseSpeechRecognitionOptions) => {
     }
 
     const handleResult = (result: TranscriptionResult) => {
+      console.log('useSpeechRecognition: handleResult called with:', result);
       setTranscript(result.text);
       // Call onTranscript for both interim and final results for real-time display
       if (options.onTranscript) {
+        console.log('useSpeechRecognition: Calling options.onTranscript with:', result.text);
         options.onTranscript(result.text);
       }
     };

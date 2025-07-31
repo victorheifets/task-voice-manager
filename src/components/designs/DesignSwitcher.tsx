@@ -11,9 +11,10 @@ const designs = [
 interface DesignSwitcherProps {
   onTranscript: (text: string) => void;
   transcriptionService?: 'browser' | 'whisper' | 'azure' | 'hybrid';
+  transcript?: string;
 }
 
-const DesignSwitcher: React.FC<DesignSwitcherProps> = ({ onTranscript, transcriptionService }) => {
+const DesignSwitcher: React.FC<DesignSwitcherProps> = ({ onTranscript, transcriptionService, transcript }) => {
   const [selectedDesign, setSelectedDesign] = useState('enhanced');
   const theme = useTheme();
 
@@ -30,6 +31,7 @@ const DesignSwitcher: React.FC<DesignSwitcherProps> = ({ onTranscript, transcrip
       <SelectedComponent 
         onTranscript={onTranscript}
         transcriptionService={transcriptionService}
+        transcript={transcript}
       />
     </Box>
   );

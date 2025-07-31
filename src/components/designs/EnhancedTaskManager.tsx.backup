@@ -1,0 +1,1536 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Box, 
+  Typography, 
+  Button, 
+  TextField, 
+  Checkbox, 
+  IconButton, 
+  Menu, 
+  MenuItem, 
+  Tooltip, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions,
+  Paper,
+  Card,
+  CardContent,
+  Chip,
+  useTheme,
+  alpha,
+  useMediaQuery,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TablePagination,
+  Snackbar,
+  Alert,
+  Divider,
+  CircularProgress,
+  InputAdornment,
+  OutlinedInput,
+  FormControl,
+  InputLabel,
+  Select,
+  Drawer,
+  Fab,
+  Badge,
+  Avatar,
+  Stack
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import SortIcon from '@mui/icons-material/Sort';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import FlagIcon from '@mui/icons-material/Flag';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import CloseIcon from '@mui/icons-material/Close';
+import CheckIcon from '@mui/icons-material/Check';
+import InfoIcon from '@mui/icons-material/Info';
+import PersonIcon from '@mui/icons-material/Person';
+import LocalOfferIcon from '@mui/icons-material/LocalOffer';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
+import { Task } from '@/types/task';
+import { Priority } from '@/components/tasks/PrioritySelect';
+import { getTasks, createTask, updateTask, deleteTask } from '@/lib/supabase/client';
+import TaskInput from '../tasks/TaskInput';
+import TaskEditDialog from '../tasks/TaskEditDialog';
+import TaskDetailsDialog from '../tasks/TaskDetailsDialog';
+import { useThemeContext } from '../../contexts/ThemeContext';
+
+interface EnhancedTaskManagerProps {
+  onTranscript: (text: string) => void;
+  transcriptionService?: string;
+  transcript?: string;
+}
+
+const EnhancedTaskManager: React.FC<EnhancedTaskManagerProps> = ({
+  onTranscript,
+  transcriptionService,
+  transcript
+}) => {
+  const theme = useTheme();
+  const { mode } = useThemeContext();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isSmallMobile = useMediaQuery(theme.breakpoints.down('xs'));
+  const [tasks, setTasks] = useState<Task[]>([]);
+  const [searchFilter, setSearchFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [taskToView, setTaskToView] = useState<Task | null>(null);
+  const [snackbar, setSnackbar] = useState<{open: boolean, message: string, severity: 'success' | 'error'}>({ open: false, message: '', severity: 'success' });
+  const [loading, setLoading] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [currentTranscript, setCurrentTranscript] = useState<string>('');
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [datePickerTaskId, setDatePickerTaskId] = useState<string | null>(null);
+  const [priorityMenuOpen, setPriorityMenuOpen] = useState(false);
+  const [priorityAnchorEl, setPriorityAnchorEl] = useState<HTMLElement | null>(null);
+  const [priorityTaskId, setPriorityTaskId] = useState<string | null>(null);
+  // Use theme colors instead of custom color palette
+  const isDarkMode = mode === 'dark';
+
+  useEffect(() => {
+    loadTasks();
+  }, []);
+
+  // Update local transcript when prop changes
+  useEffect(() => {
+    if (transcript) {
+      console.log('EnhancedTaskManager: Received transcript prop:', transcript);
+      setCurrentTranscript(transcript);
+    }
+  }, [transcript]);
+
+  // Handle transcript from voice recognition
+  const handleTranscript = (transcript: string) => {
+    console.log('EnhancedTaskManager: handleTranscript called with:', transcript);
+    setCurrentTranscript(transcript);
+    console.log('EnhancedTaskManager: setCurrentTranscript called, new state should be:', transcript);
+    onTranscript(transcript); // Pass it up to parent
+  };
+
+  const loadTasks = async () => {
+    setLoading(true);
+    try {
+      const fetchedTasks = await getTasks();
+      
+      // Only add mock data if no real tasks exist
+      if (fetchedTasks.length === 0) {
+        // Generate some demo tasks for first time users
+        const demoTasks = [
+          {
+            id: 'demo-1',
+            title: 'Welcome to Task Voice Manager!',
+            notes: 'This is a demo task. Try editing it or creating new ones with voice commands.',
+            completed: false,
+            dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            assignee: 'You',
+            priority: 'medium' as any,
+            tags: ['demo', 'welcome'],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 'demo-2',
+            title: 'Try voice commands',
+            notes: 'Click the microphone and say something like "Create a task to review the quarterly report by next Friday"',
+            completed: false,
+            dueDate: null,
+            assignee: null,
+            priority: 'high' as any,
+            tags: ['voice', 'demo'],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        ];
+        
+        // Save demo tasks to localStorage immediately
+        if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.location.search.includes('skipauth'))) {
+          localStorage.setItem('dev_tasks', JSON.stringify(demoTasks));
+        }
+        
+        setTasks(demoTasks);
+      } else {
+        setTasks(fetchedTasks);
+      }
+    } catch (error) {
+      console.error('Error loading tasks:', error);
+      showSnackbar('Error loading tasks', 'error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, task: Task) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedTask(task);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedTask(null);
+  };
+
+  const showSnackbar = (message: string, severity: 'success' | 'error' = 'success') => {
+    setSnackbar({ open: true, message, severity });
+  };
+
+  const handleTaskUpdate = async (taskId: string, updates: Partial<Task>) => {
+    try {
+      const updatedTask = await updateTask(taskId, updates);
+      setTasks(prev => prev.map(t => t.id === taskId ? updatedTask : t));
+      showSnackbar('Task updated successfully');
+    } catch (error) {
+      console.error('Error updating task:', error);
+      showSnackbar('Error updating task', 'error');
+    }
+  };
+
+  const handleTaskDelete = async (taskId: string) => {
+    try {
+      await deleteTask(taskId);
+      setTasks(prev => prev.filter(t => t.id !== taskId));
+      showSnackbar('Task deleted successfully');
+    } catch (error) {
+      console.error('Error deleting task:', error);
+      showSnackbar('Error deleting task', 'error');
+    }
+  };
+
+  const handleTaskComplete = async (task: Task) => {
+    await handleTaskUpdate(task.id, { completed: !task.completed });
+  };
+
+  const startInlineEdit = (taskId: string, field: string, currentValue: string) => {
+    setEditingTaskId(taskId);
+    setEditingField(field);
+    setEditValue(currentValue);
+  };
+
+  const saveInlineEdit = async () => {
+    if (!editingTaskId || !editingField) return;
+    
+    const updates: Partial<Task> = {
+      [editingField]: editValue
+    };
+    
+    await handleTaskUpdate(editingTaskId, updates);
+    setEditingTaskId(null);
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  const cancelInlineEdit = () => {
+    setEditingTaskId(null);
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      saveInlineEdit();
+    } else if (e.key === 'Escape') {
+      cancelInlineEdit();
+    }
+  };
+
+  const isEditing = (taskId: string, field: string) => {
+    return editingTaskId === taskId && editingField === field;
+  };
+
+  const handleDateChange = async (taskId: string, newDate: string) => {
+    try {
+      const isoDate = newDate ? new Date(newDate).toISOString() : null;
+      await handleTaskUpdate(taskId, { dueDate: isoDate });
+    } catch (error) {
+      console.error('Error updating date:', error);
+    }
+  };
+
+  const handlePriorityChange = async (taskId: string, newPriority: Priority) => {
+    try {
+      await handleTaskUpdate(taskId, { priority: newPriority });
+      setPriorityMenuOpen(false);
+      setPriorityAnchorEl(null);
+      setPriorityTaskId(null);
+    } catch (error) {
+      console.error('Error updating priority:', error);
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch(priority) {
+      case 'urgent': return '#d32f2f';
+      case 'high': return '#f57c00';
+      case 'medium': return '#1976d2';
+      case 'low': return '#388e3c';
+      default: return '#757575';
+    }
+  };
+
+  const getPriorityIcon = (priority: string) => {
+    const color = getPriorityColor(priority);
+    return <FlagIcon sx={{ color, fontSize: 16 }} />;
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = parseISO(dateString);
+    if (isToday(date)) return 'Today';
+    if (isTomorrow(date)) return 'Tomorrow';
+    if (isPast(date)) return `${format(date, 'MMM d')} (overdue)`;
+    return format(date, 'MMM d, yyyy');
+  };
+
+  const filterButtons = [
+    { id: 'all', label: 'All', color: '#1976d2', count: tasks.length },
+    { id: 'today', label: 'Today', color: '#2e7d32', count: tasks.filter(t => t.dueDate && isToday(parseISO(t.dueDate))).length },
+    { id: 'tomorrow', label: 'Tomorrow', color: '#ed6c02', count: tasks.filter(t => t.dueDate && isTomorrow(parseISO(t.dueDate))).length },
+    { id: 'overdue', label: 'Overdue', color: '#d32f2f', count: tasks.filter(t => t.dueDate && isPast(parseISO(t.dueDate)) && !t.completed).length },
+    { id: 'completed', label: 'Completed', color: '#2e7d32', count: tasks.filter(t => t.completed).length },
+  ];
+
+  const filteredTasks = tasks.filter(task => {
+    const searchLower = searchFilter.toLowerCase();
+    const matchesSearch = searchFilter === '' || 
+      task.title.toLowerCase().includes(searchLower) ||
+      (task.notes && task.notes.toLowerCase().includes(searchLower)) ||
+      (task.assignee && task.assignee.toLowerCase().includes(searchLower)) ||
+      task.priority.toLowerCase().includes(searchLower) ||
+      task.tags.some(tag => tag.toLowerCase().includes(searchLower));
+      
+    const matchesStatus = statusFilter === 'all' || 
+      (statusFilter === 'today' && task.dueDate && isToday(parseISO(task.dueDate))) ||
+      (statusFilter === 'tomorrow' && task.dueDate && isTomorrow(parseISO(task.dueDate))) ||
+      (statusFilter === 'overdue' && task.dueDate && isPast(parseISO(task.dueDate)) && !task.completed) ||
+      (statusFilter === 'completed' && task.completed);
+    return matchesSearch && matchesStatus;
+  });
+
+  return (
+    <Box sx={{ 
+      bgcolor: theme.palette.background.default,
+      color: theme.palette.text.primary,
+      height: '100vh',
+      display: 'flex',
+      flexDirection: 'column',
+      width: '100%',
+      maxWidth: '100%',
+      px: { xs: 1, sm: 2, md: 3 },
+      overflow: 'hidden',
+      transition: 'background-color 0.3s ease, color 0.3s ease'
+    }}>
+
+      {/* Task Input Section */}
+      <Box sx={{ 
+        flexShrink: 0,
+        bgcolor: theme.palette.background.paper,
+        borderBottom: '1px solid',
+        borderColor: theme.palette.divider,
+        transition: 'all 0.3s ease'
+      }}>
+        {!isMobile && (
+          /* Desktop Task Input */
+          <Box sx={{ 
+            p: 1.5,
+            mt: 2,
+            mb: 2
+          }}>
+            <TaskInput 
+              onTaskAdded={loadTasks}
+              transcript={currentTranscript}
+            />
+          </Box>
+        )}
+
+        {/* Filter Section */}
+        {isMobile ? (
+          // Modern mobile filters with 2-row grid
+          <Box sx={{ 
+            p: 2,
+            bgcolor: theme.palette.background.paper,
+            boxShadow: isDarkMode ? '0 2px 4px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.1)',
+            transition: 'all 0.3s ease'
+          }}>
+            {/* Search bar */}
+            <TextField
+              size="small"
+              placeholder="Search tasks..."
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              fullWidth
+              sx={{ 
+                mb: 2,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 3,
+                  bgcolor: theme.palette.background.paper,
+                  color: theme.palette.text.primary,
+                  height: 44,
+                  fontSize: '0.9rem',
+                  border: `1px solid ${theme.palette.divider}`,
+                  boxShadow: isDarkMode ? '0 2px 4px rgba(0,0,0,0.3)' : '0 2px 4px rgba(0,0,0,0.08)',
+                  '&:hover': {
+                    borderColor: theme.palette.primary.main
+                  },
+                  '&.Mui-focused': {
+                    borderColor: '#3b82f6',
+                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
+                  }
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ fontSize: 20, color: '#475569' }} />
+                  </InputAdornment>
+                ),
+              }}
+            />
+            
+            {/* Single row filters */}
+            <Box sx={{ 
+              display: 'flex',
+              gap: 0.75,
+              width: '100%',
+              justifyContent: 'space-between'
+            }}>
+              {filterButtons.slice(0, 5).map((filter) => (
+                <Button
+                  key={filter.id}
+                  variant={statusFilter === filter.id ? 'contained' : 'outlined'}
+                  onClick={() => setStatusFilter(filter.id)}
+                  size="small"
+                  sx={{
+                    borderRadius: 1.5,
+                    px: 0.5,
+                    py: 0.25,
+                    fontSize: '0.6rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    border: '1px solid',
+                    borderColor: statusFilter === filter.id ? filter.color : theme.palette.divider,
+                    bgcolor: statusFilter === filter.id ? filter.color : theme.palette.background.paper,
+                    color: statusFilter === filter.id ? '#ffffff' : theme.palette.text.primary,
+                    minWidth: 0,
+                    flex: 1,
+                    height: 26,
+                    boxShadow: statusFilter === filter.id ? `0 1px 3px ${alpha(filter.color, 0.3)}` : '0 1px 2px rgba(0,0,0,0.08)',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 0.125,
+                    '&:hover': {
+                      borderColor: filter.color,
+                      bgcolor: statusFilter === filter.id ? filter.color : '#f8fafc',
+                      boxShadow: statusFilter === filter.id ? `0 2px 4px ${alpha(filter.color, 0.3)}` : '0 1px 3px rgba(0,0,0,0.12)'
+                    },
+                    transition: 'all 0.15s ease-in-out'
+                  }}
+                >
+                  <Typography sx={{ 
+                    fontSize: '0.55rem', 
+                    fontWeight: 600, 
+                    lineHeight: 1,
+                    color: 'inherit'
+                  }}>
+                    {filter.label}
+                  </Typography>
+                  <Typography sx={{ 
+                    fontSize: '0.5rem', 
+                    fontWeight: 700,
+                    lineHeight: 1,
+                    opacity: statusFilter === filter.id ? 0.9 : 0.7,
+                    color: 'inherit'
+                  }}>
+                    {filter.count}
+                  </Typography>
+                </Button>
+              ))}
+            </Box>
+          </Box>
+        ) : (
+          // Desktop filters - original layout
+          <Box sx={{ 
+            p: 1.5,
+            mb: 2, 
+            display: 'flex', 
+            flexDirection: 'row',
+            gap: 2,
+            alignItems: 'center',
+            justifyContent: 'space-between'
+          }}>
+            <Stack direction="row" spacing={1} flexWrap="wrap">
+              {filterButtons.map((filter) => (
+                <Button
+                  key={filter.id}
+                  variant={statusFilter === filter.id ? 'contained' : 'outlined'}
+                  onClick={() => setStatusFilter(filter.id)}
+                  size="small"
+                  sx={{
+                    borderRadius: 4,
+                    px: 1.2,
+                    py: 0.4,
+                    fontSize: '0.8rem',
+                    fontWeight: 600,
+                    textTransform: 'none',
+                    border: '1px solid',
+                    borderColor: statusFilter === filter.id ? filter.color : alpha(filter.color, 0.3),
+                    bgcolor: statusFilter === filter.id ? filter.color : 'transparent',
+                    color: statusFilter === filter.id ? '#fff' : filter.color,
+                    '&:hover': {
+                      bgcolor: statusFilter === filter.id ? filter.color : alpha(filter.color, 0.1),
+                      borderColor: filter.color,
+                    },
+                    minWidth: 'auto',
+                    height: 32,
+                  }}
+                >
+                  {filter.label}
+                  <Chip 
+                    label={filter.count} 
+                    size="small" 
+                    sx={{ 
+                      ml: 0.5,
+                      height: 16,
+                      fontSize: '0.7rem',
+                      bgcolor: statusFilter === filter.id ? 'rgba(255,255,255,0.2)' : alpha(filter.color, 0.1),
+                      color: statusFilter === filter.id ? '#fff' : filter.color,
+                      fontWeight: 600
+                    }} 
+                  />
+                </Button>
+              ))}
+            </Stack>
+
+            <TextField
+              size="small"
+              placeholder="Search tasks..."
+              value={searchFilter}
+              onChange={(e) => setSearchFilter(e.target.value)}
+              sx={{ 
+                minWidth: 200,
+                '& .MuiOutlinedInput-root': {
+                  borderRadius: 2,
+                  bgcolor: '#f8f9fa',
+                  border: '1px solid',
+                  borderColor: alpha(theme.palette.divider, 0.2),
+                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
+                  height: 36,
+                }
+              }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon sx={{ fontSize: 18 }} color="action" />
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+        )}
+      </Box>
+
+      {/* Scrollable Table Section */}
+      <Box sx={{ 
+        flex: 1,
+        px: isMobile ? 0 : 1.5,
+        pb: isMobile ? 2 : 1.5,
+        overflow: 'hidden',
+        display: 'flex',
+        flexDirection: 'column'
+      }}>
+        {!isMobile ? (
+          // Desktop Table View
+          <Card sx={{ 
+            border: '1px solid',
+            borderColor: alpha(theme.palette.divider, 0.2),
+            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
+            borderRadius: 2,
+            overflow: 'hidden'
+          }}>
+            <TableContainer sx={{ 
+              maxHeight: 'calc(100vh - 250px)',
+              overflow: 'auto'
+            }}>
+              <Table stickyHeader>
+            <TableHead>
+              <TableRow sx={{ 
+                bgcolor: mode === 'dark' ? '#1e1e1e' : theme.palette.primary.main,
+                '& .MuiTableCell-head': {
+                  color: mode === 'dark' ? theme.palette.text.primary : 'white',
+                  fontWeight: 700,
+                  fontSize: '0.875rem',
+                  py: 1.5,
+                  borderBottom: mode === 'dark' ? `1px solid ${theme.palette.divider}` : 'none',
+                  bgcolor: mode === 'dark' ? '#1e1e1e' : theme.palette.primary.main
+                },
+                transition: 'all 0.3s ease'
+              }}>
+                <TableCell padding="checkbox" sx={{ width: '60px' }}>
+                  <Checkbox sx={{ color: theme.palette.text.secondary }} />
+                </TableCell>
+                <TableCell sx={{ width: '35%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <LocalOfferIcon sx={{ fontSize: 18 }} />
+                    Task
+                  </Box>
+                </TableCell>
+                <TableCell sx={{ width: '15%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CalendarTodayIcon sx={{ 
+                      fontSize: 18,
+                      color: theme.palette.mode === 'dark' ? '#94A3B8' : undefined
+                    }} />
+                    Due Date
+                  </Box>
+                </TableCell>
+                <TableCell sx={{ width: '15%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PersonIcon sx={{ fontSize: 18 }} />
+                    Assignee
+                  </Box>
+                </TableCell>
+                <TableCell sx={{ width: '12%' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <FlagIcon sx={{ fontSize: 18 }} />
+                    Priority
+                  </Box>
+                </TableCell>
+                <TableCell sx={{ width: '13%' }}>Tags</TableCell>
+                <TableCell sx={{ width: '10%' }}>Actions</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {filteredTasks.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} sx={{ textAlign: 'center', py: 8 }}>
+                    <Typography variant="h6" color="text.secondary" gutterBottom>
+                      No tasks found
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      {searchFilter ? "Try adjusting your search terms" : "Add your first task to get started"}
+                    </Typography>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredTasks.map((task, index) => (
+                  <TableRow
+                    key={task.id}
+                    sx={{
+                      bgcolor: theme.palette.background.paper,
+                      borderBottom: '1px solid',
+                      borderColor: theme.palette.divider,
+                      color: theme.palette.text.primary,
+                      '&:hover': {
+                        bgcolor: theme.palette.action.hover,
+                        transform: 'translateY(-1px)',
+                        boxShadow: isDarkMode ? '0 4px 12px rgba(0,0,0,0.3)' : '0 4px 12px rgba(0,0,0,0.1)',
+                      },
+                      '&:last-child': {
+                        borderBottom: 'none'
+                      },
+                      transition: 'all 0.2s ease-in-out',
+                      height: 56,
+                    }}
+                  >
+                    <TableCell padding="checkbox">
+                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 1.5, justifyContent: 'space-between' }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                          <Checkbox
+                            checked={task.completed}
+                            onChange={() => handleTaskComplete(task)}
+                            sx={{
+                              color: theme.palette.mode === 'dark' ? '#6B7280' : undefined,
+                              padding: '8px',
+                              '&.Mui-checked': {
+                                color: theme.palette.mode === 'dark' ? '#818CF8' : undefined,
+                              },
+                              '& .MuiSvgIcon-root': {
+                                fontSize: '1.3rem',
+                              },
+                            }}
+                          />
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontSize: { xs: '1rem', sm: '1.05rem' },
+                              fontWeight: 600,
+                              textDecoration: task.completed ? 'line-through' : 'none',
+                              color: task.completed 
+                                ? (theme.palette.mode === 'dark' ? '#6B7280' : theme.palette.text.secondary)
+                                : (theme.palette.mode === 'dark' ? '#F9FAFB' : theme.palette.text.primary),
+                              opacity: task.completed ? 0.7 : 1,
+                              wordBreak: 'break-word',
+                              lineHeight: 1.4,
+                              letterSpacing: '-0.01em',
+                            }}
+                          >
+                            {task.title}
+                          </Typography>
+                        </Box>
+                        {isEditing(task.id, 'title') ? (
+                          <input
+                            style={{
+                              border: 'none',
+                              outline: 'none',
+                              background: 'transparent',
+                              width: '100%',
+                              fontSize: '1rem',
+                              fontWeight: 600,
+                              color: task.completed ? '#757575' : '#1976d2',
+                              fontFamily: 'inherit',
+                              padding: 0,
+                              marginBottom: '4px'
+                            }}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={handleKeyPress}
+                            onBlur={saveInlineEdit}
+                            autoFocus
+                          />
+                        ) : (
+                          <Typography 
+                            variant="subtitle1" 
+                            sx={{ 
+                              fontWeight: 600,
+                              color: task.completed ? 'text.secondary' : 'text.primary',
+                              textDecoration: task.completed ? 'line-through' : 'none',
+                              mb: 0.5,
+                              cursor: 'pointer',
+                              '&:hover': {
+                                bgcolor: 'action.hover',
+                                borderRadius: 1,
+                                px: 0.5
+                              }
+                            }}
+                            onClick={() => startInlineEdit(task.id, 'title', task.title)}
+                          >
+                            {task.title}
+                          </Typography>
+                        )}
+                        {/* Notes field - always show */}
+                        {isEditing(task.id, 'notes') ? (
+                          <TextField
+                            fullWidth
+                            size="small"
+                            multiline
+                            rows={2}
+                            value={editValue}
+                            onChange={(e) => setEditValue(e.target.value)}
+                            onKeyDown={handleKeyPress}
+                            onBlur={saveInlineEdit}
+                            autoFocus
+                            placeholder="Add notes..."
+                          />
+                        ) : (
+                          <Typography 
+                            variant="caption" 
+                            sx={{
+                              cursor: 'pointer',
+                              display: 'block',
+                              color: task.notes ? 'text.secondary' : '#94a3b8',
+                              fontStyle: task.notes ? 'normal' : 'italic',
+                              '&:hover': {
+                                bgcolor: 'action.hover',
+                                borderRadius: 1,
+                                px: 0.5
+                              }
+                            }}
+                            onClick={() => startInlineEdit(task.id, 'notes', task.notes || '')}
+                          >
+                            {task.notes ? (task.notes.length > 60 ? task.notes.substring(0, 60) + '...' : task.notes) : 'Click to add notes...'}
+                      <Chip
+                        key={tagIndex}
+                        size="small"
+                        label={tag}
+                        sx={{
+                          fontSize: '0.7rem',
+                          height: 20,
+                          bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                          color: theme.palette.secondary.main,
+                          '&:hover': {
+                            bgcolor: alpha(theme.palette.secondary.main, 0.2),
+                          }
+                        }}
+                      />
+                    ))}
+                    {task.tags.length > 2 && (
+                      <Typography variant="caption" color="text.secondary">
+                        +{task.tags.length - 2}
+                      </Typography>
+                    )}
+                  </Stack>
+                </TableCell>
+                <TableCell>
+                  <Stack direction="row" spacing={0.5}>
+                    <Tooltip title="View Details">
+                      <IconButton 
+                        size="small" 
+                        sx={{ color: 'text.secondary' }}
+                        onClick={() => {
+                          setTaskToView(task);
+                          setDetailsDialogOpen(true);
+                        }}
+                      >
+                        <InfoIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Edit Task">
+                      <IconButton 
+                        size="small" 
+                        sx={{ color: 'text.secondary' }}
+                        onClick={() => {
+                          setTaskToEdit(task);
+                          setEditDialogOpen(true);
+                        }}
+                      >
+                        <EditIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="More Options">
+                      <IconButton 
+                        size="small" 
+                        onClick={(e) => handleMenuClick(e, task)}
+                        sx={{ color: 'text.secondary' }}
+                      >
+                        <MoreVertIcon fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))
+          )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </Card>
+  ) : (
+    // Modern Mobile Card View
+    <Box sx={{ 
+      flex: 1,
+      height: 'calc(100vh - 240px)',
+      overflowY: 'auto',
+      overflowX: 'hidden',
+      px: 3,
+      py: 1,
+      bgcolor: '#f1f5f9'
+    }}>
+      {filteredTasks.length === 0 ? (
+        <Box sx={{ 
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: 300,
+          textAlign: 'center'
+        }}>
+          <Typography variant="h6" color="text.secondary" gutterBottom>
+            No tasks found
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {searchFilter ? "Try adjusting your search terms" : "Add your first task to get started"}
+          </Typography>
+        </Box>
+      ) : (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
+          {filteredTasks.map((task, index) => (
+            <Card 
+              key={task.id}
+              elevation={0}
+              sx={{
+                bgcolor: theme.palette.mode === 'dark' ? '#1F2937' : theme.palette.background.paper,
+                borderRadius: '16px',
+                border: 'none',
+                overflow: 'hidden',
+                boxShadow: theme.palette.mode === 'dark' 
+                  ? '0 4px 20px rgba(0,0,0,0.3), inset 0 0 0 1px rgba(255,255,255,0.1)' 
+                  : '0 2px 12px rgba(0,0,0,0.08)',
+                transition: 'all 0.2s ease-in-out',
+                minHeight: 120,
+                display: 'flex',
+                flexDirection: 'column',
+                color: theme.palette.mode === 'dark' ? '#F9FAFB' : theme.palette.text.primary,
+                position: 'relative',
+                '&:hover': {
+                  transform: 'translateY(-2px)',
+                  boxShadow: theme.palette.mode === 'dark' 
+                    ? '0 8px 24px rgba(0,0,0,0.4), inset 0 0 0 1px rgba(255,255,255,0.15)' 
+                    : '0 8px 24px rgba(0,0,0,0.12)',
+                },
+                '&:before': {
+                  content: '""',
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '4px',
+                  height: '100%',
+                  background: getPriorityColor(task.priority),
+                  opacity: 0.9
+                }
+              }}
+            >
+              <Box sx={{ p: 2.5, pl: 3, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                {/* Header */}
+                <Box sx={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  gap: 1.5,
+                  mb: 2
+                }}>
+                  <Box
+                    onClick={() => handleTaskComplete(task)}
+                    sx={{
+                      width: 24,
+                      height: 24,
+                      borderRadius: '50%',
+                      border: `2px solid ${task.completed ? '#10b981' : theme.palette.mode === 'dark' ? '#6B7280' : '#94a3b8'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      backgroundColor: task.completed ? '#10b981' : 'transparent',
+                      '&:hover': {
+                        transform: 'scale(1.1)',
+                        borderColor: task.completed ? '#059669' : theme.palette.mode === 'dark' ? '#818CF8' : '#3b82f6',
+                        boxShadow: theme.palette.mode === 'dark' ? '0 0 0 4px rgba(129, 140, 248, 0.2)' : '0 0 0 4px rgba(59, 130, 246, 0.2)',
+                      }
+                    }}
+                  >
+                    {task.completed && (
+                      <CheckIcon sx={{ fontSize: 16, color: 'white' }} />
+                    )}
+                  </Box>
+                  
+                  <Box sx={{ flex: 1, minWidth: 0 }}>
+                    {isEditing(task.id, 'title') ? (
+                      <input
+                        style={{
+                          border: 'none',
+                          outline: 'none',
+                          background: 'transparent',
+                          width: '100%',
+                          fontSize: '1.1rem',
+                          fontWeight: 600,
+                          color: theme.palette.mode === 'dark' 
+                            ? (task.completed ? '#9CA3AF' : '#F9FAFB') 
+                            : (task.completed ? '#757575' : '#1976d2'),
+                          fontFamily: 'inherit',
+                          padding: 0,
+                          marginBottom: task.notes ? '4px' : 0
+                        }}
+                        value={editValues.title}
+                        onChange={(e) => setEditValues({ ...editValues, title: e.target.value })}
+                        autoFocus
+                        onBlur={() => handleSaveEdit(task.id, 'title')}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleSaveEdit(task.id, 'title');
+                          }
+                        }}
+                      />
+                    ) : (
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          fontSize: { xs: '1.05rem', sm: '1.1rem' },
+                          fontWeight: 600,
+                          textDecoration: task.completed ? 'line-through' : 'none',
+                          color: theme.palette.mode === 'dark' 
+                            ? (task.completed ? '#9CA3AF' : '#F9FAFB') 
+                            : (task.completed ? '#757575' : '#1976d2'),
+                          opacity: task.completed ? 0.7 : 1,
+                          wordBreak: 'break-word',
+                          cursor: 'pointer',
+                          lineHeight: 1.4,
+                          letterSpacing: '-0.01em',
+                          '&:hover': {
+                            color: theme.palette.mode === 'dark' ? '#A5B4FC' : '#2196f3',
+                          }
+                        }}
+                        onClick={() => handleEditClick(task.id, 'title', task.title)}
+                      >
+                        {task.title}
+                      </Typography>
+                    )}
+                    {/* Notes field - always show */}
+                    {isEditing(task.id, 'notes') ? (
+                      <TextField
+                        fullWidth
+                        size="small"
+                        multiline
+                        rows={2}
+                        value={editValues.notes}
+                        onChange={(e) => setEditValues({ ...editValues, notes: e.target.value })}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            handleSaveEdit(task.id, 'notes');
+                          }
+                        }}
+                        autoFocus
+                        onBlur={() => handleSaveEdit(task.id, 'notes')}
+                        placeholder="Add notes..."
+                      />
+                    ) : (
+                      <Typography
+                      variant="body2"
+                      sx={{
+                        color: theme.palette.mode === 'dark' 
+                          ? (task.notes ? '#9CA3AF' : '#6B7280') 
+                          : (task.notes ? '#64748b' : '#94a3b8'),
+                        fontSize: { xs: '0.85rem', sm: '0.9rem' },
+                        lineHeight: 1.5,
+                        cursor: 'pointer',
+                        fontStyle: task.notes ? 'normal' : 'italic',
+                        mt: 1,
+                        mb: 0.5,
+                        maxHeight: '4.5em',
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        '&:hover': {
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.05)',
+                          borderRadius: 1,
+                          px: 0.5
+                        }
+                      }}
+                      onClick={() => handleEditClick(task.id, 'notes', task.notes || '')}
+                    >
+                      {task.notes || 'Click to add notes...'}
+                    </Typography>
+                    )}
+                  </Box>
+
+                  <IconButton 
+                    size="small" 
+                    onClick={(e) => handleMenuClick(e, task)}
+                    sx={{ 
+                      color: '#94a3b8',
+                      '&:hover': { 
+                        bgcolor: '#f1f5f9',
+                        color: '#64748b'
+                      }
+                    }}
+                  >
+                    <MoreVertIcon sx={{ fontSize: 18 }} />
+                  </IconButton>
+                </Box>
+
+                {/* Task metadata */}
+                <Box sx={{ 
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 1.5,
+                  alignItems: 'center'
+                }}>
+                  {/* Due date */}
+                  {task.dueDate && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      <Box sx={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: '50%',
+                        bgcolor: isPast(parseISO(task.dueDate)) && !task.completed 
+                          ? '#ef4444' 
+                          : '#3b82f6'
+                      }} />
+                      <Typography variant="body2" sx={{ 
+                        fontSize: '0.8rem',
+                        color: isPast(parseISO(task.dueDate)) && !task.completed 
+                          ? '#ef4444' 
+                          : '#64748b',
+                        fontWeight: 500
+                      }}>
+                        {formatDate(task.dueDate)}
+                      </Typography>
+                    </Box>
+                  )}
+                  
+                  {/* Assignee */}
+                  {task.assignee && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                      <Avatar sx={{ 
+                        width: 20, 
+                        height: 20, 
+                        fontSize: '0.7rem', 
+                        bgcolor: '#3b82f6',
+                        fontWeight: 600
+                      }}>
+                        {task.assignee.charAt(0).toUpperCase()}
+                      </Avatar>
+                      <Typography variant="body2" sx={{ 
+                        fontSize: '0.8rem', 
+                        color: '#64748b',
+                        fontWeight: 500
+                      }}>
+                        {task.assignee.split(' ')[0]}
+                      </Typography>
+                    </Box>
+                  )}
+
+                  {/* Priority */}
+                  <Box sx={{
+                    px: 1.5,
+                    py: 0.5,
+                    borderRadius: 2,
+                    bgcolor: alpha(getPriorityColor(task.priority), 0.1),
+                    border: `1px solid ${alpha(getPriorityColor(task.priority), 0.2)}`
+                  }}>
+                    <Typography sx={{
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      textTransform: 'uppercase',
+                      color: getPriorityColor(task.priority),
+                      letterSpacing: '0.5px'
+                    }}>
+                      {task.priority}
+                    </Typography>
+                  </Box>
+
+                  {/* Tags */}
+                  {task.tags.length > 0 && (
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                      {task.tags.slice(0, 2).map((tag, tagIndex) => (
+                        <Box
+                          key={tagIndex}
+                          sx={{
+                            px: 1,
+                            py: 0.25,
+                            borderRadius: 1.5,
+                            bgcolor: '#f1f5f9',
+                            border: '1px solid #e2e8f0'
+                          }}
+                        >
+                          size="small" 
+                          onClick={(e) => handleMenuClick(e, task)}
+                          sx={{ 
+                            color: '#94a3b8',
+                            '&:hover': { 
+                              bgcolor: '#f1f5f9',
+                              color: '#64748b'
+                            }
+                          }}
+                        >
+                          <MoreVertIcon sx={{ fontSize: 18 }} />
+                        </IconButton>
+                      </Box>
+
+                      {/* Task metadata */}
+                      <Box sx={{ 
+                        display: 'flex',
+                        flexWrap: 'wrap',
+                        gap: 1.5,
+                        alignItems: 'center'
+                      }}>
+                        {/* Due date */}
+                        {task.dueDate && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            <Box sx={{
+                              width: 8,
+                              height: 8,
+                              borderRadius: '50%',
+                              bgcolor: isPast(parseISO(task.dueDate)) && !task.completed 
+                                ? '#ef4444' 
+                                : '#3b82f6'
+                            }} />
+                            <Typography variant="body2" sx={{ 
+                              fontSize: '0.8rem',
+                              color: isPast(parseISO(task.dueDate)) && !task.completed 
+                                ? '#ef4444' 
+                                : '#64748b',
+                              fontWeight: 500
+                            }}>
+                              {formatDate(task.dueDate)}
+                            </Typography>
+                          </Box>
+                        )}
+                        
+                        {/* Assignee */}
+                        {task.assignee && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
+                            <Avatar sx={{ 
+                              width: 20, 
+                              height: 20, 
+                              fontSize: '0.7rem', 
+                              bgcolor: '#3b82f6',
+                              fontWeight: 600
+                            }}>
+                              {task.assignee.charAt(0).toUpperCase()}
+                            </Avatar>
+                            <Typography variant="body2" sx={{ 
+                              fontSize: '0.8rem', 
+                              color: '#64748b',
+                              fontWeight: 500
+                            }}>
+                              {task.assignee.split(' ')[0]}
+                            </Typography>
+                          </Box>
+                        )}
+
+                        {/* Priority */}
+                        <Box sx={{
+                          px: 1.5,
+                          py: 0.5,
+                          borderRadius: 2,
+                          bgcolor: alpha(getPriorityColor(task.priority), 0.1),
+                          border: `1px solid ${alpha(getPriorityColor(task.priority), 0.2)}`
+                        }}>
+                          <Typography sx={{
+                            fontSize: '0.7rem',
+                            fontWeight: 700,
+                            textTransform: 'uppercase',
+                            color: getPriorityColor(task.priority),
+                            letterSpacing: '0.5px'
+                          }}>
+                            {task.priority}
+                          </Typography>
+                        </Box>
+
+                        {/* Tags */}
+                        {task.tags.length > 0 && (
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                            {task.tags.slice(0, 2).map((tag, tagIndex) => (
+                              <Box
+                                key={tagIndex}
+                                sx={{
+                                  px: 1,
+                                  py: 0.25,
+                                  borderRadius: 1.5,
+                                  bgcolor: '#f1f5f9',
+                                  border: '1px solid #e2e8f0'
+                                }}
+                              >
+                                <Typography sx={{
+                                  fontSize: '0.7rem',
+                                  color: '#64748b',
+                                  fontWeight: 500
+                                }}>
+                                  {tag}
+                                </Typography>
+                              </Box>
+                            ))}
+                            {task.tags.length > 2 && (
+                              <Typography variant="caption" sx={{ 
+                                fontSize: '0.7rem', 
+                                color: '#94a3b8',
+                                fontWeight: 500
+                              }}>
+                                +{task.tags.length - 2}
+                              </Typography>
+                            )}
+                          </Box>
+                        )}
+                      </Box>
+                    </Box>
+                  </Card>
+                ))}
+              </Box>
+            )}
+          </Box>
+        )}
+      </Box>
+
+
+      {/* Menu */}
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        <MenuItem onClick={() => {
+          handleMenuClose();
+          setTaskToEdit(selectedTask);
+          setEditDialogOpen(true);
+        }}>
+          <EditIcon sx={{ mr: 1, fontSize: 18 }} />
+          Edit Task
+        </MenuItem>
+        <MenuItem onClick={() => {
+          handleMenuClose();
+          setTaskToView(selectedTask);
+          setDetailsDialogOpen(true);
+        }}>
+          <InfoIcon sx={{ mr: 1, fontSize: 18 }} />
+          View Details
+        </MenuItem>
+        <Divider />
+        <MenuItem onClick={() => {
+          if (selectedTask) {
+            handleTaskDelete(selectedTask.id);
+          }
+          handleMenuClose();
+        }} sx={{ color: 'error.main' }}>
+          <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
+          Delete Task
+        </MenuItem>
+      </Menu>
+
+
+      {/* Task Edit Dialog */}
+      <TaskEditDialog
+        open={editDialogOpen}
+        task={taskToEdit}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setTaskToEdit(null);
+        }}
+        onSave={async (task: Task) => {
+          if (task.id) {
+            await handleTaskUpdate(task.id, task);
+          } else {
+            const newTask = await createTask(task);
+            setTasks(prev => [newTask, ...prev]);
+            showSnackbar('Task created successfully');
+          }
+        }}
+        onDelete={handleTaskDelete}
+      />
+
+      {/* Task Details Dialog */}
+      <TaskDetailsDialog
+        open={detailsDialogOpen}
+        task={taskToView}
+        onClose={() => {
+          setDetailsDialogOpen(false);
+          setTaskToView(null);
+        }}
+        onEdit={() => {
+          setDetailsDialogOpen(false);
+          setTaskToEdit(taskToView);
+          setEditDialogOpen(true);
+        }}
+      />
+
+      {/* Date Picker Dialog */}
+      <Dialog
+        open={datePickerOpen}
+        onClose={() => {
+          setDatePickerOpen(false);
+          setDatePickerTaskId(null);
+        }}
+        PaperProps={{
+          sx: {
+            bgcolor: theme.palette.mode === 'dark' ? '#1F2937' : undefined,
+            color: theme.palette.mode === 'dark' ? '#F9FAFB' : undefined,
+            borderRadius: { xs: 2, sm: 3 },
+            boxShadow: theme.palette.mode === 'dark' ? '0 12px 40px rgba(0, 0, 0, 0.6)' : '0 8px 32px rgba(0, 0, 0, 0.2)',
+            border: theme.palette.mode === 'dark' ? '1px solid #4B5563' : 'none',
+            maxWidth: { xs: '95%', sm: '400px' },
+            width: '100%',
+            mx: 'auto'
+          }
+        }}
+      >
+        <DialogTitle>Set Due Date</DialogTitle>
+        <DialogContent>
+          <TextField
+            type="datetime-local"
+            fullWidth
+            variant="outlined"
+            onChange={(e) => {
+              if (datePickerTaskId) {
+                handleDateChange(datePickerTaskId, e.target.value);
+                setDatePickerOpen(false);
+                setDatePickerTaskId(null);
+              }
+            }}
+            sx={{ 
+              mt: 2,
+              '& .MuiOutlinedInput-root': {
+                bgcolor: theme.palette.mode === 'dark' ? '#1F2937 !important' : undefined,
+                '& .MuiOutlinedInput-notchedOutline': {
+                  borderColor: theme.palette.mode === 'dark' ? '#4B5563' : undefined,
+                },
+                '&:hover .MuiOutlinedInput-notchedOutline': {
+                  borderColor: theme.palette.mode === 'dark' ? '#6366F1' : undefined,
+                },
+                '&.Mui-focused .MuiOutlinedInput-notchedOutline': {
+                  borderColor: theme.palette.mode === 'dark' ? '#818CF8' : undefined,
+                  boxShadow: theme.palette.mode === 'dark' ? '0 0 0 3px rgba(129, 140, 248, 0.3)' : undefined,
+                }
+              }
+            }}
+            InputLabelProps={{
+              shrink: true,
+            }}
+          />
+        </DialogContent>
+        <DialogActions sx={{ px: 3, py: 2 }}>
+          <Button 
+            onClick={() => {
+              setDatePickerOpen(false);
+              setDatePickerTaskId(null);
+            }}
+            sx={{
+              color: theme.palette.mode === 'dark' ? '#94A3B8' : undefined,
+              '&:hover': {
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(148, 163, 184, 0.1)' : undefined,
+              }
+            }}
+          >
+            Cancel
+          </Button>
+          {datePickerTaskId && (
+            <Button 
+              onClick={() => {
+                handleDateChange(datePickerTaskId, '');
+                setDatePickerOpen(false);
+                setDatePickerTaskId(null);
+              }} 
+              color="error"
+              sx={{
+                bgcolor: theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.1)' : undefined,
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(248, 113, 113, 0.2)' : undefined,
+                }
+              }}
+            >
+              Remove Date
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
+
+/* ... */
+      {/* Priority Menu */}
+      <Menu
+        anchorEl={priorityAnchorEl}
+        open={priorityMenuOpen}
+        onClose={() => {
+          setPriorityMenuOpen(false);
+          setPriorityAnchorEl(null);
+          setPriorityTaskId(null);
+        }}
+        PaperProps={{
+          sx: {
+            bgcolor: theme.palette.mode === 'dark' ? '#1F2937' : undefined,
+            border: theme.palette.mode === 'dark' ? '1px solid #4B5563' : undefined,
+            borderRadius: '12px',
+            boxShadow: theme.palette.mode === 'dark' ? '0 8px 24px rgba(0, 0, 0, 0.5)' : undefined,
+            minWidth: '180px',
+            overflow: 'visible',
+            mt: 0.5,
+            '&:before': {
+              content: '""',
+              display: 'block',
+              position: 'absolute',
+              top: 0,
+              right: 14,
+              width: 10,
+              height: 10,
+              bgcolor: theme.palette.mode === 'dark' ? '#1F2937' : 'white',
+              transform: 'translateY(-50%) rotate(45deg)',
+              borderLeft: theme.palette.mode === 'dark' ? '1px solid #4B5563' : undefined,
+              borderTop: theme.palette.mode === 'dark' ? '1px solid #4B5563' : undefined,
+              zIndex: 0,
+            },
+          },
+        }}
+        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
+        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+      >
+        {['low', 'medium', 'high', 'urgent'].map((priority) => (
+          <MenuItem 
+            key={priority}
+            onClick={() => priorityTaskId && handlePriorityChange(priorityTaskId, priority as Priority)}
+            sx={{
+              color: theme.palette.mode === 'dark' ? getPriorityColor(priority) : getPriorityColor(priority),
+              py: 1.5,
+              px: 2,
+              borderRadius: '8px',
+              mx: 0.5,
+              my: 0.5,
+              '&:hover': {
+                bgcolor: theme.palette.mode === 'dark' ? 
+                  alpha(getPriorityColor(priority), 0.15) : 
+                  alpha(getPriorityColor(priority), 0.1)
+              },
+              '&.Mui-selected': {
+                bgcolor: theme.palette.mode === 'dark' ? 
+                  alpha(getPriorityColor(priority), 0.2) : 
+                  alpha(getPriorityColor(priority), 0.15),
+                '&:hover': {
+                  bgcolor: theme.palette.mode === 'dark' ? 
+                    alpha(getPriorityColor(priority), 0.25) : 
+                    alpha(getPriorityColor(priority), 0.2)
+                }
+              }
+            }}
+          >
+            {getPriorityIcon(priority)}
+            <Typography 
+              variant="body2" 
+              sx={{ 
+                ml: 1.5,
+                fontWeight: 500,
+                fontSize: { xs: '0.875rem', sm: '0.9rem' }
+              }}
+            >
+              {priority.charAt(0).toUpperCase() + priority.slice(1)}
+            </Typography>
+          </MenuItem>
+        ))}
+      </Menu>
+
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+
+      {/* Add Task FAB for mobile */}
+      {isMobile && (
+        <Fab
+          color="primary"
+          aria-label="add task"
+          sx={{
+            position: 'fixed',
+            bottom: 100,
+            right: 16,
+            background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
+          }}
+          onClick={() => {
+            setTaskToEdit(null);
+            setEditDialogOpen(true);
+          }}
+        >
+          <AddIcon />
+        </Fab>
+      )}
+    </Box>
+  );
+};
+
+export default EnhancedTaskManager;

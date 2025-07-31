@@ -1,61 +1,89 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import {
-  Box,
+import React, { useState, useEffect, useRef } from 'react';
+import { 
+  Box, 
+  Typography, 
+  Button, 
+  TextField, 
+  Checkbox, 
+  IconButton, 
+  Menu, 
+  MenuItem, 
+  Tooltip, 
+  Dialog, 
+  DialogTitle, 
+  DialogContent, 
+  DialogActions,
   Paper,
-  Typography,
-  Table,
-  TableBody,
-  TableCell,
-  TableContainer,
-  TableHead,
-  TableRow,
-  Checkbox,
-  IconButton,
+  Card,
+  CardContent,
   Chip,
-  TableSortLabel,
-  Tooltip,
-  useMediaQuery,
   useTheme,
-  TextField,
-  InputAdornment,
-  Button,
-  Menu,
-  MenuItem,
-  Avatar,
-  Divider,
-  Stack,
   alpha,
-  Card
+  useMediaQuery,
+  TableContainer,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  TablePagination,
+  Snackbar,
+  Alert,
+  Divider,
+  CircularProgress,
+  InputAdornment,
+  OutlinedInput,
+  FormControl,
+  InputLabel,
+  Select,
+  Drawer,
+  Fab,
+  Badge,
+  Avatar,
+  Stack
 } from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
-import MoreVertIcon from '@mui/icons-material/MoreVert';
-import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import InfoIcon from '@mui/icons-material/Info';
+import EditIcon from '@mui/icons-material/Edit';
+import AddIcon from '@mui/icons-material/Add';
+import SearchIcon from '@mui/icons-material/Search';
+import FilterListIcon from '@mui/icons-material/FilterList';
+import SortIcon from '@mui/icons-material/Sort';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
-import PersonIcon from '@mui/icons-material/Person';
 import FlagIcon from '@mui/icons-material/Flag';
+import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
+import CloseIcon from '@mui/icons-material/Close';
+import CheckIcon from '@mui/icons-material/Check';
+import InfoIcon from '@mui/icons-material/Info';
+import PersonIcon from '@mui/icons-material/Person';
 import LocalOfferIcon from '@mui/icons-material/LocalOffer';
 import AccessTimeIcon from '@mui/icons-material/AccessTime';
-import MicIcon from '@mui/icons-material/Mic';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { Task } from '@/types/task';
-import { getTasks } from '@/lib/supabase/client';
+import { Priority } from '@/components/tasks/PrioritySelect';
+import { getTasks, createTask, updateTask, deleteTask } from '@/lib/supabase/client';
 import TaskInput from '../tasks/TaskInput';
-import VoiceRecorder from '../voice/VoiceRecorder';
+import TaskEditDialog from '../tasks/TaskEditDialog';
+import TaskDetailsDialog from '../tasks/TaskDetailsDialog';
+import TaskFilters from '../tasks/TaskFilters';
+import { useThemeContext } from '../../contexts/ThemeContext';
 
 interface EnhancedTaskManagerProps {
   onTranscript: (text: string) => void;
   transcriptionService?: string;
+  transcript?: string;
 }
 
 const EnhancedTaskManager: React.FC<EnhancedTaskManagerProps> = ({
   onTranscript,
-  transcriptionService
+  transcriptionService,
+  transcript
 }) => {
   const theme = useTheme();
+  const { mode } = useThemeContext();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isSmallMobile = useMediaQuery(theme.breakpoints.down('xs'));
   const [tasks, setTasks] = useState<Task[]>([]);
@@ -63,53 +91,176 @@ const EnhancedTaskManager: React.FC<EnhancedTaskManagerProps> = ({
   const [statusFilter, setStatusFilter] = useState('all');
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
-  const [isRecording, setIsRecording] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [taskToView, setTaskToView] = useState<Task | null>(null);
+  const [snackbar, setSnackbar] = useState<{open: boolean, message: string, severity: 'success' | 'error'}>({ open: false, message: '', severity: 'success' });
+  const [loading, setLoading] = useState(false);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [editingField, setEditingField] = useState<string | null>(null);
+  const [editValue, setEditValue] = useState<string>('');
+  const [currentTranscript, setCurrentTranscript] = useState<string>('');
+  const [datePickerOpen, setDatePickerOpen] = useState(false);
+  const [datePickerTaskId, setDatePickerTaskId] = useState<string | null>(null);
+  const [priorityMenuOpen, setPriorityMenuOpen] = useState(false);
+  const [priorityAnchorEl, setPriorityAnchorEl] = useState<HTMLElement | null>(null);
+  const [priorityTaskId, setPriorityTaskId] = useState<string | null>(null);
 
   useEffect(() => {
     loadTasks();
   }, []);
 
+  // Update local transcript when prop changes
+  useEffect(() => {
+    if (transcript) {
+      console.log('EnhancedTaskManager: Received transcript prop:', transcript);
+      setCurrentTranscript(transcript);
+    }
+  }, [transcript]);
+
+  const handleTranscript = (transcript: string) => {
+    console.log('EnhancedTaskManager: handleTranscript called with:', transcript);
+    setCurrentTranscript(transcript);
+    console.log('EnhancedTaskManager: setCurrentTranscript called, new state should be:', transcript);
+    onTranscript(transcript); // Pass it up to parent
+  };
+
   const loadTasks = async () => {
+    setLoading(true);
     try {
       const fetchedTasks = await getTasks();
       
-      // Generate 200 mock tasks for demonstration
-      const mockTasks = Array.from({ length: 200 }, (_, index) => ({
-        id: `mock-${index + 1}`,
-        title: `Task ${index + 1}: ${['Complete project documentation', 'Review pull requests', 'Update user interface', 'Fix critical bugs', 'Write unit tests', 'Deploy to production', 'Analyze performance metrics', 'Refactor legacy code', 'Setup CI/CD pipeline', 'Create API documentation'][index % 10]}`,
-        notes: `This is a sample note for task ${index + 1}`,
-        completed: Math.random() > 0.7,
-        dueDate: new Date(Date.now() + Math.random() * 30 * 24 * 60 * 60 * 1000 - 15 * 24 * 60 * 60 * 1000).toISOString(),
-        assignee: ['John Doe', 'Jane Smith', 'Bob Johnson', 'Alice Brown', 'Charlie Wilson', null][Math.floor(Math.random() * 6)],
-        priority: ['low', 'medium', 'high', 'urgent'][Math.floor(Math.random() * 4)] as any,
-        tags: [
-          ['frontend', 'react'],
-          ['backend', 'api'],
-          ['documentation', 'urgent'],
-          ['testing', 'qa'],
-          ['deployment', 'devops'],
-          ['bug', 'critical'],
-          ['feature', 'enhancement'],
-          ['refactor', 'technical-debt']
-        ][Math.floor(Math.random() * 8)],
-        createdAt: new Date(Date.now() - Math.random() * 7 * 24 * 60 * 60 * 1000).toISOString(),
-        updatedAt: new Date(Date.now() - Math.random() * 2 * 24 * 60 * 60 * 1000).toISOString()
-      }));
-      
-      setTasks([...fetchedTasks, ...mockTasks]);
+      // Only add mock data if no real tasks exist
+      if (fetchedTasks.length === 0) {
+        // Generate some demo tasks for first time users
+        const demoTasks = [
+          {
+            id: 'demo-1',
+            title: 'Welcome to Task Voice Manager!',
+            notes: 'This is a demo task. Try editing it or creating new ones with voice commands.',
+            completed: false,
+            dueDate: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString(),
+            assignee: 'You',
+            priority: 'medium' as any,
+            tags: ['demo', 'welcome'],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          },
+          {
+            id: 'demo-2',
+            title: 'Try voice commands',
+            notes: 'Click the microphone and say something like "Create a task to review the quarterly report by next Friday"',
+            completed: false,
+            dueDate: null,
+            assignee: null,
+            priority: 'high' as any,
+            tags: ['voice', 'demo'],
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }
+        ];
+        
+        // Save demo tasks to localStorage immediately
+        if (typeof window !== 'undefined' && (process.env.NODE_ENV === 'development' || window.location.search.includes('skipauth'))) {
+          localStorage.setItem('dev_tasks', JSON.stringify(demoTasks));
+        }
+        
+        setTasks(demoTasks);
+      } else {
+        setTasks(fetchedTasks);
+      }
     } catch (error) {
       console.error('Error loading tasks:', error);
+      setSnackbar({ open: true, message: 'Error loading tasks', severity: 'error' });
+    } finally {
+      setLoading(false);
     }
   };
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>, task: Task) => {
-    setAnchorEl(event.currentTarget);
-    setSelectedTask(task);
+  const handleTaskUpdate = async (taskId: string, updates: Partial<Task>) => {
+    try {
+      await updateTask(taskId, updates);
+      await loadTasks();
+      setSnackbar({ open: true, message: 'Task updated successfully', severity: 'success' });
+    } catch (error) {
+      console.error('Error updating task:', error);
+      setSnackbar({ open: true, message: 'Error updating task', severity: 'error' });
+    }
   };
 
-  const handleMenuClose = () => {
-    setAnchorEl(null);
-    setSelectedTask(null);
+  const handleTaskComplete = async (task: Task) => {
+    await handleTaskUpdate(task.id, { completed: !task.completed });
+  };
+
+  const handleTaskDelete = async (taskId: string) => {
+    if (window.confirm('Are you sure you want to delete this task?')) {
+      try {
+        await deleteTask(taskId);
+        await loadTasks();
+        setSnackbar({ open: true, message: 'Task deleted successfully', severity: 'success' });
+      } catch (error) {
+        console.error('Error deleting task:', error);
+        setSnackbar({ open: true, message: 'Error deleting task', severity: 'error' });
+      }
+    }
+  };
+
+  const startInlineEdit = (taskId: string, field: string, currentValue: string) => {
+    setEditingTaskId(taskId);
+    setEditingField(field);
+    setEditValue(currentValue);
+  };
+
+  const saveInlineEdit = async () => {
+    if (editingTaskId && editingField) {
+      try {
+        await handleTaskUpdate(editingTaskId, { [editingField]: editValue });
+        setEditingTaskId(null);
+        setEditingField(null);
+        setEditValue('');
+      } catch (error) {
+        console.error('Error saving inline edit:', error);
+      }
+    }
+  };
+
+  const cancelInlineEdit = () => {
+    setEditingTaskId(null);
+    setEditingField(null);
+    setEditValue('');
+  };
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      saveInlineEdit();
+    } else if (e.key === 'Escape') {
+      cancelInlineEdit();
+    }
+  };
+
+  const isEditing = (taskId: string, field: string) => {
+    return editingTaskId === taskId && editingField === field;
+  };
+
+  const handleDateChange = async (taskId: string, newDate: string) => {
+    try {
+      const isoDate = newDate ? new Date(newDate).toISOString() : null;
+      await handleTaskUpdate(taskId, { dueDate: isoDate });
+    } catch (error) {
+      console.error('Error updating date:', error);
+    }
+  };
+
+  const handlePriorityChange = async (taskId: string, newPriority: Priority) => {
+    try {
+      await handleTaskUpdate(taskId, { priority: newPriority });
+      setPriorityMenuOpen(false);
+      setPriorityAnchorEl(null);
+      setPriorityTaskId(null);
+    } catch (error) {
+      console.error('Error updating priority:', error);
+    }
   };
 
   const getPriorityColor = (priority: string) => {
@@ -135,16 +286,15 @@ const EnhancedTaskManager: React.FC<EnhancedTaskManagerProps> = ({
     return format(date, 'MMM d, yyyy');
   };
 
-  const filterButtons = [
-    { id: 'all', label: 'All', color: '#1976d2', count: tasks.length },
-    { id: 'today', label: 'Today', color: '#2e7d32', count: tasks.filter(t => t.dueDate && isToday(parseISO(t.dueDate))).length },
-    { id: 'tomorrow', label: 'Tomorrow', color: '#ed6c02', count: tasks.filter(t => t.dueDate && isTomorrow(parseISO(t.dueDate))).length },
-    { id: 'overdue', label: 'Overdue', color: '#d32f2f', count: tasks.filter(t => t.dueDate && isPast(parseISO(t.dueDate)) && !t.completed).length },
-    { id: 'completed', label: 'Completed', color: '#2e7d32', count: tasks.filter(t => t.completed).length },
-  ];
-
   const filteredTasks = tasks.filter(task => {
-    const matchesSearch = task.title.toLowerCase().includes(searchFilter.toLowerCase());
+    const searchLower = searchFilter.toLowerCase();
+    const matchesSearch = searchFilter === '' || 
+      task.title.toLowerCase().includes(searchLower) ||
+      (task.notes && task.notes.toLowerCase().includes(searchLower)) ||
+      (task.assignee && task.assignee.toLowerCase().includes(searchLower)) ||
+      task.priority.toLowerCase().includes(searchLower) ||
+      task.tags.some(tag => tag.toLowerCase().includes(searchLower));
+      
     const matchesStatus = statusFilter === 'all' || 
       (statusFilter === 'today' && task.dueDate && isToday(parseISO(task.dueDate))) ||
       (statusFilter === 'tomorrow' && task.dueDate && isTomorrow(parseISO(task.dueDate))) ||
@@ -155,414 +305,300 @@ const EnhancedTaskManager: React.FC<EnhancedTaskManagerProps> = ({
 
   return (
     <Box sx={{ 
-      bgcolor: '#ffffff',
+      bgcolor: theme.palette.background.default,
+      color: theme.palette.text.primary,
       height: '100vh',
       display: 'flex',
       flexDirection: 'column',
       width: '100%',
-      maxWidth: isMobile ? '100%' : '1400px',
-      mx: 'auto',
-      px: { xs: 0, sm: 2, md: 3 },
-      overflow: 'hidden'
+      maxWidth: '100%',
+      px: { xs: 1, sm: 2, md: 3 },
+      overflow: 'hidden',
+      transition: 'background-color 0.3s ease, color 0.3s ease'
     }}>
-      {/* Fixed Header Section */}
+
+      {/* Task Input Section */}
       <Box sx={{ 
         flexShrink: 0,
-        bgcolor: '#ffffff',
-        borderBottom: '1px solid',
-        borderColor: alpha(theme.palette.divider, 0.1),
-        position: 'sticky',
-        top: 0,
-        zIndex: 100
+        mb: 1.5,
+        mx: 2
       }}>
         {!isMobile && (
-          /* Desktop Task Input */
           <Box sx={{ 
-            p: 1.5,
-            mt: 2,
-            mb: 2
+            mb: 1.5
           }}>
             <TaskInput 
               onTaskAdded={loadTasks}
-              transcript=""
+              transcript={currentTranscript}
             />
           </Box>
         )}
 
         {/* Filter Section */}
-        {isMobile ? (
-          // Modern mobile filters with 2-row grid
-          <Box sx={{ 
-            p: 2,
-            bgcolor: '#e2e8f0',
-            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
-          }}>
-            {/* Search bar */}
-            <TextField
-              size="small"
-              placeholder="Search tasks..."
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              fullWidth
-              sx={{ 
-                mb: 2,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 3,
-                  bgcolor: '#ffffff',
-                  height: 44,
-                  fontSize: '0.9rem',
-                  border: '1px solid #cbd5e1',
-                  boxShadow: '0 2px 4px rgba(0,0,0,0.08)',
-                  '&:hover': {
-                    borderColor: '#94a3b8'
-                  },
-                  '&.Mui-focused': {
-                    borderColor: '#3b82f6',
-                    boxShadow: '0 0 0 3px rgba(59, 130, 246, 0.1)'
-                  }
-                }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: 20, color: '#475569' }} />
-                  </InputAdornment>
-                ),
-              }}
-            />
-            
-            {/* Single row filters */}
-            <Box sx={{ 
-              display: 'flex',
-              gap: 0.75,
-              width: '100%',
-              justifyContent: 'space-between'
-            }}>
-              {filterButtons.slice(0, 5).map((filter) => (
-                <Button
-                  key={filter.id}
-                  variant={statusFilter === filter.id ? 'contained' : 'outlined'}
-                  onClick={() => setStatusFilter(filter.id)}
-                  size="small"
-                  sx={{
-                    borderRadius: 1.5,
-                    px: 0.5,
-                    py: 0.25,
-                    fontSize: '0.6rem',
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    border: '1px solid',
-                    borderColor: statusFilter === filter.id ? filter.color : '#94a3b8',
-                    bgcolor: statusFilter === filter.id ? filter.color : '#ffffff',
-                    color: statusFilter === filter.id ? '#ffffff' : '#374151',
-                    minWidth: 0,
-                    flex: 1,
-                    height: 26,
-                    boxShadow: statusFilter === filter.id ? `0 1px 3px ${alpha(filter.color, 0.3)}` : '0 1px 2px rgba(0,0,0,0.08)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 0.125,
-                    '&:hover': {
-                      borderColor: filter.color,
-                      bgcolor: statusFilter === filter.id ? filter.color : '#f8fafc',
-                      boxShadow: statusFilter === filter.id ? `0 2px 4px ${alpha(filter.color, 0.3)}` : '0 1px 3px rgba(0,0,0,0.12)'
-                    },
-                    transition: 'all 0.15s ease-in-out'
-                  }}
-                >
-                  <Typography sx={{ 
-                    fontSize: '0.55rem', 
-                    fontWeight: 600, 
-                    lineHeight: 1,
-                    color: 'inherit'
-                  }}>
-                    {filter.label}
-                  </Typography>
-                  <Typography sx={{ 
-                    fontSize: '0.5rem', 
-                    fontWeight: 700,
-                    lineHeight: 1,
-                    opacity: statusFilter === filter.id ? 0.9 : 0.7,
-                    color: 'inherit'
-                  }}>
-                    {filter.count}
-                  </Typography>
-                </Button>
-              ))}
-            </Box>
-          </Box>
-        ) : (
-          // Desktop filters - original layout
-          <Box sx={{ 
-            p: 1.5,
-            mb: 2, 
-            display: 'flex', 
-            flexDirection: 'row',
-            gap: 2,
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}>
-            <Stack direction="row" spacing={1} flexWrap="wrap">
-              {filterButtons.map((filter) => (
-                <Button
-                  key={filter.id}
-                  variant={statusFilter === filter.id ? 'contained' : 'outlined'}
-                  onClick={() => setStatusFilter(filter.id)}
-                  size="small"
-                  sx={{
-                    borderRadius: 4,
-                    px: 1.2,
-                    py: 0.4,
-                    fontSize: '0.8rem',
-                    fontWeight: 600,
-                    textTransform: 'none',
-                    border: '1px solid',
-                    borderColor: statusFilter === filter.id ? filter.color : alpha(filter.color, 0.3),
-                    bgcolor: statusFilter === filter.id ? filter.color : 'transparent',
-                    color: statusFilter === filter.id ? '#fff' : filter.color,
-                    '&:hover': {
-                      bgcolor: statusFilter === filter.id ? filter.color : alpha(filter.color, 0.1),
-                      borderColor: filter.color,
-                    },
-                    minWidth: 'auto',
-                    height: 32,
-                  }}
-                >
-                  {filter.label}
-                  <Chip 
-                    label={filter.count} 
-                    size="small" 
-                    sx={{ 
-                      ml: 0.5,
-                      height: 16,
-                      fontSize: '0.7rem',
-                      bgcolor: statusFilter === filter.id ? 'rgba(255,255,255,0.2)' : alpha(filter.color, 0.1),
-                      color: statusFilter === filter.id ? '#fff' : filter.color,
-                      fontWeight: 600
-                    }} 
-                  />
-                </Button>
-              ))}
-            </Stack>
-
-            <TextField
-              size="small"
-              placeholder="Search tasks..."
-              value={searchFilter}
-              onChange={(e) => setSearchFilter(e.target.value)}
-              sx={{ 
-                minWidth: 200,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  bgcolor: '#f8f9fa',
-                  border: '1px solid',
-                  borderColor: alpha(theme.palette.divider, 0.2),
-                  boxShadow: '0 1px 3px rgba(0,0,0,0.08)',
-                  height: 36,
-                }
-              }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon sx={{ fontSize: 18 }} color="action" />
-                  </InputAdornment>
-                ),
-              }}
-            />
-          </Box>
-        )}
+        <Box>
+          <TaskFilters
+            searchFilter={searchFilter}
+            statusFilter={statusFilter}
+            onSearchChange={setSearchFilter}
+            onStatusFilterChange={setStatusFilter}
+          />
+        </Box>
       </Box>
 
-      {/* Scrollable Table Section */}
+      {/* Tasks Section */}
       <Box sx={{ 
         flex: 1,
-        px: isMobile ? 0 : 1.5,
-        pb: isMobile ? 2 : 1.5,
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column'
       }}>
-        {!isMobile ? (
+        {loading ? (
+          <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', flex: 1 }}>
+            <CircularProgress />
+          </Box>
+        ) : filteredTasks.length === 0 ? (
+          <Box sx={{ 
+            display: 'flex', 
+            flexDirection: 'column',
+            justifyContent: 'center', 
+            alignItems: 'center', 
+            flex: 1,
+            gap: 2
+          }}>
+            <Typography variant="h6" color="text.secondary">
+              No tasks found
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {searchFilter || statusFilter !== 'all' 
+                ? 'Try adjusting your filters or search term' 
+                : 'Create your first task using the input above or voice commands'}
+            </Typography>
+          </Box>
+        ) : (
           // Desktop Table View
-          <Card sx={{ 
+          <Box sx={{ 
+            mx: 2, 
+            flex: 1, 
+            display: 'flex', 
+            flexDirection: 'column',
+            borderRadius: '12px',
             border: '1px solid',
-            borderColor: alpha(theme.palette.divider, 0.2),
-            boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-            borderRadius: 2,
+            borderColor: theme.palette.divider,
+            bgcolor: theme.palette.background.paper,
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 4px 20px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.6)' 
+              : '0 4px 20px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.12)',
             overflow: 'hidden'
           }}>
-            <TableContainer sx={{ 
-              maxHeight: 'calc(100vh - 250px)',
-              overflow: 'auto'
-            }}>
-              <Table stickyHeader>
-            <TableHead>
-              <TableRow sx={{ 
-                bgcolor: theme.palette.primary.main,
-                '& .MuiTableCell-head': {
-                  color: '#ffffff',
-                  fontWeight: 700,
-                  fontSize: '0.875rem',
-                  py: 1.5,
-                  borderBottom: 'none',
-                  bgcolor: theme.palette.primary.main
-                }
-              }}>
-                <TableCell padding="checkbox" sx={{ width: '60px' }}>
-                  <Checkbox sx={{ color: 'rgba(255,255,255,0.7)' }} />
-                </TableCell>
-                <TableCell sx={{ width: '35%' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <LocalOfferIcon sx={{ fontSize: 18 }} />
-                    Task
-                  </Box>
-                </TableCell>
-                <TableCell sx={{ width: '15%' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <CalendarTodayIcon sx={{ fontSize: 18 }} />
-                    Due Date
-                  </Box>
-                </TableCell>
-                <TableCell sx={{ width: '15%' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <PersonIcon sx={{ fontSize: 18 }} />
-                    Assignee
-                  </Box>
-                </TableCell>
-                <TableCell sx={{ width: '12%' }}>
-                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                    <FlagIcon sx={{ fontSize: 18 }} />
-                    Priority
-                  </Box>
-                </TableCell>
-                <TableCell sx={{ width: '13%' }}>Tags</TableCell>
-                <TableCell sx={{ width: '10%' }}>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredTasks.length === 0 ? (
+            {/* Static Table Header */}
+            <Table sx={{ tableLayout: 'fixed' }}>
+              <TableHead>
                 <TableRow>
-                  <TableCell colSpan={7} sx={{ textAlign: 'center', py: 8 }}>
-                    <Typography variant="h6" color="text.secondary" gutterBottom>
-                      No tasks found
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {searchFilter ? "Try adjusting your search terms" : "Add your first task to get started"}
-                    </Typography>
+                  <TableCell 
+                    sx={{ 
+                      bgcolor: mode === 'dark' ? '#1e1e1e' : theme.palette.primary.main,
+                      color: mode === 'dark' ? theme.palette.text.primary : '#ffffff',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      width: '40%'
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CheckIcon fontSize="small" />
+                      Task
+                    </Box>
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
+                      bgcolor: mode === 'dark' ? '#1e1e1e' : theme.palette.primary.main,
+                      color: mode === 'dark' ? theme.palette.text.primary : '#ffffff',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      width: '12%'
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <CalendarTodayIcon fontSize="small" />
+                      Due Date
+                    </Box>
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
+                      bgcolor: mode === 'dark' ? '#1e1e1e' : theme.palette.primary.main,
+                      color: mode === 'dark' ? theme.palette.text.primary : '#ffffff',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      width: '12%'
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <PersonIcon fontSize="small" />
+                      Assignee
+                    </Box>
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
+                      bgcolor: mode === 'dark' ? '#1e1e1e' : theme.palette.primary.main,
+                      color: mode === 'dark' ? theme.palette.text.primary : '#ffffff',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      width: '10%'
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <FlagIcon fontSize="small" />
+                      Priority
+                    </Box>
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
+                      bgcolor: mode === 'dark' ? '#1e1e1e' : theme.palette.primary.main,
+                      color: mode === 'dark' ? theme.palette.text.primary : '#ffffff',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      width: '12%'
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                      <LocalOfferIcon fontSize="small" />
+                      Tags
+                    </Box>
+                  </TableCell>
+                  <TableCell 
+                    sx={{ 
+                      bgcolor: mode === 'dark' ? '#1e1e1e' : theme.palette.primary.main,
+                      color: mode === 'dark' ? theme.palette.text.primary : '#ffffff',
+                      fontWeight: 600,
+                      fontSize: '0.875rem',
+                      width: '14%'
+                    }}
+                  >
+                    Actions
                   </TableCell>
                 </TableRow>
-              ) : (
-                filteredTasks.map((task, index) => (
-                  <TableRow
+              </TableHead>
+            </Table>
+            
+            {/* Scrollable Table Body */}
+            <Box sx={{ 
+              flex: 1, 
+              overflow: 'auto',
+              '&::-webkit-scrollbar': {
+                display: 'none'
+              },
+              '-ms-overflow-style': 'none',
+              'scrollbar-width': 'none'
+            }}>
+              <Table sx={{ tableLayout: 'fixed' }}>
+                <TableBody>
+                {filteredTasks.map((task) => (
+                  <TableRow 
                     key={task.id}
                     sx={{
-                      bgcolor: '#ffffff',
-                      borderBottom: '1px solid',
-                      borderColor: alpha(theme.palette.divider, 0.08),
+                      bgcolor: task.completed 
+                        ? alpha(theme.palette.success.main, 0.1)
+                        : 'transparent',
                       '&:hover': {
-                        bgcolor: '#ffffff',
-                        transform: 'translateY(-1px)',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                        bgcolor: alpha(theme.palette.primary.main, 0.05)
                       },
-                      '&:last-child': {
-                        borderBottom: 'none'
-                      },
-                      transition: 'all 0.2s ease-in-out',
                       height: 56,
                     }}
                   >
-                    <TableCell padding="checkbox">
-                      <Checkbox
-                        checked={task.completed}
-                        sx={{
-                          color: alpha(theme.palette.primary.main, 0.6),
-                          '&.Mui-checked': {
-                            color: theme.palette.primary.main,
-                          }
-                        }}
-                      />
-                    </TableCell>
-                    <TableCell>
-                      <Box>
-                        <Typography 
-                          variant="subtitle1" 
-                          sx={{ 
-                            fontWeight: 600,
-                            color: task.completed ? 'text.secondary' : 'text.primary',
-                            textDecoration: task.completed ? 'line-through' : 'none',
-                            mb: 0.5
+                    <TableCell padding="checkbox" sx={{ width: '40%' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Checkbox
+                          checked={task.completed}
+                          onChange={() => handleTaskComplete(task)}
+                          sx={{
+                            color: 'text.secondary',
+                            padding: '8px',
+                            '&.Mui-checked': {
+                              color: 'primary.main',
+                            },
+                            '& .MuiSvgIcon-root': {
+                              fontSize: '1.3rem',
+                            },
                           }}
-                        >
-                          {task.title}
-                        </Typography>
-                        {task.notes && (
-                          <Typography variant="caption" color="text.secondary">
-                            {task.notes.substring(0, 60)}...
+                        />
+                        <Box sx={{ minWidth: 0, flex: 1 }}>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontSize: { xs: '1rem', sm: '1.05rem' },
+                              fontWeight: 600,
+                              textDecoration: task.completed ? 'line-through' : 'none',
+                              color: task.completed 
+                                ? theme.palette.text.secondary
+                                : theme.palette.text.primary,
+                              opacity: task.completed ? 0.7 : 1,
+                              wordBreak: 'break-word',
+                              lineHeight: 1.4,
+                              letterSpacing: '-0.01em',
+                            }}
+                          >
+                            {task.title}
                           </Typography>
-                        )}
+                          {task.notes && (
+                            <Typography 
+                              variant="caption" 
+                              sx={{
+                                display: 'block',
+                                color: 'text.secondary',
+                                mt: 0.5
+                              }}
+                            >
+                              {task.notes.length > 60 ? task.notes.substring(0, 60) + '...' : task.notes}
+                            </Typography>
+                          )}
+                        </Box>
                       </Box>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ width: '12%' }}>
                       {task.dueDate ? (
                         <Chip
                           size="small"
                           label={formatDate(task.dueDate)}
-                          icon={<CalendarTodayIcon sx={{ fontSize: 14 }} />}
-                          sx={{
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            bgcolor: isPast(parseISO(task.dueDate)) && !task.completed 
-                              ? alpha('#d32f2f', 0.1) 
-                              : alpha(theme.palette.primary.main, 0.1),
-                            color: isPast(parseISO(task.dueDate)) && !task.completed 
-                              ? '#d32f2f' 
-                              : theme.palette.primary.main,
-                            border: '1px solid',
-                            borderColor: isPast(parseISO(task.dueDate)) && !task.completed 
-                              ? alpha('#d32f2f', 0.3) 
-                              : alpha(theme.palette.primary.main, 0.3),
-                          }}
+                          color={isPast(parseISO(task.dueDate)) && !task.completed ? 'error' : 'default'}
+                          sx={{ fontSize: '0.75rem' }}
                         />
                       ) : (
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary">
                           No due date
                         </Typography>
                       )}
                     </TableCell>
-                    <TableCell>
-                      {task.assignee ? (
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Avatar sx={{ width: 24, height: 24, fontSize: '0.75rem', bgcolor: theme.palette.primary.main }}>
-                            {task.assignee.charAt(0).toUpperCase()}
-                          </Avatar>
-                          <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                            {task.assignee}
-                          </Typography>
-                        </Box>
-                      ) : (
-                        <Typography variant="body2" color="text.secondary">
-                          Unassigned
+                    <TableCell sx={{ width: '12%' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Avatar
+                          sx={{ 
+                            width: 24, 
+                            height: 24, 
+                            fontSize: '0.75rem',
+                            bgcolor: theme.palette.primary.main 
+                          }}
+                        >
+                          {task.assignee ? task.assignee.charAt(0).toUpperCase() : '?'}
+                        </Avatar>
+                        <Typography variant="caption" color="text.primary">
+                          {task.assignee || 'Unassigned'}
                         </Typography>
-                      )}
+                      </Box>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ width: '10%' }}>
                       <Chip
                         size="small"
                         icon={getPriorityIcon(task.priority)}
-                        label={task.priority}
+                        label={task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
                         sx={{
-                          fontSize: '0.75rem',
-                          fontWeight: 600,
-                          textTransform: 'capitalize',
                           bgcolor: alpha(getPriorityColor(task.priority), 0.1),
                           color: getPriorityColor(task.priority),
-                          border: '1px solid',
-                          borderColor: alpha(getPriorityColor(task.priority), 0.3),
+                          fontWeight: 500,
+                          fontSize: '0.75rem'
                         }}
                       />
                     </TableCell>
-                    <TableCell>
-                      <Stack direction="row" spacing={0.5}>
+                    <TableCell sx={{ width: '12%' }}>
+                      <Stack direction="row" spacing={0.5} sx={{ flexWrap: 'wrap' }}>
                         {task.tags.slice(0, 2).map((tag, tagIndex) => (
                           <Chip
                             key={tagIndex}
@@ -586,317 +622,138 @@ const EnhancedTaskManager: React.FC<EnhancedTaskManagerProps> = ({
                         )}
                       </Stack>
                     </TableCell>
-                    <TableCell>
+                    <TableCell sx={{ width: '14%' }}>
                       <Stack direction="row" spacing={0.5}>
                         <Tooltip title="View Details">
-                          <IconButton size="small" sx={{ color: 'text.secondary' }}>
+                          <IconButton 
+                            size="small" 
+                            sx={{ color: 'text.secondary' }}
+                            onClick={() => {
+                              setTaskToView(task);
+                              setDetailsDialogOpen(true);
+                            }}
+                          >
                             <InfoIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                         <Tooltip title="Edit Task">
-                          <IconButton size="small" sx={{ color: 'text.secondary' }}>
+                          <IconButton 
+                            size="small" 
+                            sx={{ color: 'text.secondary' }}
+                            onClick={() => {
+                              setTaskToEdit(task);
+                              setEditDialogOpen(true);
+                            }}
+                          >
                             <EditIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
-                        <Tooltip title="More Options">
+                        <Tooltip title="Delete Task">
                           <IconButton 
                             size="small" 
-                            onClick={(e) => handleMenuClick(e, task)}
-                            sx={{ color: 'text.secondary' }}
+                            sx={{ color: 'error.main' }}
+                            onClick={() => handleTaskDelete(task.id)}
                           >
-                            <MoreVertIcon fontSize="small" />
+                            <DeleteIcon fontSize="small" />
                           </IconButton>
                         </Tooltip>
                       </Stack>
                     </TableCell>
                   </TableRow>
-                ))
-              )}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </Card>
-        ) : (
-          // Modern Mobile Card View
-          <Box sx={{ 
-            flex: 1,
-            height: 'calc(100vh - 240px)',
-            overflowY: 'auto',
-            overflowX: 'hidden',
-            px: 3,
-            py: 1,
-            bgcolor: '#f1f5f9'
-          }}>
-            {filteredTasks.length === 0 ? (
-              <Box sx={{ 
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                justifyContent: 'center',
-                minHeight: 300,
-                textAlign: 'center'
-              }}>
-                <Typography variant="h6" color="text.secondary" gutterBottom>
-                  No tasks found
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {searchFilter ? "Try adjusting your search terms" : "Add your first task to get started"}
-                </Typography>
-              </Box>
-            ) : (
-              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.25 }}>
-                {filteredTasks.map((task, index) => (
-                  <Card 
-                    key={task.id}
-                    elevation={2}
-                    sx={{
-                      bgcolor: '#ffffff',
-                      borderRadius: 3,
-                      border: '1px solid #d1d5db',
-                      overflow: 'hidden',
-                      boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-                      transition: 'all 0.2s ease-in-out',
-                      minHeight: 140,
-                      maxHeight: 140,
-                      display: 'flex',
-                      flexDirection: 'column',
-                      '&:active': {
-                        transform: 'translateY(1px)',
-                        boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                        borderColor: '#3b82f6'
-                      }
-                    }}
-                  >
-                    {/* Priority indicator bar */}
-                    <Box sx={{
-                      height: 3,
-                      bgcolor: getPriorityColor(task.priority),
-                      opacity: 0.8
-                    }} />
-
-                    <Box sx={{ p: 2.5, flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-                      {/* Header */}
-                      <Box sx={{ 
-                        display: 'flex', 
-                        alignItems: 'flex-start', 
-                        gap: 2,
-                        mb: 2
-                      }}>
-                        <Checkbox
-                          checked={task.completed}
-                          size="medium"
-                          sx={{
-                            p: 0,
-                            color: '#94a3b8',
-                            '&.Mui-checked': {
-                              color: '#10b981',
-                            }
-                          }}
-                        />
-                        
-                        <Box sx={{ flex: 1, minWidth: 0 }}>
-                          <Typography 
-                            variant="h6" 
-                            sx={{ 
-                              fontWeight: 600,
-                              color: task.completed ? '#94a3b8' : '#1e293b',
-                              textDecoration: task.completed ? 'line-through' : 'none',
-                              lineHeight: 1.2,
-                              fontSize: '1.1rem',
-                              mb: task.notes ? 0.5 : 0
-                            }}
-                          >
-                            {task.title}
-                          </Typography>
-                          {task.notes && (
-                            <Typography 
-                              variant="body2" 
-                              sx={{ 
-                                color: '#64748b',
-                                fontSize: '0.85rem',
-                                lineHeight: 1.3
-                              }}
-                            >
-                              {task.notes.substring(0, 80)}...
-                            </Typography>
-                          )}
-                        </Box>
-
-                        <IconButton 
-                          size="small" 
-                          onClick={(e) => handleMenuClick(e, task)}
-                          sx={{ 
-                            color: '#94a3b8',
-                            '&:hover': { 
-                              bgcolor: '#f1f5f9',
-                              color: '#64748b'
-                            }
-                          }}
-                        >
-                          <MoreVertIcon sx={{ fontSize: 18 }} />
-                        </IconButton>
-                      </Box>
-
-                      {/* Task metadata */}
-                      <Box sx={{ 
-                        display: 'flex',
-                        flexWrap: 'wrap',
-                        gap: 1.5,
-                        alignItems: 'center'
-                      }}>
-                        {/* Due date */}
-                        {task.dueDate && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <Box sx={{
-                              width: 8,
-                              height: 8,
-                              borderRadius: '50%',
-                              bgcolor: isPast(parseISO(task.dueDate)) && !task.completed 
-                                ? '#ef4444' 
-                                : '#3b82f6'
-                            }} />
-                            <Typography variant="body2" sx={{ 
-                              fontSize: '0.8rem',
-                              color: isPast(parseISO(task.dueDate)) && !task.completed 
-                                ? '#ef4444' 
-                                : '#64748b',
-                              fontWeight: 500
-                            }}>
-                              {formatDate(task.dueDate)}
-                            </Typography>
-                          </Box>
-                        )}
-                        
-                        {/* Assignee */}
-                        {task.assignee && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.75 }}>
-                            <Avatar sx={{ 
-                              width: 20, 
-                              height: 20, 
-                              fontSize: '0.7rem', 
-                              bgcolor: '#3b82f6',
-                              fontWeight: 600
-                            }}>
-                              {task.assignee.charAt(0).toUpperCase()}
-                            </Avatar>
-                            <Typography variant="body2" sx={{ 
-                              fontSize: '0.8rem', 
-                              color: '#64748b',
-                              fontWeight: 500
-                            }}>
-                              {task.assignee.split(' ')[0]}
-                            </Typography>
-                          </Box>
-                        )}
-
-                        {/* Priority */}
-                        <Box sx={{
-                          px: 1.5,
-                          py: 0.5,
-                          borderRadius: 2,
-                          bgcolor: alpha(getPriorityColor(task.priority), 0.1),
-                          border: `1px solid ${alpha(getPriorityColor(task.priority), 0.2)}`
-                        }}>
-                          <Typography sx={{
-                            fontSize: '0.7rem',
-                            fontWeight: 700,
-                            textTransform: 'uppercase',
-                            color: getPriorityColor(task.priority),
-                            letterSpacing: '0.5px'
-                          }}>
-                            {task.priority}
-                          </Typography>
-                        </Box>
-
-                        {/* Tags */}
-                        {task.tags.length > 0 && (
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            {task.tags.slice(0, 2).map((tag, tagIndex) => (
-                              <Box
-                                key={tagIndex}
-                                sx={{
-                                  px: 1,
-                                  py: 0.25,
-                                  borderRadius: 1.5,
-                                  bgcolor: '#f1f5f9',
-                                  border: '1px solid #e2e8f0'
-                                }}
-                              >
-                                <Typography sx={{
-                                  fontSize: '0.7rem',
-                                  color: '#64748b',
-                                  fontWeight: 500
-                                }}>
-                                  {tag}
-                                </Typography>
-                              </Box>
-                            ))}
-                            {task.tags.length > 2 && (
-                              <Typography variant="caption" sx={{ 
-                                fontSize: '0.7rem', 
-                                color: '#94a3b8',
-                                fontWeight: 500
-                              }}>
-                                +{task.tags.length - 2}
-                              </Typography>
-                            )}
-                          </Box>
-                        )}
-                      </Box>
-                    </Box>
-                  </Card>
                 ))}
-              </Box>
-            )}
+              </TableBody>
+              </Table>
+            </Box>
           </Box>
         )}
       </Box>
 
+      {/* Edit Dialog */}
+      <TaskEditDialog
+        open={editDialogOpen}
+        task={taskToEdit}
+        onClose={() => {
+          setEditDialogOpen(false);
+          setTaskToEdit(null);
+        }}
+        onSave={async (updatedTask) => {
+          if (taskToEdit) {
+            await handleTaskUpdate(taskToEdit.id, updatedTask);
+            setEditDialogOpen(false);
+            setTaskToEdit(null);
+          }
+        }}
+      />
 
-      {/* Menu */}
+      {/* Details Dialog */}
+      <TaskDetailsDialog
+        open={detailsDialogOpen}
+        task={taskToView}
+        onClose={() => {
+          setDetailsDialogOpen(false);
+          setTaskToView(null);
+        }}
+        onEdit={() => {
+          setDetailsDialogOpen(false);
+          setTaskToEdit(taskToView);
+          setTaskToView(null);
+          setEditDialogOpen(true);
+        }}
+      />
+
+      {/* Priority Menu */}
       <Menu
-        anchorEl={anchorEl}
-        open={Boolean(anchorEl)}
-        onClose={handleMenuClose}
-        transformOrigin={{ horizontal: 'right', vertical: 'top' }}
-        anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
+        anchorEl={priorityAnchorEl}
+        open={priorityMenuOpen}
+        onClose={() => {
+          setPriorityMenuOpen(false);
+          setPriorityAnchorEl(null);
+          setPriorityTaskId(null);
+        }}
       >
-        <MenuItem onClick={handleMenuClose}>
-          <EditIcon sx={{ mr: 1, fontSize: 18 }} />
-          Edit Task
-        </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <InfoIcon sx={{ mr: 1, fontSize: 18 }} />
-          View Details
-        </MenuItem>
-        <Divider />
-        <MenuItem onClick={handleMenuClose} sx={{ color: 'error.main' }}>
-          <DeleteIcon sx={{ mr: 1, fontSize: 18 }} />
-          Delete Task
-        </MenuItem>
+        {['low', 'medium', 'high', 'urgent'].map((priority) => (
+          <MenuItem
+            key={priority}
+            onClick={() => priorityTaskId && handlePriorityChange(priorityTaskId, priority as Priority)}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              {getPriorityIcon(priority)}
+              <Typography>{priority.charAt(0).toUpperCase() + priority.slice(1)}</Typography>
+            </Box>
+          </MenuItem>
+        ))}
       </Menu>
 
-      {/* Voice Recorder */}
-      {isRecording && (
-        <Paper sx={{
-          position: 'fixed',
-          bottom: 120,
-          right: 32,
-          p: 3,
-          bgcolor: '#ffffff',
-          border: '2px solid',
-          borderColor: theme.palette.primary.main,
-          borderRadius: 3,
-          boxShadow: '0 8px 32px rgba(0,0,0,0.15)',
-          zIndex: 1000,
-          minWidth: 300,
-        }}>
-          <VoiceRecorder
-            onTranscript={onTranscript}
-            transcriptionService={transcriptionService as any}
-            onRecordingStateChange={setIsRecording}
-          />
-        </Paper>
+      {/* Snackbar for notifications */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+      >
+        <Alert 
+          onClose={() => setSnackbar({ ...snackbar, open: false })} 
+          severity={snackbar.severity}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+
+      {/* Mobile FAB for adding tasks */}
+      {isMobile && (
+        <Fab
+          color="primary"
+          sx={{
+            position: 'absolute',
+            bottom: 16,
+            right: 16,
+            zIndex: 1000
+          }}
+          onClick={() => {
+            // Handle mobile task creation
+          }}
+        >
+          <AddIcon />
+        </Fab>
       )}
     </Box>
   );
