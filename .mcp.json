@@ -1,36 +1,112 @@
 {
-  "mcpServers": {
-    "memory-bank": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "memory-bank-mcp",
-        "--port",
-        "7010"
-      ]
-    },
-    "kg-memory": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-knowledge-graph",
-        "--port",
-        "7020"
-      ]
-    },
-    "sequential": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@modelcontextprotocol/server-sequential-thinking"
-      ]
-    },
-    "playwright": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "@executeautomation/playwright-mcp-server"
-      ]
-    }
-  }
+	"mcpServers": {
+		"memory-bank": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"memory-bank-mcp",
+				"--port",
+				"7010"
+			]
+		},
+		"sequential-thinking": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-sequential-thinking"
+			]
+		},
+		"filesystem": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@modelcontextprotocol/server-filesystem",
+				"/Users/heifets/Desktop/MSD/PRIVATE/Development/task-voice-manager"
+			]
+		},
+		"duckduckgo": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@executeautomation/duckduckgo-mcp-server"
+			]
+		},
+		"puppeteer": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@executeautomation/playwright-mcp-server"
+			]
+		},
+		"task-master-ai": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"--package=task-master-ai",
+				"task-master-ai"
+			],
+			"env": {
+				"ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}",
+				"PERPLEXITY_API_KEY": "${PERPLEXITY_API_KEY}",
+				"OPENAI_API_KEY": "${OPENAI_API_KEY}"
+			}
+		},
+		"serena": {
+			"type": "stdio",
+			"command": "uv",
+			"args": [
+				"run",
+				"--directory",
+				"/Users/heifets/Desktop/MSD/PRIVATE/Development/serena",
+				"serena",
+				"start-mcp-server",
+				"--context=ide-assistant",
+				"--project=/Users/heifets/Desktop/MSD/PRIVATE/Development/task-voice-manager",
+				"--log-level=INFO"
+			]
+		},
+		"supabase-cli": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@supabase/mcp-server"
+			],
+			"env": {
+				"SUPABASE_URL": "${SUPABASE_URL}",
+				"SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}",
+				"SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
+			}
+		},
+		"git": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@cyanheads/git-mcp-server"
+			],
+			"env": {
+				"GIT_REPO_PATH": "/Users/heifets/Desktop/MSD/PRIVATE/Development/task-voice-manager"
+			}
+		},
+		"vercel": {
+			"type": "stdio",
+			"command": "npx",
+			"args": [
+				"-y",
+				"@vercel/mcp-adapter"
+			],
+			"env": {
+				"VERCEL_TOKEN": "${VERCEL_TOKEN}",
+				"VERCEL_PROJECT_ID": "${VERCEL_PROJECT_ID}",
+				"VERCEL_ORG_ID": "${VERCEL_ORG_ID}"
+			}
+		}
+	}
 }
