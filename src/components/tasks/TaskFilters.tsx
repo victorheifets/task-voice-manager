@@ -67,42 +67,49 @@ export default function TaskFilters({
   const filterOptions = [
     { 
       id: 'all', 
-      label: t('filters.all'), 
+      label: 'All', 
       icon: <AllInclusiveIcon fontSize="small" />,
       color: '#2196F3', // Blue
       bgColor: '#E3F2FD'
     },
     { 
       id: 'today', 
-      label: t('filters.today'), 
+      label: 'Today', 
       icon: <TodayIcon fontSize="small" />,
       color: '#4CAF50', // Green
       bgColor: '#E8F5E9'
     },
     { 
       id: 'tomorrow', 
-      label: t('filters.tomorrow'), 
+      label: 'Tomorrow', 
       icon: <EventIcon fontSize="small" />,
       color: '#FF9800', // Orange
       bgColor: '#FFF3E0'
     },
     { 
+      id: 'thisweek', 
+      label: 'This Week', 
+      icon: <DateRangeIcon fontSize="small" />,
+      color: '#00BCD4', // Cyan
+      bgColor: '#E0F2F1'
+    },
+    { 
       id: 'nextweek', 
-      label: t('filters.nextweek'), 
+      label: 'Next Week', 
       icon: <DateRangeIcon fontSize="small" />,
       color: '#9C27B0', // Purple
       bgColor: '#F3E5F5'
     },
     { 
       id: 'overdue', 
-      label: t('filters.overdue'), 
+      label: 'Overdue', 
       icon: <ErrorOutlineIcon fontSize="small" />,
-      color: '#F44336', // Red
+      color: '#FF5722', // Softer red
       bgColor: '#FFEBEE'
     },
     { 
       id: 'completed', 
-      label: t('filters.completed'), 
+      label: 'Completed', 
       icon: <CheckCircleOutlineIcon fontSize="small" />,
       color: '#4CAF50', // Green
       bgColor: '#E8F5E9'
@@ -132,7 +139,7 @@ export default function TaskFilters({
             }}
           >
             <TextField
-              placeholder="Search tasks..."
+              placeholder="Search tasks, assignees, tags..."
               size="small"
               value={searchFilter}
               onChange={handleSearchChange}
@@ -226,7 +233,7 @@ export default function TaskFilters({
 
   // Desktop layout
   return (
-    <Box sx={{ mb: 3, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <Box sx={{ mb: 2, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
       <Box
         sx={{
           display: 'flex',
@@ -243,19 +250,27 @@ export default function TaskFilters({
             startIcon={filter.icon}
             sx={{
               minWidth: 'auto',
-              px: 2,
-              py: 0.5,
-              borderRadius: 20,
-              color: statusFilter === filter.id ? '#fff' : filter.color,
-              bgcolor: statusFilter === filter.id ? filter.color : '#fff',
+              px: 1.5,
+              py: 0.25,
+              fontSize: '0.8rem',
+              borderRadius: 16,
+              color: statusFilter === filter.id 
+                ? '#fff' 
+                : (theme.palette.mode === 'dark' ? filter.color : filter.color),
+              bgcolor: statusFilter === filter.id 
+                ? filter.color 
+                : (theme.palette.mode === 'dark' ? 'transparent' : '#fff'),
               borderColor: filter.color,
               borderWidth: '1.5px',
+              border: `1.5px solid ${filter.color}`,
               boxShadow: statusFilter === filter.id ? 
                 `0 2px 8px ${alpha(filter.color, 0.4)}` : 
                 'none',
               fontWeight: statusFilter === filter.id ? 600 : 400,
               '&:hover': {
-                bgcolor: statusFilter === filter.id ? filter.color : alpha(filter.color, 0.1),
+                bgcolor: statusFilter === filter.id 
+                  ? filter.color 
+                  : (theme.palette.mode === 'dark' ? alpha(filter.color, 0.2) : alpha(filter.color, 0.1)),
                 color: statusFilter === filter.id ? '#fff' : filter.color,
                 borderColor: filter.color,
               },
@@ -272,7 +287,7 @@ export default function TaskFilters({
         ))}
       </Box>
       <TextField
-        placeholder={t('search.placeholder')}
+        placeholder="Search tasks, assignees, tags..."
         size="small"
         value={searchFilter}
         onChange={handleSearchChange}
@@ -284,9 +299,10 @@ export default function TaskFilters({
           ),
         }}
         sx={{
-          width: 300,
+          width: 250,
           '& .MuiOutlinedInput-root': {
             borderRadius: 2,
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'
           },
         }}
       />

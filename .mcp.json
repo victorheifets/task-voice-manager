@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "memory-bank": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "memory-bank-mcp",
+        "--port",
+        "7010"
+      ]
+    },
+    "kg-memory": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-knowledge-graph",
+        "--port",
+        "7020"
+      ]
+    },
+    "sequential": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@executeautomation/playwright-mcp-server"
+      ]
+    }
+  }
+}

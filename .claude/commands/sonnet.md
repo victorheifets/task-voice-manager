@@ -1,0 +1,1 @@
+---\ndescription: Sonnet\nallowed-tools: config\n---\n**Action:** /config set model claude-3-sonnet-20250219

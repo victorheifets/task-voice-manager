@@ -1,0 +1,104 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "enableAllProjectMcpServers": true,
+  "maxOutputTokens": 8192,
+  "parallelToolCalls": true,
+  "toolCallBatching": true,
+  
+  "permissions": {
+    "allow": [
+      "Read(**)", 
+      "Edit", 
+      "Write", 
+      "MultiEdit", 
+      "Bash(*)", 
+      "WebFetch", 
+      "WebSearch", 
+      "Glob", 
+      "Grep",
+      "Task",
+      "TodoWrite",
+      "NotebookRead",
+      "NotebookEdit",
+      "LS",
+      "ExitPlanMode",
+      "mcp__*__*"
+    ],
+    "deny": [
+      "Bash(rm -rf:*)",
+      "Bash(dd if=*:*)", 
+      "Bash(curl |*:*)",
+      "Bash(wget |*:*)",
+      "Bash(chmod 777:*)",
+      "Bash(sudo:*)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "/Users/heifets/Desktop/MSD/PRIVATE/Development/claudeSetting/hooks/web_security_check.py" },
+          { "type": "command", "command": "/Users/heifets/Desktop/MSD/PRIVATE/Development/claudeSetting/hooks/mobile_responsive_check.py" },
+          { "type": "command", "command": "/Users/heifets/Desktop/MSD/PRIVATE/Development/claudeSetting/hooks/comment_enforcer.py" }
+        ]
+      },
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "/Users/heifets/Desktop/MSD/PRIVATE/Development/claudeSetting/hooks/bash_safety_check.py" }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "/Users/heifets/Desktop/MSD/PRIVATE/Development/claudeSetting/hooks/auto_format.py" },
+          { "type": "command", "command": "/Users/heifets/Desktop/MSD/PRIVATE/Development/claudeSetting/hooks/performance_check.py" }
+        ]
+      },
+      {
+        "matcher": "TodoWrite",
+        "hooks": [
+          { "type": "command", "command": "/Users/heifets/Desktop/MSD/PRIVATE/Development/claudeSetting/hooks/task_tracker.py" }
+        ]
+      },
+      {
+        "matcher": "mcp__task-master-ai__set_task_status",
+        "hooks": [
+          { "type": "command", "command": "/Users/heifets/Desktop/MSD/PRIVATE/Development/claudeSetting/hooks/task_completion_voice.py" }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "matcher": ".*mobile.*|.*responsive.*|.*breakpoint.*|.*pwa.*",
+        "hooks": [
+          { "type": "command", "command": "/Users/heifets/Desktop/MSD/PRIVATE/Development/claudeSetting/hooks/mobile_context_enhancer.py" }
+        ]
+      },
+      {
+        "matcher": ".*performance.*|.*optimization.*|.*speed.*",
+        "hooks": [
+          { "type": "command", "command": "/Users/heifets/Desktop/MSD/PRIVATE/Development/claudeSetting/hooks/performance_context_enhancer.py" }
+        ]
+      }
+    ]
+  },
+
+  "env": {
+    "CLAUDE_CODE_MAX_OUTPUT_TOKENS": "8192",
+    "BASH_DEFAULT_TIMEOUT_MS": "30000",
+    "BASH_MAX_TIMEOUT_MS": "600000",
+    "WEB_DEV_MODE": "true",
+    "MOBILE_FIRST": "true",
+    "PERFORMANCE_MONITORING": "true",
+    "DEFAULT_VIEWPORT": "375x812",
+    "TARGET_BROWSERS": "Chrome,Safari,Firefox,Edge",
+    "AUTO_FORMAT": "true",
+    "SECURITY_CHECKS": "true"
+  }
+}

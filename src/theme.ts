@@ -217,6 +217,11 @@ export const darkTheme = createTheme({
       default: '#121212',
       paper: '#1e1e1e',
     },
+    text: {
+      primary: 'rgba(255, 255, 255, 0.87)', // Slightly dimmed from pure white
+      secondary: 'rgba(255, 255, 255, 0.6)',
+      disabled: 'rgba(255, 255, 255, 0.38)',
+    },
   },
   shape: {
     borderRadius: 8,
@@ -313,9 +318,9 @@ export const darkTheme = createTheme({
             },
           },
           '&.task-input': {
-            borderRadius: 4,
+            borderRadius: 8,
             '& .MuiOutlinedInput-root': {
-              borderRadius: 4,
+              borderRadius: 8,
             },
           },
         },
@@ -354,21 +359,21 @@ export const darkTheme = createTheme({
     MuiDialog: {
       styleOverrides: {
         paper: {
-          borderRadius: 2,
+          borderRadius: 8,
         },
       },
     },
     MuiSelect: {
       styleOverrides: {
         root: {
-          borderRadius: 2,
+          borderRadius: 8,
         },
       },
     },
     MuiMenuItem: {
       styleOverrides: {
         root: {
-          borderRadius: 2,
+          borderRadius: 8,
         },
       },
     },

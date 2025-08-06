@@ -21,6 +21,7 @@ interface PrioritySelectProps {
   value: Priority;
   onChange: (value: Priority) => void;
   disabled?: boolean;
+  autoFocus?: boolean;
 }
 
 const priorityOptions = [
@@ -31,11 +32,32 @@ const priorityOptions = [
   { value: 'urgent', label: 'Urgent', icon: <RemoveDoneIcon />, color: '#d32f2f' }
 ];
 
-export default function PrioritySelect({ value, onChange, disabled = false }: PrioritySelectProps) {
+export default function PrioritySelect({ value, onChange, disabled = false, autoFocus = false }: PrioritySelectProps) {
   const theme = useTheme();
+  const [open, setOpen] = React.useState(false);
+  const [hasInteracted, setHasInteracted] = React.useState(false);
+  
+  // Auto-open when component mounts with autoFocus
+  React.useEffect(() => {
+    if (autoFocus) {
+      const timer = setTimeout(() => {
+        setOpen(true);
+        setHasInteracted(true);
+      }, 100);
+      return () => clearTimeout(timer);
+    }
+  }, [autoFocus]);
 
   const handleChange = (event: SelectChangeEvent<Priority>) => {
     onChange(event.target.value as Priority);
+    setOpen(false);
+  };
+
+  const handleClick = () => {
+    if (!hasInteracted) {
+      setHasInteracted(true);
+      setOpen(true);
+    }
   };
 
   const selectedOption = priorityOptions.find(option => option.value === value) || priorityOptions[0];
@@ -47,6 +69,11 @@ export default function PrioritySelect({ value, onChange, disabled = false }: Pr
       disabled={disabled}
       variant="standard"
       size="small"
+      open={open}
+      onOpen={() => setOpen(true)}
+      onClose={() => setOpen(false)}
+      onClick={handleClick}
+      autoFocus={autoFocus}
       sx={{
         minWidth: 150,
         '& .MuiSelect-select': {

@@ -46,7 +46,7 @@ import PaletteIcon from '@mui/icons-material/Palette';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import TaskInput from '@/components/tasks/TaskInput';
-import TaskList from '@/components/tasks/TaskList';
+import EnhancedTaskList from '@/components/tasks/EnhancedTaskList';
 import TaskFilters from '@/components/tasks/TaskFilters';
 import { getTasks, supabase } from '@/lib/supabase/client';
 import Layout from '@/components/layout/Layout';
@@ -56,7 +56,6 @@ import DynamicFloatingMicButton from '@/components/voice/DynamicFloatingMicButto
 import { TranscriptionProvider, useTranscriptionConfig } from '@/contexts/TranscriptionContext';
 import ClientOnly from '@/components/ui/ClientOnly';
 import BrowserWarning from '@/components/ui/BrowserWarning';
-import DesignSwitcher from '@/components/designs/DesignSwitcher';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { UsageDashboard } from '@/components/auth/UsageDashboard';
@@ -78,13 +77,9 @@ function TabPanel(props: TabPanelProps) {
       id={`tabpanel-${index}`}
       aria-labelledby={`tab-${index}`}
       {...other}
-      style={{ width: '100%' }}
+      style={{ width: '100%', height: '100%', display: 'flex', flexDirection: 'column' }}
     >
-      {value === index && (
-        <Box sx={{ pt: 2, width: '100%', bgcolor: '#ffffff' }}>
-          {children}
-        </Box>
-      )}
+      {value === index && children}
     </div>
   );
 }
@@ -266,12 +261,11 @@ function MainContent() {
     <Layout>
       <Box sx={{ 
         flexGrow: 1, 
-        p: isMobile ? 0 : 2, 
-        pb: isMobile ? 8 : 2, // Extra bottom padding for mobile nav
-        overflow: 'auto',
+        pb: isMobile ? 8 : 2,
+        overflow: 'hidden', // Remove outer scroll completely
         display: 'flex',
         flexDirection: 'column',
-        bgcolor: '#ffffff'
+        height: '100%'
       }}>
         {!isMobile && (
           <Tabs 
@@ -279,11 +273,32 @@ function MainContent() {
             onChange={handleTabChange} 
             variant="fullWidth"
             sx={{ 
-              borderBottom: 1, 
-              borderColor: 'divider',
+              // Best Practice: Clean Professional Tabs
+              borderBottom: `1px solid ${theme.palette.divider}`,
+              mb: 2,
+              bgcolor: 'transparent',
               '& .MuiTab-root': {
                 py: 1.5,
-                fontSize: '1rem'
+                px: 2,
+                fontSize: '0.875rem',
+                fontWeight: 500,
+                textTransform: 'none',
+                minHeight: 48,
+                color: theme.palette.text.secondary,
+                transition: 'all 0.2s ease',
+                '&:hover': {
+                  color: theme.palette.text.primary,
+                  bgcolor: theme.palette.action.hover
+                },
+                '&.Mui-selected': {
+                  color: theme.palette.primary.main,
+                  fontWeight: 600
+                }
+              },
+              '& .MuiTabs-indicator': {
+                height: 2,
+                borderRadius: '1px',
+                backgroundColor: theme.palette.primary.main
               }
             }}
           >
@@ -294,28 +309,37 @@ function MainContent() {
         )}
         
         <TabPanel value={activeTab} index={0}>
-          {/* Tasks Tab - Enhanced Design */}
           <Box sx={{ 
-            height: 'calc(100vh - 120px)', 
-            overflow: 'hidden', 
-            m: -2,
-            mt: -2,
-            pt: 0,
-            bgcolor: '#ffffff'
+            display: 'flex',
+            flexDirection: 'column',
+            gap: 2,
+            height: '100%',
+            flex: 1
           }}>
-            <DesignSwitcher 
-              onTranscript={handleFloatingMicTranscript}
-              transcriptionService={transcriptionService}
+            <TaskInput 
+              onTaskAdded={handleTaskAdded}
+              transcript={currentTranscript}
+            />
+            <TaskFilters 
+              searchFilter={searchFilter}
+              statusFilter={statusFilter}
+              onSearchChange={handleSearchChange}
+              onStatusFilterChange={handleStatusFilterClick}
+            />
+            <EnhancedTaskList 
+              refreshTrigger={refreshTrigger}
+              searchFilter={searchFilter}
+              statusFilter={statusFilter}
             />
           </Box>
         </TabPanel>
         
         <TabPanel value={activeTab} index={1}>
-          {/* Notes Tab */}
           <Box sx={{ 
             display: 'flex', 
             flexDirection: 'column', 
-            height: '100%'
+            height: '100%',
+            bgcolor: theme.palette.background.default
           }}>
             <Box sx={{ 
               borderBottom: 'none',
@@ -347,18 +371,18 @@ function MainContent() {
                     py: 0.5,
                     minWidth: 90,
                     '&.Mui-selected': {
-                      bgcolor: '#ffffff',
-                      color: '#000',
+                      bgcolor: theme.palette.background.paper,
+                      color: theme.palette.text.primary,
                       fontWeight: 600,
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-                      border: '1px solid #e0e0e0',
-                      borderBottom: '1px solid #ffffff',
+                      boxShadow: theme.palette.mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
+                      border: `1px solid ${theme.palette.divider}`,
+                      borderBottom: `1px solid ${theme.palette.background.paper}`,
                       zIndex: 1,
                       position: 'relative'
                     },
                     '&:hover:not(.Mui-selected)': {
-                      bgcolor: '#f8f8f8',
-                      color: '#666'
+                      bgcolor: theme.palette.action.hover,
+                      color: theme.palette.text.secondary
                     }
                   }
                 }}
@@ -451,8 +475,8 @@ function MainContent() {
               flexGrow: 1, 
               overflow: 'auto', 
               height: '100%',
-              bgcolor: '#ffffff',
-              borderTop: '1px solid #e0e0e0',
+              bgcolor: theme.palette.background.paper,
+              borderTop: `1px solid ${theme.palette.divider}`,
               position: 'relative',
               zIndex: 0
             }}>
@@ -461,7 +485,7 @@ function MainContent() {
                   <Box sx={{ 
                     height: '100%',
                     width: '100%',
-                    bgcolor: '#ffffff',
+                    bgcolor: theme.palette.background.paper,
                     p: 2
                   }}>
                     <TextField
@@ -476,7 +500,7 @@ function MainContent() {
                         sx: {
                           fontSize: '1rem',
                           lineHeight: 1.6,
-                          color: '#333'
+                          color: theme.palette.text.primary
                         }
                       }}
                       sx={{ 
@@ -484,7 +508,7 @@ function MainContent() {
                         '& .MuiInputBase-root': {
                           height: '100%',
                           alignItems: 'flex-start',
-                          bgcolor: '#ffffff'
+                          bgcolor: theme.palette.background.paper
                         }
                       }}
                     />
@@ -505,17 +529,6 @@ function MainContent() {
             mx: { xs: 0, sm: 'auto' },
             px: { xs: 0, sm: 2 }
           }}>
-            <Typography 
-              variant="h5" 
-              fontWeight={600} 
-              sx={{ 
-                mb: 1,
-                fontSize: { xs: '1.5rem', sm: '2rem' },
-                px: { xs: 2, sm: 0 }
-              }}
-            >
-              Settings
-            </Typography>
             
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: { xs: 2, md: 3 } }}>
               {/* API Configuration */}
@@ -545,6 +558,47 @@ function MainContent() {
                       helperText="Used for AI task parsing and voice transcription"
                       variant="outlined"
                       size="small"
+                      sx={{
+                        '& .MuiOutlinedInput-root': {
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'transparent'
+                        },
+                        '& .MuiFormHelperText-root': {
+                          bgcolor: 'transparent !important',
+                          background: 'none !important',
+                          border: 'none !important',
+                          boxShadow: 'none !important',
+                          borderRadius: 0,
+                          padding: '3px 0px 0px !important',
+                          margin: '3px 0px 0px !important',
+                          '&:before, &:after': { display: 'none !important' },
+                          '&.MuiFormHelperText-contained': {
+                            marginLeft: '0px !important',
+                            marginRight: '0px !important'
+                          }
+                        }
+                      }}
+                      FormHelperTextProps={{
+                        sx: {
+                          color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'text.secondary',
+                          bgcolor: 'transparent !important',
+                          background: 'transparent !important',
+                          backgroundImage: 'none !important',
+                          border: 'none !important',
+                          borderRadius: '0 !important',
+                          boxShadow: 'none !important',
+                          outline: 'none !important',
+                          mt: 0.5,
+                          px: 0,
+                          mx: 0,
+                          '&:before, &:after, &::before, &::after': {
+                            display: 'none !important'
+                          },
+                          '&:hover, &:focus, &:active': {
+                            bgcolor: 'transparent !important',
+                            background: 'transparent !important'
+                          }
+                        }
+                      }}
                     />
                     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
                       <TextField
@@ -557,6 +611,23 @@ function MainContent() {
                         helperText="For Azure Speech Service"
                         variant="outlined"
                         size="small"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'transparent'
+                          }
+                        }}
+                        FormHelperTextProps={{
+                          sx: {
+                            color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'text.secondary',
+                            bgcolor: 'transparent !important',
+                            border: 'none !important',
+                            boxShadow: 'none !important',
+                            px: 0,
+                            '&:before, &:after': {
+                              display: 'none !important'
+                            }
+                          }
+                        }}
                       />
                       <TextField
                         fullWidth
@@ -567,6 +638,23 @@ function MainContent() {
                         helperText="Azure service region"
                         variant="outlined"
                         size="small"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.03)' : 'transparent'
+                          }
+                        }}
+                        FormHelperTextProps={{
+                          sx: {
+                            color: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.6)' : 'text.secondary',
+                            bgcolor: 'transparent !important',
+                            border: 'none !important',
+                            boxShadow: 'none !important',
+                            px: 0,
+                            '&:before, &:after': {
+                              display: 'none !important'
+                            }
+                          }
+                        }}
                       />
                     </Box>
                     <Box sx={{ display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2 }}>
@@ -1152,7 +1240,7 @@ function MainContent() {
             left: 0,
             right: 0,
             zIndex: 1000,
-            bgcolor: '#ffffff',
+            bgcolor: theme.palette.background.paper,
             borderTop: '1px solid',
             borderColor: 'divider',
             boxShadow: '0 -2px 8px rgba(0,0,0,0.1)',
@@ -1220,21 +1308,5 @@ function AuthenticatedApp() {
     return <LoginForm />
   }
 
-  return (
-    <Box>
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center', 
-        p: 2,
-        borderBottom: '1px solid #e0e0e0'
-      }}>
-        <UsageDashboard />
-        <Button onClick={() => supabase.auth.signOut()} variant="outlined" size="small">
-          Sign Out
-        </Button>
-      </Box>
-      <MainContent />
-    </Box>
-  )
+  return <MainContent />
 }

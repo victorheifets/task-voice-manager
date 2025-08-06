@@ -1,0 +1,1 @@
+---\ndescription: Haiku\nallowed-tools: config\n---\n**Action:** /config set model claude-3-haiku-20250220

@@ -31,19 +31,26 @@ import TaskAltIcon from '@mui/icons-material/TaskAlt';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { useLanguageContext } from '../../contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
+import { useAuth } from '../auth/AuthProvider';
+import { supabase } from '@/lib/supabase/client';
+import LogoutIcon from '@mui/icons-material/Logout';
 
 export default function Header() {
   const { t } = useTranslation(['common']);
   const { mode, toggleTheme } = useThemeContext();
   const { language, changeLanguage } = useLanguageContext();
+  const { user } = useAuth();
   const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
   const [langAnchorEl, setLangAnchorEl] = useState<null | HTMLElement>(null);
+  const [avatarAnchorEl, setAvatarAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
-  // Exact colors from designs
-  const LIGHT_PRIMARY = '#2196F3'; // Materialize UI Blue
-  const DARK_PRIMARY = '#6658DD'; // Veltrix UI Purple
+  // Theme-consistent colors - White text on blue background for light mode
+  const PRIMARY_COLOR = theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff'; // White for light mode
+  const ICON_COLOR = theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff'; // Ensure icons are white in light mode
+  const ICON_BG_COLOR = theme.palette.mode === 'dark' ? 'rgba(77, 208, 225, 0.12)' : 'rgba(255, 255, 255, 0.15)';
+  const ICON_BORDER_COLOR = theme.palette.mode === 'dark' ? 'rgba(77, 208, 225, 0.3)' : 'rgba(255, 255, 255, 0.3)';
 
   const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
     setSettingsAnchorEl(event.currentTarget);
@@ -61,6 +68,19 @@ export default function Header() {
     setLangAnchorEl(null);
   };
 
+  const handleAvatarClick = (event: React.MouseEvent<HTMLElement>) => {
+    setAvatarAnchorEl(event.currentTarget);
+  };
+
+  const handleAvatarClose = () => {
+    setAvatarAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    supabase.auth.signOut();
+    handleAvatarClose();
+  };
+
   const handleLanguageChange = (lang: 'en' | 'es' | 'fr') => {
     changeLanguage(lang);
     handleLangMenuClose();
@@ -69,14 +89,15 @@ export default function Header() {
   return (
     <AppBar 
       position="static" 
-      color="inherit" 
+      color={theme.palette.mode === 'dark' ? 'default' : 'primary'}
       elevation={mode === 'light' ? 1 : 0}
       sx={{
-        backdropFilter: 'blur(10px)',
-        backgroundColor: mode === 'light' 
-          ? 'rgba(255, 255, 255, 1)' 
-          : 'rgba(36, 41, 57, 1)',
-        borderBottom: `1px solid ${theme.palette.divider}`
+        backgroundColor: theme.palette.mode === 'dark' ? '#1a1a1a !important' : '#2196F3 !important', // Force colors
+        borderBottom: `1px solid ${theme.palette.divider}`,
+        color: theme.palette.mode === 'dark' ? '#9e9e9e !important' : '#ffffff !important', // Force text colors
+        '& .MuiToolbar-root': {
+          color: theme.palette.mode === 'dark' ? '#9e9e9e !important' : '#ffffff !important'
+        }
       }}
     >
       <Toolbar sx={{ 
@@ -90,7 +111,7 @@ export default function Header() {
           <TaskAltIcon 
             sx={{ 
               mr: 1.5, 
-              color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY,
+              color: PRIMARY_COLOR,
               fontSize: '2rem'
             }} 
           />
@@ -99,7 +120,7 @@ export default function Header() {
             component="h1" 
             sx={{ 
               fontWeight: 600,
-              color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY,
+              color: PRIMARY_COLOR,
               letterSpacing: '0.5px'
             }}
           >
@@ -113,23 +134,20 @@ export default function Header() {
               color="inherit" 
               size={isMobile ? 'small' : 'medium'}
               sx={{ 
-                borderRadius: '12px',
+                borderRadius: '50%', // Make it round like other controls
                 padding: '8px',
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}10`
-                  : `${DARK_PRIMARY}10`,
-                border: `1px solid ${mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY}40`,
+                backgroundColor: ICON_BG_COLOR,
+                border: `1px solid ${ICON_BORDER_COLOR}`,
                 transition: 'all 0.2s',
                 '&:hover': {
-                  backgroundColor: mode === 'light' 
-                    ? `${LIGHT_PRIMARY}15`
-                    : `${DARK_PRIMARY}15`,
-                  borderColor: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY,
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                  borderColor: PRIMARY_COLOR,
+                  transform: 'translateY(-2px)'
                 }
               }}
             >
               {mode === 'light' 
-                ? <DarkModeIcon sx={{ color: LIGHT_PRIMARY }} /> 
+                ? <DarkModeIcon sx={{ color: '#ffffff' }} /> 
                 : <LightModeIcon sx={{ color: '#FFB74D' }} />
               }
             </IconButton>
@@ -142,19 +160,15 @@ export default function Header() {
               sx={{ 
                 borderRadius: '50%',
                 padding: '8px',
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}20`
-                  : `${DARK_PRIMARY}20`,
+                backgroundColor: ICON_BG_COLOR,
                 transition: 'all 0.2s',
                 '&:hover': {
-                  backgroundColor: mode === 'light' 
-                    ? `${LIGHT_PRIMARY}30`
-                    : `${DARK_PRIMARY}30`,
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
                   transform: 'translateY(-2px)'
                 }
               }}
             >
-              <TranslateIcon sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+              <TranslateIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
             </IconButton>
           </Tooltip>
           {!isMobile && (
@@ -165,19 +179,15 @@ export default function Header() {
                 sx={{ 
                   borderRadius: '50%',
                   padding: '8px',
-                  backgroundColor: mode === 'light' 
-                    ? `${LIGHT_PRIMARY}20`
-                    : `${DARK_PRIMARY}20`,
+                  backgroundColor: ICON_BG_COLOR,
                   transition: 'all 0.2s',
                   '&:hover': {
-                    backgroundColor: mode === 'light' 
-                      ? `${LIGHT_PRIMARY}30`
-                      : `${DARK_PRIMARY}30`,
+                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
                     transform: 'translateY(-2px)'
                   }
                 }}
               >
-                <NotificationsIcon sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+                <NotificationsIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
               </IconButton>
             </Badge>
           )}
@@ -189,38 +199,37 @@ export default function Header() {
               sx={{ 
                 borderRadius: '50%',
                 padding: '8px',
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}20`
-                  : `${DARK_PRIMARY}20`,
+                backgroundColor: ICON_BG_COLOR,
                 transition: 'all 0.2s',
                 '&:hover': {
-                  backgroundColor: mode === 'light' 
-                    ? `${LIGHT_PRIMARY}30`
-                    : `${DARK_PRIMARY}30`,
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
                   transform: 'translateY(-2px)'
                 }
               }}
             >
-              <SettingsIcon sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+              <SettingsIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
             </IconButton>
           </Tooltip>
           {!isMobile && (
-            <Avatar 
-              sx={{ 
-                ml: 1, 
-                width: 36, 
-                height: 36,
-                border: `2px solid ${mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY}`,
-                cursor: 'pointer',
-                transition: 'transform 0.2s',
-                backgroundColor: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY,
-                '&:hover': {
-                  transform: 'scale(1.1)'
-                }
-              }}
-            >
-              U
-            </Avatar>
+            <Tooltip title="Account">
+              <Avatar 
+                onClick={handleAvatarClick}
+                sx={{ 
+                  ml: 1, 
+                  width: 36, 
+                  height: 36,
+                  border: `2px solid ${theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff'}`,
+                  cursor: 'pointer',
+                  transition: 'transform 0.2s',
+                  backgroundColor: theme.palette.mode === 'dark' ? '#9e9e9e' : '#1976d2',
+                  '&:hover': {
+                    transform: 'scale(1.1)'
+                  }
+                }}
+              >
+                {user?.email?.[0]?.toUpperCase() || 'U'}
+              </Avatar>
+            </Tooltip>
           )}
         </Box>
         {/* Language Menu */}
@@ -271,14 +280,14 @@ export default function Header() {
               mx: 0.5,
               my: 0.25,
               '&.Mui-selected': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}20`
-                  : `${DARK_PRIMARY}30`,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(144, 202, 249, 0.2)'
+                  : 'rgba(255, 255, 255, 0.2)',
               },
               '&:hover': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}15`
-                  : `${DARK_PRIMARY}20`,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(144, 202, 249, 0.1)'
+                  : 'rgba(255, 255, 255, 0.1)',
               }
             }}
           >
@@ -295,14 +304,14 @@ export default function Header() {
               mx: 0.5,
               my: 0.25,
               '&.Mui-selected': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}15`
-                  : `${DARK_PRIMARY}20`,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(144, 202, 249, 0.2)'
+                  : 'rgba(255, 255, 255, 0.2)',
               },
               '&:hover': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}10`
-                  : `${DARK_PRIMARY}15`,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(144, 202, 249, 0.1)'
+                  : 'rgba(255, 255, 255, 0.1)',
               }
             }}
           >
@@ -319,14 +328,14 @@ export default function Header() {
               mx: 0.5,
               my: 0.25,
               '&.Mui-selected': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}20`
-                  : `${DARK_PRIMARY}30`,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(144, 202, 249, 0.2)'
+                  : 'rgba(255, 255, 255, 0.2)',
               },
               '&:hover': {
-                backgroundColor: mode === 'light' 
-                  ? `${LIGHT_PRIMARY}15`
-                  : `${DARK_PRIMARY}20`,
+                backgroundColor: theme.palette.mode === 'dark' 
+                  ? 'rgba(144, 202, 249, 0.1)'
+                  : 'rgba(255, 255, 255, 0.1)',
               }
             }}
           >
@@ -379,22 +388,87 @@ export default function Header() {
         >
           <MenuItem onClick={handleSettingsClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
-              <PersonIcon fontSize="small" sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+              <PersonIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
             </ListItemIcon>
             <ListItemText>{t('menu.profile')}</ListItemText>
           </MenuItem>
           <MenuItem onClick={handleSettingsClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
-              <SettingsIcon fontSize="small" sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+              <SettingsIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
             </ListItemIcon>
             <ListItemText>{t('menu.settings')}</ListItemText>
           </MenuItem>
           <Divider sx={{ my: 1 }} />
           <MenuItem onClick={handleSettingsClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
-              <HelpIcon fontSize="small" sx={{ color: mode === 'light' ? LIGHT_PRIMARY : DARK_PRIMARY }} />
+              <HelpIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
             </ListItemIcon>
             <ListItemText>{t('menu.help')}</ListItemText>
+          </MenuItem>
+        </Menu>
+        
+        {/* Avatar Menu */}
+        <Menu
+          anchorEl={avatarAnchorEl}
+          open={Boolean(avatarAnchorEl)}
+          onClose={handleAvatarClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'right',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'right',
+          }}
+          PaperProps={{
+            elevation: 3,
+            sx: {
+              mt: 1.5,
+              minWidth: 200,
+              overflow: 'visible',
+              borderRadius: '12px',
+              border: `1px solid ${theme.palette.divider}`,
+              boxShadow: mode === 'light' 
+                ? '0 8px 24px rgba(0,0,0,0.12)'
+                : '0 8px 24px rgba(0,0,0,0.3)',
+              '&:before': {
+                content: '""',
+                display: 'block',
+                position: 'absolute',
+                top: 0,
+                right: 14,
+                width: 10,
+                height: 10,
+                bgcolor: theme.palette.background.paper,
+                transform: 'translateY(-50%) rotate(45deg)',
+                zIndex: 0,
+                borderLeft: `1px solid ${theme.palette.divider}`,
+                borderTop: `1px solid ${theme.palette.divider}`,
+              },
+            }
+          }}
+        >
+          <MenuItem onClick={handleAvatarClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
+            <ListItemIcon>
+              <PersonIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
+            </ListItemIcon>
+            <ListItemText>
+              <Box>
+                <Typography variant="body2" fontWeight={600}>
+                  {user?.email || 'User'}
+                </Typography>
+                <Typography variant="caption" color="text.secondary">
+                  View Profile
+                </Typography>
+              </Box>
+            </ListItemText>
+          </MenuItem>
+          <Divider sx={{ my: 1 }} />
+          <MenuItem onClick={handleLogout} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25, color: 'error.main' }}>
+            <ListItemIcon>
+              <LogoutIcon fontSize="small" color="error" />
+            </ListItemIcon>
+            <ListItemText>Sign Out</ListItemText>
           </MenuItem>
         </Menu>
       </Toolbar>

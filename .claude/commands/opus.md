@@ -1,0 +1,1 @@
+---\ndescription: Opus\nallowed-tools: config\n---\n**Action:** /config set model claude-3-opus-20250229

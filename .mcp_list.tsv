@@ -1,0 +1,12 @@
+memory-bank	npx	-y
+kg-memory	npx	-y
+cache	npx	-y
+sequential	npx	-y
+serena	npx	-y
+playwright	npx	-y
+puppeteer	npx	-y
+github	npx	-y
+openagents	npx	-y
+compass	npx	-y
+desktop	npx	-y
+duckduckgo	npx	-y

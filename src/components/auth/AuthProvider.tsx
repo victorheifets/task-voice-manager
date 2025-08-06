@@ -35,7 +35,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Get initial session
+    // Development bypass - skip authentication entirely
+    if (process.env.NODE_ENV === 'development') {
+      const mockUser: User = {
+        id: 'dev-user-123',
+        email: 'dev@test.com',
+        user_metadata: { name: 'Development User' },
+        app_metadata: {},
+        aud: 'authenticated',
+        role: 'authenticated',
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString()
+      } as User
+      
+      setUser(mockUser)
+      setLoading(false)
+      return
+    }
+
+    // Production authentication
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null)
       setLoading(false)

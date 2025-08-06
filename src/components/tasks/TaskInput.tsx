@@ -82,63 +82,64 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
   };
 
   return (
-    <Box sx={{ my: 3 }}>
-      <Paper
-        elevation={3}
-        sx={{
-          py: 2,
-          px: 2,
-          minHeight: '48px',
-          gap: 2,
-          borderRadius: 2,
-          boxShadow: '0 0 12px rgba(0,0,0,0.15)',
-          border: `1px solid ${theme.palette.divider}`
+    <>
+      <TextField
+        fullWidth
+        placeholder="Add a task... (e.g., 'Call John tomorrow at 3pm')"
+        value={input}
+        onChange={handleInputChange}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit(e);
+          }
         }}
-      >
-        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 2, position: 'relative' }}>
-          <TextField
-            fullWidth
-            placeholder="Add a task... (e.g., 'Call John tomorrow at 3pm')"
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
-            variant="outlined"
-            size="small"
-            className="task-input"
-            sx={{
-              '& .MuiOutlinedInput-root': {
-                minHeight: 40,
-                pr: '80px', // Make space for controls
-              },
-            }}
-            slotProps={{
-              input: {
-                endAdornment: (
-                  <Box sx={{ display: 'flex', gap: 0.5 }}>
-                    <IconButton
-                      size="small"
-                      color="primary"
-                      onClick={handleSubmit}
-                      disabled={!input.trim() || isSubmitting}
-                    >
-                      {isSubmitting ? (
-                        <CircularProgress size={20} />
-                      ) : (
-                        <SendIcon />
-                      )}
-                    </IconButton>
-                  </Box>
-                ),
-              },
-            }}
-          />
-        </Box>
-      </Paper>
+        variant="outlined"
+        size="medium"
+        className="task-input"
+        sx={{
+          '& .MuiOutlinedInput-root': {
+            minHeight: 48,
+            pr: '80px', // Make space for controls
+            borderRadius: 2,
+            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#ffffff',
+            border: theme.palette.mode === 'dark' ? '2px solid rgba(255,255,255,0.2)' : '2px solid rgba(0,0,0,0.1)',
+            '& fieldset': {
+              borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.23)'
+            },
+            '&:hover fieldset': {
+              borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.4)'
+            },
+            '&.Mui-focused fieldset': {
+              borderColor: theme.palette.primary.main
+            }
+          },
+          '& .MuiInputBase-input': {
+            color: theme.palette.mode === 'dark' ? '#fff' : '#333'
+          },
+          mb: 2
+        }}
+        slotProps={{
+          input: {
+            endAdornment: (
+              <Box sx={{ display: 'flex', gap: 0.5 }}>
+                <IconButton
+                  size="small"
+                  color="primary"
+                  onClick={handleSubmit}
+                  disabled={!input.trim() || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <CircularProgress size={20} />
+                  ) : (
+                    <SendIcon />
+                  )}
+                </IconButton>
+              </Box>
+            ),
+          },
+        }}
+      />
 
       <Dialog
         open={showNotes}
@@ -174,6 +175,6 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
           </Button>
         </DialogActions>
       </Dialog>
-    </Box>
+    </>
   );
 }

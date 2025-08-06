@@ -1,5 +1,6 @@
 import { createBrowserClient } from '@supabase/ssr'
 import { Task } from '@/types/task'
+import { sampleTasks } from '@/data/sampleTasks'
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
@@ -8,6 +9,12 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Task management functions
 export async function getTasks(): Promise<Task[]> {
+  // Development mode - return hardcoded tasks
+  if (process.env.NODE_ENV === 'development') {
+    await new Promise(resolve => setTimeout(resolve, 300)) // Simulate API delay
+    return [...sampleTasks].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -22,6 +29,19 @@ export async function getTasks(): Promise<Task[]> {
 }
 
 export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> {
+  // Development mode - simulate task creation
+  if (process.env.NODE_ENV === 'development') {
+    await new Promise(resolve => setTimeout(resolve, 200))
+    const newTask: Task = {
+      ...task,
+      id: String(Date.now()),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    }
+    sampleTasks.unshift(newTask) // Add to beginning of array
+    return newTask
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -53,6 +73,20 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
 }
 
 export async function updateTask(taskId: string, updates: Partial<Task>) {
+  // Development mode - simulate task update
+  if (process.env.NODE_ENV === 'development') {
+    await new Promise(resolve => setTimeout(resolve, 200))
+    const taskIndex = sampleTasks.findIndex(task => task.id === taskId)
+    if (taskIndex === -1) throw new Error('Task not found')
+    
+    sampleTasks[taskIndex] = {
+      ...sampleTasks[taskIndex],
+      ...updates,
+      updatedAt: new Date().toISOString()
+    }
+    return sampleTasks[taskIndex]
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -90,6 +124,16 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
 }
 
 export async function deleteTask(id: string): Promise<void> {
+  // Development mode - simulate task deletion
+  if (process.env.NODE_ENV === 'development') {
+    await new Promise(resolve => setTimeout(resolve, 200))
+    const taskIndex = sampleTasks.findIndex(task => task.id === id)
+    if (taskIndex === -1) throw new Error('Task not found')
+    
+    sampleTasks.splice(taskIndex, 1)
+    return
+  }
+
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
