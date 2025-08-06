@@ -350,9 +350,9 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
           onMouseDown={(e) => {
             e.preventDefault();
             // Force date picker to open immediately
-            const input = e.currentTarget;
+            const input = e.currentTarget as HTMLInputElement;
             setTimeout(() => {
-              if (input.showPicker) {
+              if ('showPicker' in input && typeof input.showPicker === 'function') {
                 input.showPicker();
               } else {
                 // Fallback for browsers without showPicker

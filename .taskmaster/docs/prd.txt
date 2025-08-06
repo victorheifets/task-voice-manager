@@ -1,0 +1,69 @@
+# Task Voice Manager - Deployment & Production Launch PRD
+
+## Project Overview
+Deploy the Task Voice Manager application to production with admin approval system, ensuring secure user access and full functionality.
+
+## Current Status
+- ✅ App is fully developed and working locally
+- ✅ Supabase database reactivated with new API keys  
+- ✅ Admin approval system implemented
+- ✅ Voice recording and task creation functional
+- ⏳ Ready for production deployment
+
+## Deployment Requirements
+
+### 1. Database Setup & Migration
+- Ensure all required database tables exist in production
+- Verify RLS (Row Level Security) policies are correctly configured
+- Test admin approval workflow with real users
+- Confirm data isolation between users
+
+### 2. Vercel Production Deployment
+- Deploy application to Vercel with proper environment variables
+- Configure custom domain if needed
+- Set up automatic deployments from main branch
+- Configure build optimization and performance monitoring
+
+### 3. Environment Configuration
+- Securely configure all environment variables in Vercel
+- Ensure API keys are properly set for production
+- Configure OpenAI API for voice transcription and task parsing
+- Set up proper CORS and security headers
+
+### 4. User Access Control Implementation
+- Deploy admin approval system to production
+- Configure victor.heifets@gmail.com as the admin user
+- Test user signup → pending approval → admin approval workflow
+- Ensure non-approved users cannot access the application
+
+### 5. Production Testing & Validation
+- Test all CRUD operations (Create, Read, Update, Delete) for tasks
+- Verify voice recording and transcription works in production
+- Test mobile responsiveness and PWA functionality
+- Validate authentication flows and session management
+- Perform load testing with multiple users
+
+### 6. Monitoring & Maintenance Setup
+- Set up error tracking and monitoring
+- Configure usage analytics and performance metrics
+- Establish backup and recovery procedures
+- Document admin procedures for user approval
+
+## Success Criteria
+- Application is accessible via public URL
+- New users can sign up but require admin approval
+- Admin can approve/reject users through Supabase dashboard
+- All voice and task management features work in production
+- Mobile and desktop experiences are fully functional
+- Security measures are properly implemented
+
+## Timeline
+- Database Setup: Immediate
+- Vercel Deployment: 30 minutes
+- Testing & Validation: 1 hour
+- Production Launch: Same day
+
+## Post-Launch Tasks
+- Monitor application performance and user feedback
+- Document user approval process for ongoing maintenance
+- Plan future feature enhancements based on usage patterns

@@ -1,0 +1,254 @@
+{
+  "master": {
+    "tasks": [
+      {
+        "id": 1,
+        "title": "Configure Production Database and RLS Policies",
+        "description": "Set up and configure the Supabase production database with all required tables and Row Level Security (RLS) policies to ensure proper data isolation between users.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "details": "1. Access the Supabase dashboard and verify all tables from local development exist in production\n2. Implement the following RLS policies for each table:\n   - Tasks table: Users can only CRUD their own tasks\n   - Users table: Users can only read/update their own profile\n   - Admin approval table: Only admin can read/write\n3. Create necessary database indexes for performance optimization\n4. Set up foreign key relationships between tables\n5. Configure the admin approval workflow tables\n6. Test data isolation by creating test users and verifying they cannot access each other's data\n7. Use Supabase JS SDK v2.31.0 or newer for database interactions\n8. Implement database migrations using Supabase CLI if needed\n9. Verify that the admin user (victor.heifets@gmail.com) has proper permissions\n10. Document the database schema and RLS policies for future reference",
+        "testStrategy": "1. Create multiple test users and verify data isolation\n2. Test admin approval workflow by creating new user accounts\n3. Verify that unapproved users cannot access protected resources\n4. Test CRUD operations for tasks with different user accounts\n5. Validate that the admin user can approve/reject pending users\n6. Use Supabase's built-in SQL editor to verify RLS policies are working correctly\n7. Perform database query performance testing",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Execute SQL setup scripts in Supabase SQL Editor",
+            "description": "Run the prepared SQL scripts in the Supabase SQL Editor in the correct sequence to set up the production database.",
+            "status": "done",
+            "dependencies": [],
+            "details": "1. Execute production_db_setup_step1.sql - Creates core tables (tasks, user_usage, users)\n2. Execute production_db_setup_step2.sql - Enables RLS and creates security policies\n3. Execute production_db_setup_step3.sql - Adds indexes and timestamp triggers\n4. Execute production_db_setup_step4.sql - Creates user registration trigger and permissions\n5. Verify each script executes without errors before proceeding to the next",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Verify database setup and configuration",
+            "description": "Confirm that all database objects and security policies have been properly created and are functioning as expected.",
+            "status": "done",
+            "dependencies": [],
+            "details": "1. Verify all tables (tasks, user_usage, users) exist with correct schema\n2. Confirm RLS is enabled on all tables\n3. Check that security policies are properly applied\n4. Verify foreign key relationships are established\n5. Confirm indexes are created on key fields\n6. Test timestamp triggers are working\n7. Verify user registration workflow functions correctly\n8. Confirm admin user (victor.heifets@gmail.com) has proper permissions",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Test data isolation and security",
+            "description": "Perform comprehensive testing to ensure proper data isolation between users and verify security policies.",
+            "status": "done",
+            "dependencies": [],
+            "details": "1. Create test users with different permission levels\n2. Attempt cross-user data access to verify isolation\n3. Test admin-specific policies for victor.heifets@gmail.com\n4. Verify automated user registration workflow\n5. Test CRUD operations with different user accounts\n6. Validate that unapproved users cannot access protected resources",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Document database schema and RLS policies",
+            "description": "Create comprehensive documentation of the database structure, security policies, and configuration for future reference.",
+            "status": "done",
+            "dependencies": [],
+            "details": "1. Document table schemas and relationships\n2. Document all RLS policies and their purposes\n3. Document indexes and performance optimizations\n4. Document triggers and automated workflows\n5. Create a database diagram showing relationships\n6. Document admin-specific permissions and access controls\n7. Include copies of the SQL scripts in the documentation",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 2,
+        "title": "Configure Environment Variables and API Keys",
+        "description": "Securely set up all required environment variables and API keys in the production environment, including Supabase credentials and OpenAI API configuration.",
+        "status": "done",
+        "dependencies": [],
+        "priority": "high",
+        "details": "1. Create a comprehensive list of all required environment variables:\n   - NEXT_PUBLIC_SUPABASE_URL\n   - NEXT_PUBLIC_SUPABASE_ANON_KEY\n   - SUPABASE_SERVICE_ROLE_KEY (keep this secret, server-side only)\n   - OPENAI_API_KEY\n   - NEXT_PUBLIC_APP_URL\n   - ADMIN_EMAIL=victor.heifets@gmail.com\n2. Configure these variables in Vercel's Environment Variables section\n3. Set proper scoping for environment variables (Development, Preview, Production)\n4. Ensure sensitive keys are marked as encrypted\n5. Configure OpenAI API with appropriate rate limiting and usage tiers\n6. Set up proper CORS headers in Supabase dashboard:\n   - Allow only the production domain\n   - Configure appropriate HTTP methods (GET, POST, PUT, DELETE)\n7. Configure security headers in next.config.js:\n   - Content-Security-Policy\n   - X-Frame-Options\n   - X-Content-Type-Options\n8. Verify API keys are working by testing connections to Supabase and OpenAI\n9. Create deployment configuration files for Vercel\n10. Document deployment process for future reference",
+        "testStrategy": "1. Test API connections to Supabase from the production environment\n2. Verify OpenAI API integration works for voice transcription\n3. Check for any environment-specific errors in the application logs\n4. Validate that CORS is properly configured by testing API requests\n5. Use security scanning tools to verify proper security headers\n6. Test the application in incognito/private browsing mode to ensure cookies and sessions work correctly\n7. Verify microphone permissions are working correctly\n8. Confirm all environment variables are properly loaded in production",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Environment Variables Setup",
+            "description": "Created .env.production.local with all required production variables and documented environment variables for Vercel dashboard configuration.",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Security Configuration",
+            "description": "Enhanced next.config.js with comprehensive CSP, added security headers (HSTS, X-Frame-Options, X-XSS-Protection, Referrer-Policy), configured CORS policies, set up microphone permissions policy, and added environment-specific CORS origin handling.",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Vercel Deployment Setup",
+            "description": "Created vercel.json with framework configuration, configured function timeouts for API routes, set up security headers at deployment level, configured regions and build settings, and added environment variable references.",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Documentation",
+            "description": "Created comprehensive DEPLOYMENT_GUIDE.md including MCP integration status, manual deployment steps for Supabase and Vercel, and current configuration status.",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "MCP Analysis and Integration",
+            "description": "Analyzed MCP integration status: Task Master AI (functional), Filesystem (working), Supabase CLI (configured but requires manual execution), Vercel (using manual deployment workflow).",
+            "status": "done",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 3,
+        "title": "Deploy Application to Vercel Production Environment",
+        "description": "Deploy the Task Voice Manager application to Vercel production environment with proper configuration, build optimization, and continuous deployment setup, ensuring integration with the configured Supabase MCP.",
+        "status": "pending",
+        "dependencies": [
+          2
+        ],
+        "priority": "high",
+        "details": "1. Connect the GitHub repository to Vercel if not already done\n2. Configure the following Vercel project settings:\n   - Framework preset: Next.js\n   - Build command: `next build`\n   - Output directory: `.next`\n   - Node.js version: 18.x or newer\n3. Set up a custom domain if required and configure DNS settings\n4. Enable HTTPS and configure SSL certificates\n5. Configure build cache for faster deployments\n6. Set up automatic deployments from the main branch\n7. Configure build optimization:\n   - Enable Next.js image optimization\n   - Configure Vercel Edge Functions if needed\n   - Set up appropriate caching strategies\n8. Configure Vercel Analytics for performance monitoring\n9. Set up deployment protection rules if needed\n10. Configure serverless function regions for optimal performance\n11. Configure Vercel MCP to connect with the Supabase production environment\n12. Ensure Vercel environment variables align with the Supabase service role key in .mcp.json\n13. Deploy the application and verify successful build",
+        "testStrategy": "1. Verify successful deployment and build process\n2. Check application accessibility via the production URL\n3. Test page load times and performance metrics\n4. Verify that static assets are properly cached\n5. Test automatic deployment by making a small change to the repository\n6. Validate that environment variables are correctly applied\n7. Check Vercel logs for any deployment errors or warnings\n8. Test application functionality immediately after deployment\n9. Verify Supabase connection and data access via the production application\n10. Test database operations against existing tables (tasks, task_attachments, ai_processing_logs)\n11. Validate that the application correctly handles schema differences between expected and actual database structure",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Configure Vercel MCP for Supabase Integration",
+            "description": "Set up Vercel MCP to properly connect with the already configured Supabase MCP, ensuring the application can access the production database.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Handle Database Schema Alignment",
+            "description": "Configure the application deployment to handle the differences between expected schema and existing production database tables, including field name differences (assigned_to vs assignee) and missing tables.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Deploy Application with Database Migration Scripts",
+            "description": "Include necessary database migration scripts in the deployment to add missing tables (users, user_usage) and implement required RLS policies for data isolation.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Test Integrated Workflow with Existing Database",
+            "description": "After deployment, thoroughly test the application's interaction with the existing production database tables and verify that the schema alignment is working correctly.",
+            "status": "pending",
+            "dependencies": [],
+            "details": "",
+            "testStrategy": ""
+          }
+        ]
+      },
+      {
+        "id": 4,
+        "title": "Implement User Access Control and Admin Approval System",
+        "description": "Deploy and configure the admin approval system in production, ensuring that new users require approval and that the designated admin can manage user access.",
+        "details": "1. Verify the admin approval system is properly deployed to production\n2. Configure victor.heifets@gmail.com as the admin user with appropriate permissions\n3. Implement the user signup flow with pending approval status:\n   - Create a 'user_status' field in the users table with values: 'pending', 'approved', 'rejected'\n   - Set default status to 'pending' for new signups\n4. Create an admin dashboard or interface for approving/rejecting users\n5. Implement middleware to check user approval status on protected routes\n6. Create a waiting page for users with pending approval\n7. Set up email notifications for:\n   - Admin when new users sign up\n   - Users when their account is approved/rejected\n8. Implement session management to handle approval state changes\n9. Add logging for all approval-related actions\n10. Create a user management interface for the admin to view all users and their statuses",
+        "testStrategy": "1. Test the complete user flow: signup → pending approval → admin approval → access\n2. Verify that non-approved users cannot access protected routes\n3. Test the admin interface for approving and rejecting users\n4. Verify email notifications are sent correctly\n5. Test session handling when approval status changes\n6. Verify that only the designated admin can access the approval system\n7. Test with multiple simultaneous user signups\n8. Validate that approved users retain their status across sessions",
+        "priority": "high",
+        "dependencies": [
+          1,
+          3
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 5,
+        "title": "Perform Comprehensive Production Testing and Validation",
+        "description": "Conduct thorough testing of all application features in the production environment, including CRUD operations, voice recording, transcription, and responsive design.",
+        "details": "1. Create a comprehensive test plan covering all application features:\n   - User authentication and session management\n   - Task creation, reading, updating, and deletion\n   - Voice recording and transcription functionality\n   - Admin approval workflow\n   - Mobile responsiveness and PWA features\n2. Test voice recording and OpenAI transcription in production:\n   - Test with different accents and background noise levels\n   - Verify transcription accuracy and task parsing\n3. Validate all CRUD operations for tasks:\n   - Create tasks via voice and text input\n   - Read tasks with various filtering options\n   - Update task status, priority, and details\n   - Delete tasks and verify proper cleanup\n4. Test responsive design across devices:\n   - Mobile phones (iOS and Android)\n   - Tablets\n   - Desktop browsers (Chrome, Firefox, Safari, Edge)\n5. Validate PWA functionality:\n   - Offline capabilities\n   - Add to home screen\n   - Service worker updates\n6. Perform load testing with multiple simultaneous users\n7. Test error handling and recovery scenarios\n8. Validate authentication flows including login, logout, and password reset",
+        "testStrategy": "1. Create a test matrix covering all features across different devices and browsers\n2. Use real devices for mobile testing when possible\n3. Employ automated testing tools for load testing\n4. Create test user accounts with different permission levels\n5. Document and track all issues found during testing\n6. Verify fixed issues with regression testing\n7. Test edge cases such as poor network conditions\n8. Validate accessibility compliance using tools like Lighthouse\n9. Test performance metrics including Time to First Byte (TTFB) and First Contentful Paint (FCP)",
+        "priority": "medium",
+        "dependencies": [
+          3,
+          4
+        ],
+        "status": "pending",
+        "subtasks": []
+      },
+      {
+        "id": 6,
+        "title": "Set Up Monitoring, Analytics, and Maintenance Procedures",
+        "description": "Implement monitoring tools, error tracking, analytics, and establish maintenance procedures for the production application that has been successfully deployed.",
+        "status": "in-progress",
+        "dependencies": [
+          3,
+          5
+        ],
+        "priority": "medium",
+        "details": "1. Set up error tracking and monitoring using Sentry.io or similar service:\n   - Configure error boundaries in React components\n   - Set up server-side error logging\n   - Configure alert notifications for critical errors\n2. Implement analytics using Vercel Analytics or Google Analytics 4:\n   - Track page views and user engagement\n   - Monitor feature usage patterns\n   - Set up conversion tracking for key actions\n3. Configure performance monitoring:\n   - Set up Core Web Vitals tracking\n   - Monitor API response times\n   - Track resource usage (CPU, memory)\n4. Establish backup and recovery procedures:\n   - Configure automated Supabase database backups\n   - Document recovery procedures\n   - Test restoration from backups\n5. Create maintenance documentation:\n   - User approval process for administrators\n   - Deployment procedures\n   - Common troubleshooting steps\n6. Set up status page or monitoring dashboard\n7. Configure uptime monitoring with alerts for the production URL (https://ai-task-manager-3plqgspnq-victorheifets-projects.vercel.app)\n8. Establish a regular maintenance schedule\n9. Document future enhancement plans based on initial usage patterns\n10. Monitor authentication workflow and user signup process",
+        "testStrategy": "1. Verify error tracking by intentionally triggering errors\n2. Test alert notifications for critical issues\n3. Validate that analytics are properly tracking user behavior\n4. Test backup and restoration procedures in a controlled environment\n5. Review documentation for completeness and clarity\n6. Verify that monitoring tools are correctly configured\n7. Test alert escalation procedures\n8. Validate that performance metrics are being correctly captured\n9. Test monitoring of authentication flow including signup, admin approval, and database integration\n10. Verify monitoring captures 401 responses appropriately (as these are expected for unauthenticated users)",
+        "subtasks": [
+          {
+            "id": 1,
+            "title": "Verify production deployment and initial monitoring",
+            "description": "Confirm the application is properly deployed and set up initial monitoring for the authentication flow",
+            "status": "done",
+            "dependencies": [],
+            "details": "- Verified production URL is accessible: https://ai-task-manager-3plqgspnq-victorheifets-projects.vercel.app\n- Confirmed 401 response for unauthenticated users (working as expected)\n- Verified Vercel deployment is successful\n- Confirmed database connection is configured\n- Verified environment variables are properly separated",
+            "testStrategy": ""
+          },
+          {
+            "id": 2,
+            "title": "Set up authentication flow monitoring",
+            "description": "Implement monitoring specifically for the authentication and user approval workflow",
+            "status": "to-do",
+            "dependencies": [],
+            "details": "- Configure monitoring for signup process\n- Set up tracking for admin approval system\n- Monitor database connections during user creation\n- Track authentication success/failure rates\n- Set up alerts for authentication issues",
+            "testStrategy": ""
+          },
+          {
+            "id": 3,
+            "title": "Implement error tracking with Sentry.io",
+            "description": "Set up comprehensive error tracking for both frontend and backend",
+            "status": "to-do",
+            "dependencies": [],
+            "details": "- Install and configure Sentry SDK\n- Set up error boundaries in React components\n- Configure server-side error logging\n- Set up alert notifications for critical errors\n- Test error capturing by triggering sample errors",
+            "testStrategy": ""
+          },
+          {
+            "id": 4,
+            "title": "Configure analytics",
+            "description": "Implement analytics to track user behavior and application usage",
+            "status": "to-do",
+            "dependencies": [],
+            "details": "- Set up Vercel Analytics or Google Analytics 4\n- Configure tracking for page views and user engagement\n- Set up event tracking for key user actions\n- Create custom reports for feature usage patterns\n- Implement conversion tracking for important workflows",
+            "testStrategy": ""
+          },
+          {
+            "id": 5,
+            "title": "Establish backup and recovery procedures",
+            "description": "Set up automated backups and document recovery processes",
+            "status": "to-do",
+            "dependencies": [],
+            "details": "- Configure automated Supabase database backups\n- Document step-by-step recovery procedures\n- Test restoration from backups in a controlled environment\n- Create backup verification process\n- Document data retention policies",
+            "testStrategy": ""
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "created": "2025-08-06T21:21:12.117Z",
+      "updated": "2025-08-06T22:04:45.132Z",
+      "description": "Tasks for master context"
+    }
+  }
+}

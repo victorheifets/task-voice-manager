@@ -31,4 +31,5 @@ export interface ParsedTaskData {
   dueDate: string | null;
   assignee: string | null;
   tags: string[];
+  priority?: Priority;
 } 
