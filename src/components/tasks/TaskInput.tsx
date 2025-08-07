@@ -80,9 +80,9 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
       previousTranscriptRef.current = '';
       onTaskAdded();
       console.log('🎉 All tasks created and UI updated');
-    } catch (error) {
+    } catch (error: any) {
       console.error('❌ Error creating task:', error);
-      console.error('Error details:', error.message, error.stack);
+      console.error('Error details:', error?.message, error?.stack);
     } finally {
       setIsSubmitting(false);
     }
