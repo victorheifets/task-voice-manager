@@ -39,7 +39,8 @@ export async function getTasks(): Promise<Task[]> {
       completed: dbTask.completed || false,
       createdAt: dbTask.created_at,
       updatedAt: dbTask.updated_at,
-      priority: dbTask.priority || 'medium'
+      priority: dbTask.priority || 'medium',
+      notes: dbTask.notes || null
     };
   });
   
@@ -111,6 +112,7 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
   if (updates.title !== undefined) updateData.title = updates.title
   if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate
   if (updates.completed !== undefined) updateData.completed = updates.completed
+  if (updates.notes !== undefined) updateData.notes = updates.notes
 
   const { data, error } = await supabase
     .from('tasks')
@@ -132,7 +134,8 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
     completed: data.completed || false,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
-    priority: data.priority || updates.priority || 'medium'
+    priority: data.priority || updates.priority || 'medium',
+    notes: data.notes || updates.notes || null
   }
 }
 

@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Table,
   TableBody,
@@ -80,6 +80,9 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
   const [selectedTaskForInfo, setSelectedTaskForInfo] = useState<Task | null>(null);
   const [taskNotes, setTaskNotes] = useState('');
+  const [isNoteSaving, setIsNoteSaving] = useState(false);
+  const [lastSavedNotes, setLastSavedNotes] = useState('');
+  const notesDebounceRef = useRef<NodeJS.Timeout>();
 
   useEffect(() => {
     loadTasks();
@@ -216,6 +219,48 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
 
   const cancelEdit = () => {
     setEditing(null);
+  };
+
+  const saveNotes = useCallback(async (noteText: string, taskId: string) => {
+    if (noteText === lastSavedNotes) return;
+    
+    setIsNoteSaving(true);
+    try {
+      await updateTask(taskId, { notes: noteText });
+      setLastSavedNotes(noteText);
+      loadTasks();
+    } catch (error) {
+      console.error('Auto-save notes failed:', error);
+      setSnackbar({ open: true, message: 'Failed to save notes', severity: 'error' });
+    } finally {
+      setIsNoteSaving(false);
+    }
+  }, [lastSavedNotes, loadTasks]);
+
+  const debouncedSaveNotes = useCallback((noteText: string, taskId: string) => {
+    if (notesDebounceRef.current) {
+      clearTimeout(notesDebounceRef.current);
+    }
+    
+    notesDebounceRef.current = setTimeout(() => {
+      saveNotes(noteText, taskId);
+    }, 2500); // 2.5 second delay
+  }, [saveNotes]);
+
+  const handleNotesChange = (value: string) => {
+    setTaskNotes(value);
+    if (selectedTaskForInfo) {
+      debouncedSaveNotes(value, selectedTaskForInfo.id);
+    }
+  };
+
+  const handleNotesBlur = () => {
+    if (notesDebounceRef.current) {
+      clearTimeout(notesDebounceRef.current);
+    }
+    if (selectedTaskForInfo && taskNotes !== lastSavedNotes) {
+      saveNotes(taskNotes, selectedTaskForInfo.id);
+    }
   };
 
   const handleDelete = async (taskId: string) => {
@@ -612,7 +657,9 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
         <MenuItem onClick={() => {
           if (selectedTask) {
             setSelectedTaskForInfo(selectedTask);
-            setTaskNotes(selectedTask.notes || '');
+            const initialNotes = selectedTask.notes || '';
+            setTaskNotes(initialNotes);
+            setLastSavedNotes(initialNotes);
             setInfoDialogOpen(true);
           }
           setAnchorEl(null);
@@ -755,16 +802,24 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
               <Divider />
               
               <Box>
-                <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Notes
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Notes
+                  </Typography>
+                  {isNoteSaving && (
+                    <Typography variant="caption" color="text.secondary" sx={{ fontStyle: 'italic' }}>
+                      Saving...
+                    </Typography>
+                  )}
+                </Box>
                 <TextField
                   multiline
                   rows={4}
                   fullWidth
                   variant="outlined"
                   value={taskNotes}
-                  onChange={(e) => setTaskNotes(e.target.value)}
+                  onChange={(e) => handleNotesChange(e.target.value)}
+                  onBlur={handleNotesBlur}
                   placeholder="Add notes about this task..."
                   sx={{
                     '& .MuiOutlinedInput-root': {
@@ -778,23 +833,7 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
         </DialogContent>
         <DialogActions sx={{ p: 2 }}>
           <Button onClick={() => setInfoDialogOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            variant="contained" 
-            onClick={() => {
-              if (selectedTaskForInfo) {
-                updateTask(selectedTaskForInfo.id, { notes: taskNotes }).then(() => {
-                  loadTasks();
-                  setSnackbar({ open: true, message: 'Notes saved', severity: 'success' });
-                }).catch(() => {
-                  setSnackbar({ open: true, message: 'Failed to save notes', severity: 'error' });
-                });
-              }
-              setInfoDialogOpen(false);
-            }}
-          >
-            Save Notes
+            Close
           </Button>
         </DialogActions>
       </Dialog>
