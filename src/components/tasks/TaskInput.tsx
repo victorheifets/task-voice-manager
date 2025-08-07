@@ -58,24 +58,31 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
     try {
       // Use AI to parse the tasks
       const parsedTasks = await parseMultipleTasks(input.trim());
+      console.log('📋 Parsed tasks to create:', parsedTasks);
       
       // Create all parsed tasks
       for (const taskData of parsedTasks) {
-        await createTask({
+        console.log('💾 Creating task:', taskData);
+        
+        const createdTask = await createTask({
           title: taskData.title,
           dueDate: taskData.dueDate,
           assignee: taskData.assignee,
           tags: taskData.tags,
           completed: false,
-          priority: 'none'
+          priority: taskData.priority || 'medium'
         });
+        
+        console.log('✅ Task created successfully:', createdTask);
       }
 
       setInput('');
       previousTranscriptRef.current = '';
       onTaskAdded();
+      console.log('🎉 All tasks created and UI updated');
     } catch (error) {
-      console.error('Error creating task:', error);
+      console.error('❌ Error creating task:', error);
+      console.error('Error details:', error.message, error.stack);
     } finally {
       setIsSubmitting(false);
     }
