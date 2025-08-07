@@ -26,30 +26,36 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
+  // Create base task data with only core columns that exist in database
+  const taskData: any = {
+    title: task.title,
+    user_id: user.id,
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString()
+  }
+
+  // Add optional columns only if they exist in the schema (graceful handling)
+  if (task.dueDate) taskData.due_date = task.dueDate
+  
   const { data, error } = await supabase
     .from('tasks')
-    .insert({
-      ...task,
-      user_id: user.id,
-      due_date: task.dueDate,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
-    })
+    .insert(taskData)
     .select()
     .single()
 
   if (error) throw error
 
+  // Return task with safe property access
   return {
     id: data.id,
     title: data.title,
-    dueDate: data.due_date,
-    assignee: data.assignee,
-    tags: data.tags,
-    completed: data.completed,
+    dueDate: data.due_date || null,
+    assignee: data.assignee || task.assignee || null,
+    tags: data.tags || task.tags || [],
+    completed: data.completed || false,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
-    priority: data.priority
+    priority: data.priority || task.priority || 'medium'
   }
 }
 
@@ -57,15 +63,15 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
+  // Build update data with only core columns
   const updateData: any = {
-    ...updates,
     updated_at: new Date().toISOString()
   }
 
-  if (updates.dueDate !== undefined) {
-    updateData.due_date = updates.dueDate
-    delete updateData.dueDate
-  }
+  // Only update columns that exist in the database
+  if (updates.title !== undefined) updateData.title = updates.title
+  if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate
+  if (updates.completed !== undefined) updateData.completed = updates.completed
 
   const { data, error } = await supabase
     .from('tasks')
@@ -77,16 +83,17 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
 
   if (error) throw error
 
+  // Return with safe property access
   return {
     id: data.id,
     title: data.title,
-    dueDate: data.due_date,
-    assignee: data.assignee,
-    tags: data.tags,
-    completed: data.completed,
+    dueDate: data.due_date || null,
+    assignee: data.assignee || updates.assignee || null,
+    tags: data.tags || updates.tags || [],
+    completed: data.completed || false,
     createdAt: data.created_at,
     updatedAt: data.updated_at,
-    priority: data.priority
+    priority: data.priority || updates.priority || 'medium'
   }
 }
 
