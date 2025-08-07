@@ -617,11 +617,11 @@ function MainContent() {
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: { xs: 2, md: 3 } }}>
               {/* API Configuration */}
               <Card sx={{ 
-                boxShadow: '0 0 8px rgba(0, 0, 0, 0.1)', 
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)', 
                 borderRadius: { xs: 0, sm: 2 },
                 mx: { xs: -2, sm: 0 },
                 '&:hover': {
-                  boxShadow: '0 0 12px rgba(0, 0, 0, 0.15)',
+                  boxShadow: '0 6px 28px rgba(0, 0, 0, 0.35)',
                   transform: 'translateY(-1px)',
                   transition: 'all 0.2s ease-in-out'
                 }
@@ -765,11 +765,11 @@ function MainContent() {
               
               {/* Voice Recognition */}
               <Card sx={{ 
-                boxShadow: '0 0 8px rgba(0, 0, 0, 0.1)', 
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)', 
                 borderRadius: { xs: 0, sm: 2 },
                 mx: { xs: -2, sm: 0 },
                 '&:hover': {
-                  boxShadow: '0 0 12px rgba(0, 0, 0, 0.15)',
+                  boxShadow: '0 6px 28px rgba(0, 0, 0, 0.35)',
                   transform: 'translateY(-1px)',
                   transition: 'all 0.2s ease-in-out'
                 }
@@ -870,11 +870,11 @@ function MainContent() {
               
               {/* Notifications */}
               <Card sx={{ 
-                boxShadow: '0 0 8px rgba(0, 0, 0, 0.1)', 
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)', 
                 borderRadius: { xs: 0, sm: 2 },
                 mx: { xs: -2, sm: 0 },
                 '&:hover': {
-                  boxShadow: '0 0 12px rgba(0, 0, 0, 0.15)',
+                  boxShadow: '0 6px 28px rgba(0, 0, 0, 0.35)',
                   transform: 'translateY(-1px)',
                   transition: 'all 0.2s ease-in-out'
                 }
@@ -973,7 +973,7 @@ function MainContent() {
               
               {/* Date & Time */}
               <Card sx={{ 
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', 
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)', 
                 borderRadius: { xs: 0, sm: 2 },
                 mx: { xs: -2, sm: 0 }
               }}>
@@ -1013,7 +1013,7 @@ function MainContent() {
               
               {/* Appearance */}
               <Card sx={{ 
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', 
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)', 
                 borderRadius: { xs: 0, sm: 2 },
                 mx: { xs: -2, sm: 0 }
               }}>
@@ -1085,7 +1085,7 @@ function MainContent() {
               
               {/* Advanced */}
               <Card sx={{ 
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)', 
+                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.25)', 
                 borderRadius: { xs: 0, sm: 2 },
                 mx: { xs: -2, sm: 0 }
               }}>
