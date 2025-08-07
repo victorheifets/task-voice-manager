@@ -224,13 +224,15 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
   const saveNotes = useCallback(async (noteText: string, taskId: string) => {
     if (noteText === lastSavedNotes) return;
     
+    console.log('💾 Auto-saving notes for task:', taskId, 'Text length:', noteText.length);
     setIsNoteSaving(true);
     try {
       await updateTask(taskId, { notes: noteText });
       setLastSavedNotes(noteText);
+      console.log('✅ Notes saved successfully');
       loadTasks();
     } catch (error) {
-      console.error('Auto-save notes failed:', error);
+      console.error('❌ Auto-save notes failed:', error);
       setSnackbar({ open: true, message: 'Failed to save notes', severity: 'error' });
     } finally {
       setIsNoteSaving(false);
@@ -238,16 +240,19 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
   }, [lastSavedNotes, loadTasks]);
 
   const debouncedSaveNotes = useCallback((noteText: string, taskId: string) => {
+    console.log('⏰ Setting up debounced save for task:', taskId, 'in 2.5 seconds');
     if (notesDebounceRef.current) {
       clearTimeout(notesDebounceRef.current);
     }
     
     notesDebounceRef.current = setTimeout(() => {
+      console.log('⏰ Debounce timer fired, saving notes...');
       saveNotes(noteText, taskId);
     }, 2500); // 2.5 second delay
   }, [saveNotes]);
 
   const handleNotesChange = (value: string) => {
+    console.log('📝 Notes changed:', value.length, 'characters');
     setTaskNotes(value);
     if (selectedTaskForInfo) {
       debouncedSaveNotes(value, selectedTaskForInfo.id);
@@ -255,11 +260,16 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
   };
 
   const handleNotesBlur = () => {
+    console.log('👁️ Notes field lost focus, checking if save needed...');
     if (notesDebounceRef.current) {
       clearTimeout(notesDebounceRef.current);
+      console.log('⏰ Cleared debounce timer');
     }
     if (selectedTaskForInfo && taskNotes !== lastSavedNotes) {
+      console.log('💾 Immediate save on blur');
       saveNotes(taskNotes, selectedTaskForInfo.id);
+    } else {
+      console.log('⚠️ No save needed - notes unchanged or no task selected');
     }
   };
 
