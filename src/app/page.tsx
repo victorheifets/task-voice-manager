@@ -48,7 +48,7 @@ import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import TaskInput from '@/components/tasks/TaskInput';
 import EnhancedTaskList from '@/components/tasks/EnhancedTaskList';
 import TaskFilters from '@/components/tasks/TaskFilters';
-import { getTasks, supabase } from '@/lib/supabase/client';
+import { getTasks, supabase, getUserNotes, saveUserNote } from '@/lib/supabase/client';
 import Layout from '@/components/layout/Layout';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
@@ -135,7 +135,6 @@ function MainContent() {
   const [apiKey, setApiKey] = useState('');
   const [azureKey, setAzureKey] = useState('');
   const [azureRegion, setAzureRegion] = useState('');
-  const [isSavingNotes, setIsSavingNotes] = useState(false);
   const [lastSavedNotesState, setLastSavedNotesState] = useState<any>({});
   const notesDebounceRefs = useRef<{[key: number]: NodeJS.Timeout}>({});
   
@@ -203,77 +202,76 @@ function MainContent() {
     setVoiceRecognitionLanguage(savedVoiceLanguage);
     setSelectedLanguage(i18n.language || 'en');
     
-    // Load saved notes for each tab
-    const loadedNotesState: any = {};
-    const updatedNoteTabs = noteTabs.map(tab => {
-      const savedContent = localStorage.getItem(`note_tab_${tab.id}`) || '';
-      loadedNotesState[tab.id] = savedContent;
-      return { ...tab, content: savedContent };
-    });
+    // Load saved notes from database
+    const loadNotes = async () => {
+      try {
+        const notesFromDB = await getUserNotes();
+        const updatedNoteTabs = noteTabs.map(tab => {
+          const content = notesFromDB[tab.id] || '';
+          return { ...tab, content };
+        });
+        
+        setNoteTabs(updatedNoteTabs);
+        setLastSavedNotesState(notesFromDB);
+      } catch (error) {
+        // Fallback to localStorage if database fails
+        const loadedNotesState: any = {};
+        const updatedNoteTabs = noteTabs.map(tab => {
+          const savedContent = localStorage.getItem(`note_tab_${tab.id}`) || '';
+          loadedNotesState[tab.id] = savedContent;
+          return { ...tab, content: savedContent };
+        });
+        
+        setNoteTabs(updatedNoteTabs);
+        setLastSavedNotesState(loadedNotesState);
+      }
+    };
     
-    setNoteTabs(updatedNoteTabs);
-    setLastSavedNotesState(loadedNotesState);
-    console.log('✅ Loaded saved notes from localStorage');
+    loadNotes();
   }, []);
 
   // Auto-save functionality for notes
   const saveNotesToStorage = useCallback(async (tabId: number, content: string) => {
-    const storageKey = `note_tab_${tabId}`;
     const lastSavedContent = lastSavedNotesState[tabId];
     
     if (content === lastSavedContent) return;
     
-    console.log('💾 Auto-saving notes for tab:', tabId, 'Content length:', content.length);
-    setIsSavingNotes(true);
-    
     try {
-      // Save to localStorage
-      localStorage.setItem(storageKey, content);
+      await saveUserNote(tabId, content);
       setLastSavedNotesState(prev => ({ ...prev, [tabId]: content }));
-      console.log('✅ Notes saved to localStorage successfully');
     } catch (error) {
-      console.error('❌ Auto-save notes failed:', error);
-    } finally {
-      setIsSavingNotes(false);
+      // Fallback to localStorage if database fails
+      localStorage.setItem(`note_tab_${tabId}`, content);
+      setLastSavedNotesState(prev => ({ ...prev, [tabId]: content }));
     }
   }, [lastSavedNotesState]);
 
   const debouncedSaveNotes = useCallback((tabId: number, content: string) => {
-    console.log('⏰ Setting up debounced save for notes tab:', tabId, 'in 2.5 seconds');
-    
     // Clear existing timeout for this tab
     if (notesDebounceRefs.current[tabId]) {
       clearTimeout(notesDebounceRefs.current[tabId]);
     }
     
     notesDebounceRefs.current[tabId] = setTimeout(() => {
-      console.log('⏰ Debounce timer fired for tab:', tabId, 'saving notes...');
       saveNotesToStorage(tabId, content);
     }, 2500);
   }, [saveNotesToStorage]);
 
   const handleNotesBlur = (tabId: number, content: string) => {
-    console.log('👁️ Notes field lost focus for tab:', tabId, 'checking if save needed...');
-    
     // Clear debounce timer
     if (notesDebounceRefs.current[tabId]) {
       clearTimeout(notesDebounceRefs.current[tabId]);
-      console.log('⏰ Cleared debounce timer for tab:', tabId);
     }
     
     // Immediate save on blur if content changed
     const lastSavedContent = lastSavedNotesState[tabId];
     if (content !== lastSavedContent) {
-      console.log('💾 Immediate save on blur for tab:', tabId);
       saveNotesToStorage(tabId, content);
-    } else {
-      console.log('⚠️ No save needed for tab:', tabId, '- content unchanged');
     }
   };
 
   const handleNoteContentChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = event.target.value;
-    console.log('📝 Notes content changed for tab:', activeNoteTab, 'Content length:', newContent.length);
     
     const updatedTabs = noteTabs.map(tab => 
       tab.id === activeNoteTab ? { ...tab, content: newContent } : tab
@@ -564,51 +562,31 @@ function MainContent() {
                     bgcolor: theme.palette.background.paper,
                     p: 2
                   }}>
-                    <Box sx={{ position: 'relative', height: '100%' }}>
-                      {isSavingNotes && (
-                        <Typography 
-                          variant="caption" 
-                          sx={{ 
-                            position: 'absolute', 
-                            top: 8, 
-                            right: 16, 
-                            color: 'text.secondary', 
-                            fontStyle: 'italic',
-                            zIndex: 1,
-                            bgcolor: theme.palette.background.paper,
-                            px: 1,
-                            borderRadius: 1
-                          }}
-                        >
-                          Saving...
-                        </Typography>
-                      )}
-                      <TextField
-                        multiline
-                        fullWidth
-                        variant="standard"
-                        placeholder={t('notes:placeholder')}
-                        value={tab.content}
-                        onChange={handleNoteContentChange}
-                        onBlur={() => handleNotesBlur(tab.id, tab.content)}
-                        InputProps={{
-                          disableUnderline: true,
-                          sx: {
-                            fontSize: '1rem',
-                            lineHeight: 1.6,
-                            color: theme.palette.text.primary
-                          }
-                        }}
-                        sx={{ 
+                    <TextField
+                      multiline
+                      fullWidth
+                      variant="standard"
+                      placeholder={t('notes:placeholder')}
+                      value={tab.content}
+                      onChange={handleNoteContentChange}
+                      onBlur={() => handleNotesBlur(tab.id, tab.content)}
+                      InputProps={{
+                        disableUnderline: true,
+                        sx: {
+                          fontSize: '1rem',
+                          lineHeight: 1.6,
+                          color: theme.palette.text.primary
+                        }
+                      }}
+                      sx={{ 
+                        height: '100%',
+                        '& .MuiInputBase-root': {
                           height: '100%',
-                          '& .MuiInputBase-root': {
-                            height: '100%',
-                            alignItems: 'flex-start',
-                            bgcolor: theme.palette.background.paper
-                          }
-                        }}
-                      />
-                    </Box>
+                          alignItems: 'flex-start',
+                          bgcolor: theme.palette.background.paper
+                        }
+                      }}
+                    />
                   </Box>
                 </NoteTabPanel>
               ))}
