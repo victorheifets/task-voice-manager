@@ -45,7 +45,6 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
   const { mode, toggleTheme } = useThemeContext();
   const { language, changeLanguage } = useLanguageContext();
   const { user } = useAuth();
-  const [settingsAnchorEl, setSettingsAnchorEl] = useState<null | HTMLElement>(null);
   const [langAnchorEl, setLangAnchorEl] = useState<null | HTMLElement>(null);
   const [avatarAnchorEl, setAvatarAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
@@ -58,11 +57,9 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
   const ICON_BORDER_COLOR = theme.palette.mode === 'dark' ? 'rgba(77, 208, 225, 0.3)' : 'rgba(255, 255, 255, 0.3)';
 
   const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
-    setSettingsAnchorEl(event.currentTarget);
-  };
-
-  const handleSettingsClose = () => {
-    setSettingsAnchorEl(null);
+    if (onTabChange) {
+      onTabChange(2); // Switch directly to config tab (index 2)
+    }
   };
 
   const handleLangMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
@@ -92,12 +89,6 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
     }
   };
 
-  const handleConfigClick = () => {
-    if (onTabChange) {
-      onTabChange(2); // Switch to config tab (index 2)
-    }
-    handleSettingsClose();
-  };
 
   const handleProfileClick = () => {
     // Handle profile navigation
@@ -384,54 +375,6 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
               <span role="img" aria-label="french">🇫🇷</span>
             </ListItemIcon>
             <ListItemText>{t('language.fr')}</ListItemText>
-          </MenuItem>
-        </Menu>
-        {/* Settings Menu */}
-        <Menu
-          anchorEl={settingsAnchorEl}
-          open={Boolean(settingsAnchorEl)}
-          onClose={handleSettingsClose}
-          anchorOrigin={{
-            vertical: 'bottom',
-            horizontal: 'right',
-          }}
-          transformOrigin={{
-            vertical: 'top',
-            horizontal: 'right',
-          }}
-          PaperProps={{
-            elevation: 3,
-            sx: { 
-              mt: 1.5,
-              minWidth: 180,
-              overflow: 'visible',
-              borderRadius: '12px',
-              border: `1px solid ${theme.palette.divider}`,
-              boxShadow: mode === 'light' 
-                ? '0 8px 24px rgba(0,0,0,0.12)'
-                : '0 8px 24px rgba(0,0,0,0.3)',
-              '&:before': {
-                content: '""',
-                display: 'block',
-                position: 'absolute',
-                top: 0,
-                right: 14,
-                width: 10,
-                height: 10,
-                bgcolor: theme.palette.background.paper,
-                transform: 'translateY(-50%) rotate(45deg)',
-                zIndex: 0,
-                borderLeft: `1px solid ${theme.palette.divider}`,
-                borderTop: `1px solid ${theme.palette.divider}`,
-              },
-            }
-          }}
-        >
-          <MenuItem onClick={handleConfigClick} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
-            <ListItemIcon>
-              <SettingsIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
-            </ListItemIcon>
-            <ListItemText>{t('menu.settings')}</ListItemText>
           </MenuItem>
         </Menu>
         
