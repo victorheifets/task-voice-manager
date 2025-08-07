@@ -11,6 +11,15 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    // Check if OpenAI API key is configured
+    if (!process.env.OPENAI_API_KEY) {
+      console.error('OpenAI API key not found in environment variables');
+      return NextResponse.json(
+        { error: 'no api key found in request' },
+        { status: 500 }
+      );
+    }
+
     // Get form data with audio file
     const formData = await request.formData();
     const audioFile = formData.get('audio') as File;
