@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from '../providers';
-import EnvDebug from '../components/debug/EnvDebug';
 
 export const metadata: Metadata = {
   title: "Task Voice Manager",
@@ -19,7 +18,6 @@ export default function RootLayout({
       </head>
       <body className="antialiased">
         <Providers>{children}</Providers>
-        <EnvDebug />
       </body>
     </html>
   );
