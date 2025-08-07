@@ -204,4 +204,56 @@ export async function getUserUsage() {
 
   if (error && error.code !== 'PGRST116') throw error
   return data || { api_calls: 0, tokens_used: 0 }
-} 
+}
+
+// Notes management functions
+export async function getUserNotes(): Promise<{[key: number]: string}> {
+  console.log('📋 Loading user notes from database...');
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const { data, error } = await supabase
+    .from('user_notes')
+    .select('*')
+    .eq('user_id', user.id)
+
+  if (error) {
+    console.error('❌ Error loading notes:', error);
+    throw error;
+  }
+  
+  console.log('📥 Raw database notes:', data);
+  
+  // Convert to tab_id -> content mapping
+  const notesMap: {[key: number]: string} = {};
+  if (data) {
+    data.forEach(note => {
+      notesMap[note.tab_id] = note.content;
+    });
+  }
+  
+  console.log('📤 Mapped notes for UI:', notesMap);
+  return notesMap;
+}
+
+export async function saveUserNote(tabId: number, content: string): Promise<void> {
+  console.log('💾 Saving note to database for tab:', tabId, 'Content length:', content.length);
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) throw new Error('User not authenticated')
+
+  const { error } = await supabase
+    .from('user_notes')
+    .upsert({
+      user_id: user.id,
+      tab_id: tabId,
+      content: content,
+      updated_at: new Date().toISOString()
+    })
+
+  if (error) {
+    console.error('❌ Error saving note:', error);
+    throw error;
+  }
+  
+  console.log('✅ Note saved to database successfully');
+}
