@@ -25,9 +25,9 @@ import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 import TranslateIcon from '@mui/icons-material/Translate';
 import PersonIcon from '@mui/icons-material/Person';
-import NotificationsIcon from '@mui/icons-material/Notifications';
 import HelpIcon from '@mui/icons-material/Help';
 import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import MenuIcon from '@mui/icons-material/Menu';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { useLanguageContext } from '../../contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
@@ -35,7 +35,12 @@ import { useAuth } from '../auth/AuthProvider';
 import { supabase } from '@/lib/supabase/client';
 import LogoutIcon from '@mui/icons-material/Logout';
 
-export default function Header() {
+interface HeaderProps {
+  onTabChange?: (tabIndex: number) => void;
+  onMenuClick?: () => void;
+}
+
+export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
   const { t } = useTranslation(['common']);
   const { mode, toggleTheme } = useThemeContext();
   const { language, changeLanguage } = useLanguageContext();
@@ -81,6 +86,29 @@ export default function Header() {
     handleAvatarClose();
   };
 
+  const handleLogoClick = () => {
+    if (onTabChange) {
+      onTabChange(0); // Switch to tasks tab (index 0)
+    }
+  };
+
+  const handleConfigClick = () => {
+    if (onTabChange) {
+      onTabChange(2); // Switch to config tab (index 2)
+    }
+    handleSettingsClose();
+  };
+
+  const handleProfileClick = () => {
+    // Handle profile navigation
+    handleAvatarClose();
+  };
+
+  const handleHelpClick = () => {
+    // Handle help navigation
+    handleAvatarClose();
+  };
+
   const handleLanguageChange = (lang: 'en' | 'es' | 'fr') => {
     changeLanguage(lang);
     handleLangMenuClose();
@@ -107,7 +135,18 @@ export default function Header() {
         width: '100%',
         mx: 'auto'
       }}>
-        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+        <Box 
+          sx={{ 
+            display: 'flex', 
+            alignItems: 'center',
+            cursor: 'pointer',
+            transition: 'transform 0.2s',
+            '&:hover': {
+              transform: 'scale(1.02)'
+            }
+          }}
+          onClick={handleLogoClick}
+        >
           <TaskAltIcon 
             sx={{ 
               mr: 1.5, 
@@ -128,6 +167,29 @@ export default function Header() {
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+          {isMobile && onMenuClick && (
+            <Tooltip title="Menu">
+              <IconButton 
+                onClick={onMenuClick}
+                color="inherit" 
+                size="small"
+                sx={{ 
+                  borderRadius: '50%',
+                  padding: '8px',
+                  backgroundColor: ICON_BG_COLOR,
+                  border: `1px solid ${ICON_BORDER_COLOR}`,
+                  transition: 'all 0.2s',
+                  '&:hover': {
+                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                    borderColor: PRIMARY_COLOR,
+                    transform: 'translateY(-2px)'
+                  }
+                }}
+              >
+                <MenuIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
+              </IconButton>
+            </Tooltip>
+          )}
           <Tooltip title={mode === 'light' ? t('theme.dark') : t('theme.light')}>
             <IconButton 
               onClick={toggleTheme} 
@@ -169,45 +231,6 @@ export default function Header() {
               }}
             >
               <TranslateIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
-            </IconButton>
-          </Tooltip>
-          {!isMobile && (
-            <Badge badgeContent={2} color="error" sx={{ mx: 1 }}>
-              <IconButton 
-                color="inherit"
-                size="medium"
-                sx={{ 
-                  borderRadius: '50%',
-                  padding: '8px',
-                  backgroundColor: ICON_BG_COLOR,
-                  transition: 'all 0.2s',
-                  '&:hover': {
-                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
-                    transform: 'translateY(-2px)'
-                  }
-                }}
-              >
-                <NotificationsIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
-              </IconButton>
-            </Badge>
-          )}
-          <Tooltip title={t('app.settings')}>
-            <IconButton 
-              onClick={handleSettingsClick} 
-              color="inherit"
-              size={isMobile ? 'small' : 'medium'}
-              sx={{ 
-                borderRadius: '50%',
-                padding: '8px',
-                backgroundColor: ICON_BG_COLOR,
-                transition: 'all 0.2s',
-                '&:hover': {
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
-                  transform: 'translateY(-2px)'
-                }
-              }}
-            >
-              <SettingsIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
             </IconButton>
           </Tooltip>
           {!isMobile && (
@@ -386,24 +409,11 @@ export default function Header() {
             }
           }}
         >
-          <MenuItem onClick={handleSettingsClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
-            <ListItemIcon>
-              <PersonIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
-            </ListItemIcon>
-            <ListItemText>{t('menu.profile')}</ListItemText>
-          </MenuItem>
-          <MenuItem onClick={handleSettingsClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
+          <MenuItem onClick={handleConfigClick} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
               <SettingsIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
             </ListItemIcon>
             <ListItemText>{t('menu.settings')}</ListItemText>
-          </MenuItem>
-          <Divider sx={{ my: 1 }} />
-          <MenuItem onClick={handleSettingsClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
-            <ListItemIcon>
-              <HelpIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
-            </ListItemIcon>
-            <ListItemText>{t('menu.help')}</ListItemText>
           </MenuItem>
         </Menu>
         
@@ -462,6 +472,19 @@ export default function Header() {
                 </Typography>
               </Box>
             </ListItemText>
+          </MenuItem>
+          <Divider sx={{ my: 1 }} />
+          <MenuItem onClick={handleProfileClick} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
+            <ListItemIcon>
+              <PersonIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
+            </ListItemIcon>
+            <ListItemText>Profile</ListItemText>
+          </MenuItem>
+          <MenuItem onClick={handleHelpClick} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
+            <ListItemIcon>
+              <HelpIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
+            </ListItemIcon>
+            <ListItemText>Help & Support</ListItemText>
           </MenuItem>
           <Divider sx={{ my: 1 }} />
           <MenuItem onClick={handleLogout} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25, color: 'error.main' }}>

@@ -6,9 +6,11 @@ import Header from './Header';
 
 interface LayoutProps {
   children: ReactNode;
+  onTabChange?: (tabIndex: number) => void;
+  onMenuClick?: () => void;
 }
 
-export default function Layout({ children }: LayoutProps) {
+export default function Layout({ children, onTabChange, onMenuClick }: LayoutProps) {
   const theme = useTheme();
   
   return (
@@ -19,7 +21,7 @@ export default function Layout({ children }: LayoutProps) {
       overflow: 'hidden',
       bgcolor: theme.palette.background.default
     }}>
-      <Header />
+      <Header onTabChange={onTabChange} onMenuClick={onMenuClick} />
       <Box sx={{ 
         flexGrow: 1, 
         overflow: 'hidden', // Remove outer scroll
