@@ -30,12 +30,6 @@ import {
   FormControlLabel,
   Switch,
   CircularProgress,
-  Drawer,
-  List,
-  ListItem,
-  ListItemButton,
-  ListItemIcon,
-  ListItemText,
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import MicIcon from '@mui/icons-material/Mic';
@@ -142,7 +136,6 @@ function MainContent() {
   const [azureKey, setAzureKey] = useState('');
   const [azureRegion, setAzureRegion] = useState('');
   const [lastSavedNotesState, setLastSavedNotesState] = useState<any>({});
-  const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const notesDebounceRefs = useRef<{[key: number]: NodeJS.Timeout}>({});
   
   const theme = useTheme();
@@ -157,16 +150,8 @@ function MainContent() {
   };
 
   const handleMenuClick = () => {
-    setMobileDrawerOpen(true);
-  };
-
-  const handleDrawerClose = () => {
-    setMobileDrawerOpen(false);
-  };
-
-  const handleDrawerNavigation = (tabIndex: number) => {
-    setActiveTab(tabIndex);
-    setMobileDrawerOpen(false);
+    // Handle mobile menu click - could open a drawer or show mobile navigation
+    console.log('Menu clicked');
   };
 
   const handleNoteTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -1373,126 +1358,6 @@ function MainContent() {
           />
         </BottomNavigation>
       )}
-
-      {/* Mobile Navigation Drawer */}
-      <Drawer
-        anchor="left"
-        open={mobileDrawerOpen}
-        onClose={handleDrawerClose}
-        PaperProps={{
-          sx: {
-            width: 280,
-            backgroundColor: theme.palette.background.paper,
-            borderRight: `1px solid ${theme.palette.divider}`,
-          }
-        }}
-      >
-        <Box sx={{ 
-          p: 3, 
-          borderBottom: `1px solid ${theme.palette.divider}`,
-          bgcolor: theme.palette.mode === 'dark' ? '#1a1a1a' : '#2196F3'
-        }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-            <TaskIcon sx={{ 
-              mr: 1.5, 
-              color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff',
-              fontSize: '1.8rem'
-            }} />
-            <Typography 
-              variant="h6" 
-              sx={{ 
-                fontWeight: 600,
-                color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff'
-              }}
-            >
-              {t('app.title')}
-            </Typography>
-          </Box>
-        </Box>
-        
-        <List sx={{ flex: 1, pt: 2 }}>
-          <ListItem disablePadding>
-            <ListItemButton 
-              selected={activeTab === 0}
-              onClick={() => handleDrawerNavigation(0)}
-              sx={{ 
-                borderRadius: 2, 
-                mx: 2, 
-                mb: 1,
-                '&.Mui-selected': {
-                  backgroundColor: theme.palette.primary.main,
-                  color: '#ffffff',
-                  '&:hover': {
-                    backgroundColor: theme.palette.primary.dark,
-                  },
-                  '& .MuiListItemIcon-root': {
-                    color: '#ffffff',
-                  }
-                }
-              }}
-            >
-              <ListItemIcon>
-                <TaskIcon />
-              </ListItemIcon>
-              <ListItemText primary={t('tabs.tasks')} />
-            </ListItemButton>
-          </ListItem>
-          
-          <ListItem disablePadding>
-            <ListItemButton 
-              selected={activeTab === 1}
-              onClick={() => handleDrawerNavigation(1)}
-              sx={{ 
-                borderRadius: 2, 
-                mx: 2, 
-                mb: 1,
-                '&.Mui-selected': {
-                  backgroundColor: theme.palette.primary.main,
-                  color: '#ffffff',
-                  '&:hover': {
-                    backgroundColor: theme.palette.primary.dark,
-                  },
-                  '& .MuiListItemIcon-root': {
-                    color: '#ffffff',
-                  }
-                }
-              }}
-            >
-              <ListItemIcon>
-                <NotesIcon />
-              </ListItemIcon>
-              <ListItemText primary={t('tabs.notes')} />
-            </ListItemButton>
-          </ListItem>
-          
-          <ListItem disablePadding>
-            <ListItemButton 
-              selected={activeTab === 2}
-              onClick={() => handleDrawerNavigation(2)}
-              sx={{ 
-                borderRadius: 2, 
-                mx: 2, 
-                mb: 1,
-                '&.Mui-selected': {
-                  backgroundColor: theme.palette.primary.main,
-                  color: '#ffffff',
-                  '&:hover': {
-                    backgroundColor: theme.palette.primary.dark,
-                  },
-                  '& .MuiListItemIcon-root': {
-                    color: '#ffffff',
-                  }
-                }
-              }}
-            >
-              <ListItemIcon>
-                <SettingsIcon />
-              </ListItemIcon>
-              <ListItemText primary={t('tabs.config')} />
-            </ListItemButton>
-          </ListItem>
-        </List>
-      </Drawer>
     </Layout>
   );
 }
