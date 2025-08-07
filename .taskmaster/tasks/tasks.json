@@ -243,11 +243,24 @@
             "testStrategy": ""
           }
         ]
+      },
+      {
+        "id": 7,
+        "title": "Fix Database Schema by Adding Missing Columns to Tasks Table",
+        "description": "Add assignee, tags, priority, due_date, and completed columns to the tasks table in the Supabase production database to enhance task management functionality.",
+        "details": "1. Access the Supabase production dashboard and navigate to the database section\n2. Identify the existing tasks table structure and prepare for schema modification\n3. Add the following columns to the tasks table:\n   - assignee: UUID type with foreign key reference to users table\n   - tags: JSONB type to store an array of tag strings\n   - priority: ENUM type with values 'low', 'medium', 'high', or VARCHAR with check constraint\n   - due_date: TIMESTAMP WITH TIME ZONE type, nullable\n   - completed: BOOLEAN type with default value of false\n4. Update any existing RLS policies to accommodate the new columns:\n   - Ensure users can only modify the assignee field if they have appropriate permissions\n   - Maintain data isolation between users for the new fields\n5. Create appropriate indexes for performance optimization:\n   - Add index on assignee column for faster queries by assignee\n   - Add index on priority for filtering tasks by priority\n   - Add index on completed status for filtering completed/incomplete tasks\n6. Update database triggers if necessary to handle the new columns\n7. Verify that the existing application code can handle the new schema without breaking\n8. Document the schema changes in the project documentation",
+        "testStrategy": "1. Execute SQL queries to verify all columns were added with correct data types and constraints\n2. Insert test data using the new columns to ensure they accept valid values\n3. Test RLS policies by attempting to access/modify data with different user accounts\n4. Verify foreign key constraint on assignee field works correctly\n5. Test application functionality that will use these new columns:\n   - Assigning tasks to users\n   - Adding and filtering by tags\n   - Setting and sorting by priority\n   - Setting and filtering by due dates\n   - Marking tasks as completed\n6. Check for any errors in application logs related to the schema changes\n7. Perform a rollback test to ensure a backup restoration plan works if needed\n8. Validate that existing data in the tasks table remains intact after the schema changes",
+        "status": "pending",
+        "dependencies": [
+          1
+        ],
+        "priority": "high",
+        "subtasks": []
       }
     ],
     "metadata": {
       "created": "2025-08-06T21:21:12.117Z",
-      "updated": "2025-08-06T22:04:45.132Z",
+      "updated": "2025-08-07T07:48:42.598Z",
       "description": "Tasks for master context"
     }
   }
