@@ -23,8 +23,11 @@ export async function getTasks(): Promise<Task[]> {
 }
 
 export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> {
+  console.log('🔐 Checking authentication...');
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
+  
+  console.log('✅ User authenticated:', user.id);
 
   // Create base task data with only core columns that exist in database
   const taskData: any = {
@@ -37,16 +40,23 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
   // Add optional columns only if they exist in the schema (graceful handling)
   if (task.dueDate) taskData.due_date = task.dueDate
   
+  console.log('📝 Inserting task data:', taskData);
+  
   const { data, error } = await supabase
     .from('tasks')
     .insert(taskData)
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('❌ Database insert error:', error);
+    throw error;
+  }
+  
+  console.log('✅ Database insert successful:', data);
 
   // Return task with safe property access
-  return {
+  const createdTask = {
     id: data.id,
     title: data.title,
     dueDate: data.due_date || null,
@@ -56,7 +66,10 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     priority: data.priority || task.priority || 'medium'
-  }
+  };
+  
+  console.log('📤 Returning created task:', createdTask);
+  return createdTask;
 }
 
 export async function updateTask(taskId: string, updates: Partial<Task>) {
