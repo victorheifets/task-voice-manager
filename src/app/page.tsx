@@ -145,6 +145,15 @@ function MainContent() {
     setActiveTab(newValue);
   };
 
+  const handleHeaderTabChange = (tabIndex: number) => {
+    setActiveTab(tabIndex);
+  };
+
+  const handleMenuClick = () => {
+    // Handle mobile menu click - could open a drawer or show mobile navigation
+    console.log('Menu clicked');
+  };
+
   const handleNoteTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveNoteTab(newValue);
   };
@@ -332,7 +341,7 @@ function MainContent() {
 
 
   return (
-    <Layout>
+    <Layout onTabChange={handleHeaderTabChange} onMenuClick={handleMenuClick}>
       <Box sx={{ 
         flexGrow: 1, 
         pb: isMobile ? 8 : 2,
