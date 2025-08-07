@@ -49,7 +49,7 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
   const [langAnchorEl, setLangAnchorEl] = useState<null | HTMLElement>(null);
   const [avatarAnchorEl, setAvatarAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
   // Theme-consistent colors - White text on blue background for light mode
   const PRIMARY_COLOR = theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff'; // White for light mode
@@ -131,9 +131,8 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
       <Toolbar sx={{ 
         justifyContent: 'space-between', 
         py: 1,
-        maxWidth: '1600px',
         width: '100%',
-        mx: 'auto'
+        px: { xs: 2, md: 3 } // Full width with padding
       }}>
         <Box 
           sx={{ 
@@ -190,6 +189,27 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
               </IconButton>
             </Tooltip>
           )}
+          <Tooltip title={t('app.settings')}>
+            <IconButton 
+              onClick={handleSettingsClick} 
+              color="inherit"
+              size={isMobile ? 'small' : 'medium'}
+              sx={{ 
+                borderRadius: '50%',
+                padding: '8px',
+                backgroundColor: ICON_BG_COLOR,
+                border: `1px solid ${ICON_BORDER_COLOR}`,
+                transition: 'all 0.2s',
+                '&:hover': {
+                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
+                  borderColor: PRIMARY_COLOR,
+                  transform: 'translateY(-2px)'
+                }
+              }}
+            >
+              <SettingsIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
+            </IconButton>
+          </Tooltip>
           <Tooltip title={mode === 'light' ? t('theme.dark') : t('theme.light')}>
             <IconButton 
               onClick={toggleTheme} 
@@ -233,27 +253,25 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
               <TranslateIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
             </IconButton>
           </Tooltip>
-          {!isMobile && (
-            <Tooltip title="Account">
-              <Avatar 
-                onClick={handleAvatarClick}
-                sx={{ 
-                  ml: 1, 
-                  width: 36, 
-                  height: 36,
-                  border: `2px solid ${theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff'}`,
-                  cursor: 'pointer',
-                  transition: 'transform 0.2s',
-                  backgroundColor: theme.palette.mode === 'dark' ? '#9e9e9e' : '#1976d2',
-                  '&:hover': {
-                    transform: 'scale(1.1)'
-                  }
-                }}
-              >
-                {user?.email?.[0]?.toUpperCase() || 'U'}
-              </Avatar>
-            </Tooltip>
-          )}
+          <Tooltip title="Account">
+            <Avatar 
+              onClick={handleAvatarClick}
+              sx={{ 
+                ml: 1, 
+                width: 36, 
+                height: 36,
+                border: `2px solid ${theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff'}`,
+                cursor: 'pointer',
+                transition: 'transform 0.2s',
+                backgroundColor: theme.palette.mode === 'dark' ? '#9e9e9e' : '#1976d2',
+                '&:hover': {
+                  transform: 'scale(1.1)'
+                }
+              }}
+            >
+              {user?.email?.[0]?.toUpperCase() || 'U'}
+            </Avatar>
+          </Tooltip>
         </Box>
         {/* Language Menu */}
         <Menu
