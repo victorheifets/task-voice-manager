@@ -87,10 +87,14 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
 
   const loadTasks = async () => {
     try {
+      console.log('🔄 EnhancedTaskList: Starting loadTasks...');
       const fetchedTasks = await getTasks();
+      console.log('📋 EnhancedTaskList: getTasks returned:', fetchedTasks.length, 'tasks');
+      console.log('🔍 EnhancedTaskList: First task from getTasks:', fetchedTasks?.[0] ? JSON.stringify(fetchedTasks[0], null, 2) : 'No tasks');
       setTasks(fetchedTasks);
+      console.log('✅ EnhancedTaskList: Tasks set in component state');
     } catch (error) {
-      console.error('Error loading tasks:', error);
+      console.error('❌ EnhancedTaskList: Error loading tasks:', error);
     }
   };
 
@@ -102,6 +106,8 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
   };
 
   const sortedTasks = React.useMemo(() => {
+    console.log('🎯 EnhancedTaskList: Computing sortedTasks, input tasks:', tasks.length);
+    console.log('🔍 EnhancedTaskList: First input task:', tasks?.[0] ? JSON.stringify(tasks[0], null, 2) : 'No input tasks');
     let filtered = tasks.filter(task => {
       // Enhanced search functionality
       const matchesSearch = searchFilter === '' || 
@@ -160,6 +166,10 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
       if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
       return 0;
     });
+    
+    console.log('📋 EnhancedTaskList: Final sortedTasks:', filtered.length);
+    console.log('🔍 EnhancedTaskList: First final task:', filtered?.[0] ? JSON.stringify(filtered[0], null, 2) : 'No final tasks');
+    return filtered;
   }, [tasks, sortField, sortDirection, searchFilter, statusFilter]);
 
   const handleToggleComplete = async (task: Task) => {
@@ -517,7 +527,14 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {sortedTasks.map((task) => (
+            {(() => {
+              console.log('🎨 EnhancedTaskList: About to render table rows, sortedTasks:', sortedTasks.length);
+              console.log('🔍 EnhancedTaskList: First task to render:', sortedTasks?.[0] ? JSON.stringify(sortedTasks[0], null, 2) : 'No tasks to render');
+              return null;
+            })()}
+            {sortedTasks.map((task) => {
+              console.log('🏗️ EnhancedTaskList: Rendering row for task:', task.id, 'Title:', task.title);
+              return (
               <TableRow
                 key={task.id}
                 hover
@@ -581,7 +598,8 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
                   </IconButton>
                 </TableCell>
               </TableRow>
-            ))}
+              );
+            })}
           </TableBody>
         </Table>
       </TableContainer>

@@ -9,6 +9,7 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Task management functions
 export async function getTasks(): Promise<Task[]> {
+  console.log('📋 Loading tasks from database...');
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -18,8 +19,33 @@ export async function getTasks(): Promise<Task[]> {
     .eq('user_id', user.id)
     .order('created_at', { ascending: false })
 
-  if (error) throw error
-  return data || []
+  if (error) {
+    console.error('❌ Error loading tasks:', error);
+    throw error;
+  }
+  
+  console.log('📥 Raw database tasks:', data);
+  console.log('🔍 First task detailed:', data?.[0] ? JSON.stringify(data[0], null, 2) : 'No tasks');
+  
+  // Map database fields to Task interface
+  const mappedTasks = (data || []).map(dbTask => {
+    console.log('🔄 Mapping task:', dbTask.id, 'Title:', dbTask.title);
+    return {
+      id: dbTask.id,
+      title: dbTask.title,
+      dueDate: dbTask.due_date || null,
+      assignee: dbTask.assigned_to || dbTask.assignee || null, // Handle both database column names
+      tags: dbTask.tags || [],
+      completed: dbTask.completed || false,
+      createdAt: dbTask.created_at,
+      updatedAt: dbTask.updated_at,
+      priority: dbTask.priority || 'medium'
+    };
+  });
+  
+  console.log('📤 Mapped tasks for UI:', mappedTasks);
+  console.log('🔍 First mapped task detailed:', mappedTasks?.[0] ? JSON.stringify(mappedTasks[0], null, 2) : 'No mapped tasks');
+  return mappedTasks;
 }
 
 export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> {
