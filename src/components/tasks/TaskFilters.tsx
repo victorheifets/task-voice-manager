@@ -127,15 +127,22 @@ export default function TaskFilters({
           mb: 2
         }}>
           <Paper
-            elevation={1}
             sx={{
               p: '2px 4px',
               display: 'flex',
               alignItems: 'center',
               flex: 1,
-              borderRadius: '20px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
-              border: '1px solid #e0e0e0'
+              borderRadius: 2,
+              bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
+              border: `2px solid ${theme.palette.mode === 'dark' ? theme.palette.divider : 'rgba(0,0,0,0.1)'}`,
+              boxShadow: theme.palette.mode === 'dark' ? 
+                '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.15)',
+              '&:hover': {
+                boxShadow: theme.palette.mode === 'dark' ? 
+                  '0 6px 28px rgba(0,0,0,0.4)' : '0 6px 28px rgba(0,0,0,0.2)',
+                bgcolor: theme.palette.mode === 'dark' ? 
+                  alpha(theme.palette.primary.main, 0.08) : '#ffffff',
+              }
             }}
           >
             <TextField
@@ -154,6 +161,14 @@ export default function TaskFilters({
                 width: 300,
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 2,
+                  bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
+                },
+                '& .MuiInputBase-input': {
+                  color: theme.palette.text.primary,
+                },
+                '& input::placeholder': {
+                  color: theme.palette.text.secondary,
+                  opacity: 1,
                 },
               }}
             />
@@ -287,7 +302,7 @@ export default function TaskFilters({
         ))}
       </Box>
       <TextField
-        placeholder="Search tasks, assignees, tags..."
+        placeholder="Search tasks... (e.g., 'John', 'urgent', 'meeting')"
         size="small"
         value={searchFilter}
         onChange={handleSearchChange}
@@ -299,11 +314,41 @@ export default function TaskFilters({
           ),
         }}
         sx={{
-          width: 250,
+          width: 350,
           '& .MuiOutlinedInput-root': {
             borderRadius: 2,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'
+            bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
+            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+            border: `1px solid ${theme.palette.mode === 'dark' ? theme.palette.divider : 'rgba(0,0,0,0.1)'}`,
+            '& fieldset': {
+              border: 'none',
+            },
+            '&:hover': {
+              boxShadow: theme.palette.mode === 'dark' ? 
+                '0 6px 20px rgba(0,0,0,0.35)' : '0 6px 20px rgba(0,0,0,0.35)',
+              borderColor: theme.palette.primary.main,
+              bgcolor: theme.palette.mode === 'dark' ? 
+                alpha(theme.palette.primary.main, 0.08) : '#ffffff',
+            },
+            '&:hover fieldset': {
+              border: 'none',
+            },
+            '&.Mui-focused': {
+              boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
+              bgcolor: theme.palette.mode === 'dark' ? 
+                alpha(theme.palette.primary.main, 0.08) : '#ffffff',
+            },
+            '&.Mui-focused fieldset': {
+              border: 'none',
+            }
           },
+          '& .MuiInputBase-input': {
+            color: theme.palette.text.primary
+          },
+          '& input::placeholder': {
+            color: '#999999',
+            opacity: 1
+          }
         }}
       />
     </Box>

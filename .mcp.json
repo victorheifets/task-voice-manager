@@ -71,17 +71,19 @@
 				"--log-level=INFO"
 			]
 		},
-		"supabase-cli": {
+		"supabase": {
 			"type": "stdio",
 			"command": "npx",
 			"args": [
 				"-y",
-				"@supabase/mcp-server"
+				"@supabase/mcp-server-supabase@latest",
+				"--project-ref=anoupmenvlacdpqcrvzw",
+				"--features=database"
 			],
 			"env": {
-				"SUPABASE_URL": "${SUPABASE_URL}",
-				"SUPABASE_ANON_KEY": "${SUPABASE_ANON_KEY}",
-				"SUPABASE_SERVICE_ROLE_KEY": "${SUPABASE_SERVICE_ROLE_KEY}"
+				"SUPABASE_URL": "https://anoupmenvlacdpqcrvzw.supabase.co",
+				"SUPABASE_SERVICE_ROLE_KEY": "***REMOVED***",
+				"SUPABASE_ACCESS_TOKEN": "${SUPABASE_ACCESS_TOKEN}"
 			}
 		},
 		"git": {

@@ -11,12 +11,17 @@ import {
   Dialog, 
   DialogTitle, 
   DialogContent, 
+  DialogActions,
+  Button,
   List, 
   ListItemButton, 
   ListItemIcon, 
   ListItemText, 
   Chip, 
-  alpha 
+  alpha,
+  Typography,
+  Snackbar,
+  Alert
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import FilterListIcon from '@mui/icons-material/FilterList';
@@ -27,8 +32,9 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import AllInclusiveIcon from '@mui/icons-material/AllInclusive';
 import TaskInput from './TaskInput';
-import { EnhancedTaskList } from './EnhancedTaskList';
+import EnhancedTaskList from '../../components/tasks/EnhancedTaskList';
 import TaskFilters from './TaskFilters';
+import { deleteTask } from '@/lib/supabase/client';
 
 export default function TasksSection({ 
   transcript, 
@@ -47,6 +53,13 @@ export default function TasksSection({
   const [searchFilter, setSearchFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: '',
+    severity: 'success' as 'success' | 'error'
+  });
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
 
@@ -73,6 +86,33 @@ export default function TasksSection({
     setShowMobileFilters(false);
   };
 
+  const handleBulkDelete = () => {
+    setDeleteConfirmOpen(true);
+  };
+
+  const confirmBulkDelete = async () => {
+    try {
+      const deletePromises = Array.from(selectedTasks).map(taskId => deleteTask(taskId));
+      await Promise.all(deletePromises);
+      setSnackbar({ 
+        open: true, 
+        message: `${selectedTasks.size} tasks deleted successfully`, 
+        severity: 'success' 
+      });
+      setDeleteConfirmOpen(false);
+      setSelectedTasks(new Set()); // Clear selections after delete
+      setRefreshTrigger(prev => prev + 1); // Refresh the task list
+    } catch (error) {
+      console.error('Failed to delete tasks:', error);
+      setSnackbar({ 
+        open: true, 
+        message: 'Failed to delete some tasks', 
+        severity: 'error' 
+      });
+      setDeleteConfirmOpen(false);
+    }
+  };
+
   const filterOptions = [
     { id: 'all', label: 'All', icon: <AllInclusiveIcon fontSize="small" />, color: '#2196F3' },
     { id: 'today', label: 'Today', icon: <TodayIcon fontSize="small" />, color: '#4CAF50' },
@@ -82,14 +122,19 @@ export default function TasksSection({
     { id: 'completed', label: 'Completed', icon: <CheckCircleOutlineIcon fontSize="small" />, color: '#4CAF50' }
   ];
 
+  // Get current filter label for mobile display
+  const currentFilter = filterOptions.find(f => f.id === (isMobile ? (mobileStatusFilter || statusFilter) : statusFilter));
+  const filterDisplayText = currentFilter?.label || 'All';
+
   return (
     <Box sx={{ 
       display: 'flex',
       flexDirection: 'column',
-      gap: 2,
+      gap: 3,
       height: '100%',
       flex: 1,
-      p: isMobile ? 2 : 0
+      // Minimal container - let components handle their own spacing
+      bgcolor: 'transparent'
     }}>
       {!isMobile && (
         <TaskInput 
@@ -98,7 +143,6 @@ export default function TasksSection({
         />
       )}
       {isMobile ? (
-        <Box sx={{ mb: 2 }}>
           <TextField
             placeholder="Search tasks, assignees, tags..."
             size="small"
@@ -111,7 +155,13 @@ export default function TasksSection({
               }
             }}
             fullWidth
+            style={{
+              borderRadius: '20px'
+            }}
             InputProps={{
+              style: {
+                borderRadius: '20px'
+              },
               startAdornment: (
                 <InputAdornment position="start">
                   <SearchIcon color="action" />
@@ -119,24 +169,42 @@ export default function TasksSection({
               ),
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton
+                  <Button
                     onClick={() => setShowMobileFilters(true)}
                     size="small"
+                    variant="text"
+                    startIcon={currentFilter?.icon}
                     sx={{
-                      color: theme.palette.primary.main,
+                      color: currentFilter?.color || theme.palette.primary.main,
+                      fontWeight: filterDisplayText !== 'All' ? 600 : 400,
+                      fontSize: '0.75rem',
+                      minWidth: 'auto',
+                      px: 1,
+                      py: 0.5,
                       '&:hover': {
-                        bgcolor: alpha(theme.palette.primary.main, 0.1),
+                        bgcolor: alpha(currentFilter?.color || theme.palette.primary.main, 0.1),
                       }
                     }}
                   >
-                    <FilterListIcon fontSize="small" />
-                  </IconButton>
+                    {filterDisplayText}
+                  </Button>
                 </InputAdornment>
               ),
             }}
             sx={{
+              // Stronger shadow around all sides like task input
+              boxShadow: '0 0 32px rgba(128, 128, 128, 0.15), 0 0 16px rgba(128, 128, 128, 0.1)',
+              borderRadius: '20px',
+              transition: 'box-shadow 0.3s ease, transform 0.2s ease',
+              '&:hover': {
+                boxShadow: '0 0 40px rgba(128, 128, 128, 0.2), 0 0 20px rgba(128, 128, 128, 0.15)',
+                transform: 'translateY(-1px)',
+              },
               '& .MuiOutlinedInput-root': {
                 borderRadius: '20px',
+                backgroundColor: 'background.paper',
+                // Additional shadow around the input itself
+                boxShadow: '0 0 16px rgba(128, 128, 128, 0.1)',
                 '& fieldset': {
                   borderColor: 'rgba(0, 0, 0, 0.12)',
                 },
@@ -146,16 +214,20 @@ export default function TasksSection({
                 '&.Mui-focused fieldset': {
                   borderColor: 'primary.main',
                 },
+                '&.Mui-focused': {
+                  boxShadow: '0 0 16px rgba(128, 128, 128, 0.1)',
+                },
               },
             }}
           />
-        </Box>
       ) : (
         <TaskFilters 
           searchFilter={searchFilter}
           statusFilter={statusFilter}
           onSearchChange={handleSearchChange}
           onStatusFilterChange={handleStatusFilterClick}
+          selectedTasksCount={selectedTasks.size}
+          onBulkDelete={handleBulkDelete}
         />
       )}
       <EnhancedTaskList 
@@ -245,6 +317,55 @@ export default function TasksSection({
           </List>
         </DialogContent>
       </Dialog>
+
+      {/* Delete Confirmation Dialog */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => setDeleteConfirmOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle sx={{ color: 'error.main', fontWeight: 600 }}>
+          Confirm Delete
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Are you sure you want to delete {selectedTasks.size} selected task{selectedTasks.size > 1 ? 's' : ''}? 
+            This action cannot be undone.
+          </Typography>
+        </DialogContent>
+        <DialogActions sx={{ p: 2.5, gap: 1 }}>
+          <Button 
+            onClick={() => setDeleteConfirmOpen(false)}
+            color="inherit"
+          >
+            Cancel
+          </Button>
+          <Button 
+            onClick={confirmBulkDelete}
+            variant="contained" 
+            color="error"
+          >
+            Delete {selectedTasks.size} Task{selectedTasks.size > 1 ? 's' : ''}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Snackbar */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={3000}
+        onClose={() => setSnackbar({ ...snackbar, open: false })}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          severity={snackbar.severity} 
+          onClose={() => setSnackbar({ ...snackbar, open: false })}
+          variant="filled"
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 }

@@ -29,6 +29,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import AllInclusiveIcon from '@mui/icons-material/AllInclusive';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useTranslation } from 'react-i18next';
 
 interface TaskFiltersProps {
@@ -36,13 +37,17 @@ interface TaskFiltersProps {
   statusFilter: string;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (status: string) => void;
+  selectedTasksCount?: number;
+  onBulkDelete?: () => void;
 }
 
 export default function TaskFilters({ 
   searchFilter, 
   statusFilter, 
   onSearchChange, 
-  onStatusFilterChange 
+  onStatusFilterChange,
+  selectedTasksCount = 0,
+  onBulkDelete
 }: TaskFiltersProps) {
   const { t } = useTranslation(['common']);
   const theme = useTheme();
@@ -126,18 +131,7 @@ export default function TaskFilters({
           gap: 1,
           mb: 2
         }}>
-          <Paper
-            elevation={1}
-            sx={{
-              p: '2px 4px',
-              display: 'flex',
-              alignItems: 'center',
-              flex: 1,
-              borderRadius: '20px',
-              boxShadow: '0 2px 4px rgba(0, 0, 0, 0.08)',
-              border: '1px solid #e0e0e0'
-            }}
-          >
+          <Paper elevation={1} sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', flex: 1, borderRadius: '20px', boxShadow: '0 0 8px rgba(128, 128, 128, 0.1)', border: '1px solid #e0e0e0' }}>
             <TextField
               placeholder="Search tasks, assignees, tags..."
               size="small"
@@ -150,12 +144,7 @@ export default function TaskFilters({
                   </InputAdornment>
                 ),
               }}
-              sx={{
-                width: 300,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                },
-              }}
+              sx={{ width: 300, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
             />
           </Paper>
           
@@ -182,7 +171,7 @@ export default function TaskFilters({
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               maxHeight: '70vh',
-              boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.1)'
+              boxShadow: '0 0 12px rgba(128, 128, 128, 0.15), 0 0 6px rgba(128, 128, 128, 0.1)'
             }
           }}
         >
@@ -259,13 +248,14 @@ export default function TaskFilters({
                 : (theme.palette.mode === 'dark' ? filter.color : filter.color),
               bgcolor: statusFilter === filter.id 
                 ? filter.color 
-                : (theme.palette.mode === 'dark' ? 'transparent' : '#fff'),
+                : (theme.palette.mode === 'dark' ? 'transparent' : 'background.paper'),
               borderColor: filter.color,
               borderWidth: '1.5px',
               border: `1.5px solid ${filter.color}`,
+              // Strong shadow for emphasis
               boxShadow: statusFilter === filter.id ? 
-                `0 2px 8px ${alpha(filter.color, 0.4)}` : 
-                'none',
+                `0 6px 20px ${alpha(filter.color, 0.4)}, 0 2px 8px ${alpha(filter.color, 0.3)}` : 
+                '0 0 12px rgba(128, 128, 128, 0.08), 0 0 6px rgba(128, 128, 128, 0.06)',
               fontWeight: statusFilter === filter.id ? 600 : 400,
               '&:hover': {
                 bgcolor: statusFilter === filter.id 
@@ -273,6 +263,11 @@ export default function TaskFilters({
                   : (theme.palette.mode === 'dark' ? alpha(filter.color, 0.2) : alpha(filter.color, 0.1)),
                 color: statusFilter === filter.id ? '#fff' : filter.color,
                 borderColor: filter.color,
+                // Enhanced hover shadow
+                boxShadow: statusFilter === filter.id 
+                  ? `0 8px 24px ${alpha(filter.color, 0.5)}, 0 3px 12px ${alpha(filter.color, 0.4)}` 
+                  : `0 0 16px ${alpha(filter.color, 0.2)}, 0 0 8px rgba(128, 128, 128, 0.1)`,
+                transform: 'translateY(-1px)',
               },
               '& .MuiButton-startIcon': {
                 color: 'inherit',
@@ -286,7 +281,36 @@ export default function TaskFilters({
           </Button>
         ))}
       </Box>
-      <TextField
+      
+      {/* Delete button for selected tasks */}
+      {selectedTasksCount > 0 && onBulkDelete && (
+        <Button
+          variant="contained"
+          color="error"
+          size="small"
+          startIcon={<DeleteIcon fontSize="small" />}
+          onClick={onBulkDelete}
+          sx={{ 
+            ml: 2,
+            mr: 2,
+            px: 2,
+            py: 0.5,
+            fontSize: '0.8rem',
+            fontWeight: 600,
+            borderRadius: 2,
+            textTransform: 'none',
+            minWidth: 'auto',
+            boxShadow: '0 2px 8px rgba(244, 67, 54, 0.3)',
+            '&:hover': {
+              boxShadow: '0 4px 12px rgba(244, 67, 54, 0.4)'
+            }
+          }}
+        >
+          Delete {selectedTasksCount}
+        </Button>
+      )}
+      
+       <TextField
         placeholder="Search tasks, assignees, tags..."
         size="small"
         value={searchFilter}
@@ -298,12 +322,23 @@ export default function TaskFilters({
             </InputAdornment>
           ),
         }}
-        sx={{
-          width: 250,
-          '& .MuiOutlinedInput-root': {
+        sx={{ 
+          width: 250, 
+          // Stronger shadow around all sides like task input
+          '& .MuiOutlinedInput-root': { 
             borderRadius: 2,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)'
-          },
+            backgroundColor: 'background.paper',
+            boxShadow: '0 0 32px rgba(128, 128, 128, 0.15), 0 0 16px rgba(128, 128, 128, 0.1)',
+            transition: 'box-shadow 0.3s ease, transform 0.2s ease',
+            '&:hover': {
+              boxShadow: '0 0 40px rgba(128, 128, 128, 0.2), 0 0 20px rgba(128, 128, 128, 0.15)',
+              transform: 'translateY(-1px)',
+            },
+            '&.Mui-focused': {
+              boxShadow: '0 0 40px rgba(33, 150, 243, 0.3), 0 0 20px rgba(128, 128, 128, 0.1)',
+              transform: 'translateY(-1px)',
+            }
+          }
         }}
       />
     </Box>

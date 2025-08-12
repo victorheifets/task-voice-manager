@@ -90,46 +90,54 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
 
   return (
     <>
-      <TextField
-        fullWidth
-        placeholder="Add a task... (e.g., 'Call John tomorrow at 3pm')"
-        value={input}
-        onChange={handleInputChange}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSubmit(e);
-          }
-        }}
-        variant="outlined"
-        size="medium"
-        className="task-input"
-        sx={{
-          '& .MuiOutlinedInput-root': {
-            minHeight: 48,
-            pr: '80px', // Make space for controls
-            borderRadius: 2,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#ffffff',
-            border: theme.palette.mode === 'dark' ? '2px solid rgba(255,255,255,0.2)' : '2px solid rgba(0,0,0,0.1)',
-            '& fieldset': {
-              borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.23)'
-            },
-            '&:hover fieldset': {
-              borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.4)'
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: theme.palette.primary.main
+      <Paper elevation={0} sx={{ 
+        p: 0, 
+        borderRadius: 2, 
+        mb: 2,
+        boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+        border: `1px solid ${theme.palette.divider}`,
+        '&:hover': {
+          boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
+          borderColor: theme.palette.primary.main,
+          transform: 'translateY(-1px)',
+          transition: 'all 0.3s ease'
+        }
+      }}>
+        <TextField
+          fullWidth
+          placeholder="Add a task... (e.g., 'Call John tomorrow at 3pm')"
+          value={input}
+          onChange={handleInputChange}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit(e);
             }
-          },
-          '& .MuiInputBase-input': {
-            color: theme.palette.mode === 'dark' ? '#fff' : '#333'
-          },
-          mb: 2
-        }}
-        slotProps={{
+          }}
+          variant="outlined"
+          size="medium"
+          className="task-input"
+          sx={{
+            '& .MuiOutlinedInput-root': {
+              minHeight: 48,
+              pr: '60px',
+              borderRadius: 2,
+              border: 'none',
+              '& fieldset': {
+                border: 'none',
+              },
+              '&:hover fieldset': {
+                border: 'none',
+              },
+              '&.Mui-focused fieldset': {
+                border: 'none',
+              },
+            },
+          }}
+          slotProps={{
           input: {
             endAdornment: (
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
+              <Box sx={{ display: 'flex', gap: 0.5, mr: 1 }}>
                 <IconButton
                   size="small"
                   color="primary"
@@ -147,6 +155,7 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
           },
         }}
       />
+      </Paper>
 
       <Dialog
         open={showNotes}

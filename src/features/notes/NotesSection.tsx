@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   Box,
   Tabs,
@@ -16,18 +16,39 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  Button
+  Button,
+  CircularProgress,
+  Alert
 } from '@mui/material';
 import AddIcon from '@mui/icons-material/Add';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
+import CloudOffIcon from '@mui/icons-material/CloudOff';
 import { useTranslation } from 'react-i18next';
 import NotesTabPanel from './NotesTabPanel';
+import { getUserNotes, saveUserNote } from '@/lib/supabase/client';
 
 interface NoteTab {
   id: number;
   title: string;
   content: string;
+}
+
+// Debounce hook for auto-save
+function useDebounce(value: string, delay: number) {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedValue(value);
+    }, delay);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [value, delay]);
+
+  return debouncedValue;
 }
 
 export default function NotesSection() {
@@ -45,6 +66,117 @@ export default function NotesSection() {
   const [editedNoteTitle, setEditedNoteTitle] = useState('');
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [tabToDelete, setTabToDelete] = useState<number | null>(null);
+  
+  // Database state
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [dbError, setDbError] = useState<string | null>(null);
+  const [useLocalStorage, setUseLocalStorage] = useState(false);
+
+  // Get current tab content for debouncing
+  const currentTabContent = noteTabs.find(tab => tab.id === activeNoteTab)?.content || '';
+  const debouncedContent = useDebounce(currentTabContent, 2000); // 2 second delay
+
+  // Load notes from database or localStorage on mount
+  useEffect(() => {
+    loadNotes();
+  }, []);
+
+  // Save to database when content changes (debounced)
+  useEffect(() => {
+    if (!isLoading && debouncedContent !== '') {
+      const activeTab = noteTabs.find(tab => tab.id === activeNoteTab);
+      if (activeTab && activeTab.content === debouncedContent) {
+        saveCurrentNote();
+      }
+    }
+  }, [debouncedContent, activeNoteTab, isLoading]);
+
+  // Load notes from database or localStorage
+  const loadNotes = async () => {
+    setIsLoading(true);
+    setDbError(null);
+
+    try {
+      // Try to load from database first
+      const { notes, error } = await getUserNotes();
+      
+      if (error) {
+        console.warn('Database error, falling back to localStorage:', error);
+        setDbError(error);
+        setUseLocalStorage(true);
+        loadFromLocalStorage();
+      } else {
+        // Load from database
+        const updatedTabs = noteTabs.map(tab => ({
+          ...tab,
+          content: notes[tab.id] || ''
+        }));
+        setNoteTabs(updatedTabs);
+        setUseLocalStorage(false);
+      }
+    } catch (error) {
+      console.error('Error loading notes:', error);
+      setDbError('Failed to load notes from database');
+      setUseLocalStorage(true);
+      loadFromLocalStorage();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Load from localStorage fallback
+  const loadFromLocalStorage = () => {
+    try {
+      const saved = localStorage.getItem('user-notes');
+      if (saved) {
+        const savedNotes = JSON.parse(saved);
+        const updatedTabs = noteTabs.map(tab => ({
+          ...tab,
+          content: savedNotes[tab.id] || ''
+        }));
+        setNoteTabs(updatedTabs);
+      }
+    } catch (error) {
+      console.error('Error loading from localStorage:', error);
+    }
+  };
+
+  // Save current note to database or localStorage
+  const saveCurrentNote = async () => {
+    const activeTab = noteTabs.find(tab => tab.id === activeNoteTab);
+    if (!activeTab) return;
+
+    if (useLocalStorage) {
+      saveToLocalStorage();
+      return;
+    }
+
+    setIsSaving(true);
+    try {
+      await saveUserNote(activeNoteTab, activeTab.content);
+    } catch (error) {
+      console.error('Error saving note:', error);
+      // Fallback to localStorage if database save fails
+      setUseLocalStorage(true);
+      saveToLocalStorage();
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Save to localStorage fallback
+  const saveToLocalStorage = () => {
+    try {
+      const notesMap: { [key: number]: string } = {};
+      noteTabs.forEach(tab => {
+        notesMap[tab.id] = tab.content;
+      });
+      localStorage.setItem('user-notes', JSON.stringify(notesMap));
+    } catch (error) {
+      console.error('Error saving to localStorage:', error);
+    }
+  };
 
   const handleNoteTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveNoteTab(newValue);
@@ -98,9 +230,48 @@ export default function NotesSection() {
     }
   };
 
+  // Loading state
+  if (isLoading) {
+    return (
+      <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', height: '200px' }}>
+        <CircularProgress size={40} />
+        <Typography sx={{ ml: 2 }}>Loading notes...</Typography>
+      </Box>
+    );
+  }
+
+  const StatusBar = () => (
+    <Box sx={{ 
+      display: 'flex', 
+      alignItems: 'center', 
+      gap: 1, 
+      px: 2, 
+      py: 0.5,
+      bgcolor: useLocalStorage ? 'warning.light' : 'success.light',
+      color: useLocalStorage ? 'warning.contrastText' : 'success.contrastText',
+      fontSize: '0.75rem',
+      borderRadius: 1,
+      mb: 1
+    }}>
+      {useLocalStorage && <CloudOffIcon fontSize="small" />}
+      {isSaving && <CircularProgress size={12} />}
+      <Typography variant="caption">
+        {useLocalStorage ? 'Using local storage' : isSaving ? 'Saving...' : 'Synced'}
+      </Typography>
+    </Box>
+  );
+
   if (isMobile) {
     return (
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
+        <StatusBar />
+        
+        {dbError && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {dbError}
+          </Alert>
+        )}
+
         {noteTabs.map(tab => (
           <Card key={tab.id} sx={{ boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
             <CardContent>
@@ -178,6 +349,16 @@ export default function NotesSection() {
       height: '100%',
       bgcolor: theme.palette.background.default
     }}>
+      <Box sx={{ px: 2, pt: 1 }}>
+        <StatusBar />
+        
+        {dbError && (
+          <Alert severity="warning" sx={{ mb: 2 }}>
+            {dbError}
+          </Alert>
+        )}
+      </Box>
+
       <Box sx={{ 
         borderBottom: 'none',
         bgcolor: 'transparent',

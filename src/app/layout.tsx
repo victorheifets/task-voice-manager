@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from '../providers';
+import { TranscriptionProvider } from '../contexts/TranscriptionContext';
 
 export const metadata: Metadata = {
   title: "Task Voice Manager",
@@ -14,10 +15,12 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <head>
-      </head>
       <body className="antialiased">
-        <Providers>{children}</Providers>
+        <Providers>
+          <TranscriptionProvider>
+            {children}
+          </TranscriptionProvider>
+        </Providers>
       </body>
     </html>
   );
