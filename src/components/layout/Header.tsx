@@ -186,7 +186,7 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                   },
-                  display: isMobile ? 'none' : 'flex' // Hide on mobile
+                  display: useMediaQuery(theme.breakpoints.down('lg')) ? 'none' : 'flex' // Only show on large screens
                 }}
               >
                 {isWideView 
