@@ -82,7 +82,7 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
   const [taskNotes, setTaskNotes] = useState('');
   const [isNoteSaving, setIsNoteSaving] = useState(false);
   const [lastSavedNotes, setLastSavedNotes] = useState('');
-  const notesDebounceRef = useRef<NodeJS.Timeout>();
+  const notesDebounceRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     loadTasks();
@@ -198,22 +198,30 @@ const EnhancedTaskList: React.FC<EnhancedTaskListProps> = ({
     if (!editing) return;
     
     try {
+      console.log('💾 Saving edit:', editing.field, '=', editing.value, 'for task:', editing.taskId);
+      
       const updates: Partial<Task> = {};
       if (editing.field === 'dueDate') {
         updates.dueDate = editing.value || null;
       } else if (editing.field === 'priority') {
         updates.priority = editing.value as Priority;
+      } else if (editing.field === 'assignee') {
+        updates.assignee = editing.value.trim() || null;
       } else {
         updates[editing.field] = editing.value;
       }
       
-      await updateTask(editing.taskId, updates);
+      console.log('💾 Updates object:', updates);
+      
+      const result = await updateTask(editing.taskId, updates);
+      console.log('✅ Update successful:', result);
+      
       setEditing(null);
       loadTasks();
       setSnackbar({ open: true, message: 'Task updated successfully', severity: 'success' });
     } catch (error) {
-      console.error('Error updating task:', error);
-      setSnackbar({ open: true, message: 'Failed to update task', severity: 'error' });
+      console.error('❌ Error updating task:', error);
+      setSnackbar({ open: true, message: `Failed to update task: ${(error as Error).message || String(error)}`, severity: 'error' });
     }
   };
 

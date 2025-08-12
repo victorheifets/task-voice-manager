@@ -199,28 +199,28 @@ export const darkTheme = createTheme({
   palette: {
     mode: 'dark',
     primary: {
-      main: '#2196F3',
-      light: '#64B5F6',
-      lighter: 'rgba(33, 150, 243, 0.08)',
-      dark: '#1976D2',
+      main: '#90caf9',
+      light: '#bbdefb',
+      lighter: 'rgba(144, 202, 249, 0.08)',
+      dark: '#42a5f5',
     },
     error: {
-      main: '#f44336',
-      light: '#ef5350',
-      lighter: 'rgba(244, 67, 54, 0.08)',
-      dark: '#d32f2f',
+      main: '#ef5350',
+      light: '#ff8a80',
+      lighter: 'rgba(239, 83, 80, 0.08)',
+      dark: '#c62828',
     },
     secondary: {
-      main: '#9c27b0',
+      main: '#ce93d8',
     },
     background: {
-      default: '#121212',
-      paper: '#1e1e1e',
+      default: '#2a2a2a', // Soft dark gray instead of black
+      paper: '#3a3a3a',   // Medium gray instead of dark gray
     },
     text: {
-      primary: 'rgba(255, 255, 255, 0.87)', // Slightly dimmed from pure white
-      secondary: 'rgba(255, 255, 255, 0.6)',
-      disabled: 'rgba(255, 255, 255, 0.38)',
+      primary: '#e0e0e0',     // Soft white-gray instead of bright white
+      secondary: '#b0b0b0',   // Medium gray instead of dimmed white
+      disabled: '#757575',    // Gray instead of dimmed white
     },
   },
   shape: {
@@ -230,8 +230,8 @@ export const darkTheme = createTheme({
     MuiPaper: {
       styleOverrides: {
         root: {
-          boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-          backgroundColor: '#1e1e1e',
+          boxShadow: '0 0 16px rgba(128, 128, 128, 0.15), 0 0 8px rgba(128, 128, 128, 0.1)',
+          backgroundColor: '#3a3a3a',
           '& .MuiDialog-paper': {
             borderRadius: 8,
           },
@@ -241,7 +241,7 @@ export const darkTheme = createTheme({
     MuiCard: {
       styleOverrides: {
         root: {
-          boxShadow: '0 4px 12px rgba(0, 0, 0, 0.25)',
+          boxShadow: '0 0 12px rgba(128, 128, 128, 0.2), 0 0 6px rgba(128, 128, 128, 0.15)',
           overflow: 'visible',
           borderRadius: 8,
         },
@@ -252,15 +252,15 @@ export const darkTheme = createTheme({
         root: {
           textTransform: 'none',
           borderRadius: 8,
-          boxShadow: '0 0 4px rgba(0, 0, 0, 0.25)',
+          boxShadow: '0 0 6px rgba(128, 128, 128, 0.2)',
           fontWeight: 600,
           '&:hover': {
-            boxShadow: '0 0 8px rgba(0, 0, 0, 0.35)',
+            boxShadow: '0 0 10px rgba(128, 128, 128, 0.25)',
             transform: 'translateY(-1px)',
           },
         },
         contained: {
-          boxShadow: '0 0 4px rgba(144, 202, 249, 0.25)',
+          boxShadow: '0 0 8px rgba(144, 202, 249, 0.3)',
         },
         containedPrimary: {
           background: 'linear-gradient(180deg, #90caf9 0%, #42a5f5 100%)',
@@ -282,9 +282,9 @@ export const darkTheme = createTheme({
     MuiFab: {
       styleOverrides: {
         root: {
-          boxShadow: '0 4px 8px rgba(0, 0, 0, 0.35)',
+          boxShadow: '0 0 12px rgba(128, 128, 128, 0.25), 0 0 6px rgba(128, 128, 128, 0.15)',
           '&:hover': {
-            boxShadow: '0 6px 12px rgba(0, 0, 0, 0.45)',
+            boxShadow: '0 0 16px rgba(128, 128, 128, 0.3), 0 0 8px rgba(128, 128, 128, 0.2)',
             transform: 'translateY(-2px)',
           },
           borderRadius: 8,
@@ -300,7 +300,6 @@ export const darkTheme = createTheme({
     MuiTextField: {
       styleOverrides: {
         root: {
-          backgroundColor: '#1e1e1e',
           borderRadius: 8,
           '& .MuiInput-underline:hover:not(.Mui-disabled):before': {
             borderBottom: 'none',
@@ -326,6 +325,7 @@ export const darkTheme = createTheme({
         },
       },
     },
+    
     MuiTableRow: {
       styleOverrides: {
         root: {
@@ -351,7 +351,7 @@ export const darkTheme = createTheme({
     MuiAppBar: {
       styleOverrides: {
         root: {
-          boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+          boxShadow: '0 0 12px rgba(128, 128, 128, 0.2), 0 0 6px rgba(128, 128, 128, 0.15)',
           backgroundImage: 'none',
         },
       },

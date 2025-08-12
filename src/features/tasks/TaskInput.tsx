@@ -98,24 +98,36 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
         size="medium"
         className="task-input"
         sx={{
+          borderRadius: 2,
+          // Strong shadow around all sides
+          boxShadow: '0 0 20px rgba(128, 128, 128, 0.12), 0 0 8px rgba(128, 128, 128, 0.08)',
           '& .MuiOutlinedInput-root': {
             minHeight: 48,
-            pr: '80px', // Make space for controls
+            pr: '80px',
             borderRadius: 2,
-            bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : '#ffffff',
-            border: theme.palette.mode === 'dark' ? '2px solid rgba(255,255,255,0.2)' : '2px solid rgba(0,0,0,0.1)',
+            backgroundColor: 'background.paper',
+            // Additional shadow around the input container
+            boxShadow: '0 0 12px rgba(128, 128, 128, 0.06)',
+            transition: 'box-shadow 0.3s ease, transform 0.2s ease, border-color 0.3s ease',
+            '&:hover': {
+              boxShadow: '0 0 24px rgba(128, 128, 128, 0.1), 0 0 12px rgba(128, 128, 128, 0.06)',
+              transform: 'translateY(-1px)',
+            },
+            '&.Mui-focused': {
+              boxShadow: '0 0 32px rgba(128, 128, 128, 0.12), 0 0 16px rgba(128, 128, 128, 0.08)',
+              transform: 'translateY(-2px)',
+            },
             '& fieldset': {
-              borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.23)'
+              borderColor: 'rgba(0,0,0,0.23)',
             },
             '&:hover fieldset': {
-              borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.3)' : 'rgba(0,0,0,0.4)'
+              borderColor: theme.palette.mode === 'dark' 
+                ? 'rgba(255, 255, 255, 0.6)' 
+                : 'rgba(0,0,0,0.4)',
             },
             '&.Mui-focused fieldset': {
-              borderColor: theme.palette.primary.main
+              borderColor: theme.palette.primary.main,
             }
-          },
-          '& .MuiInputBase-input': {
-            color: theme.palette.mode === 'dark' ? '#fff' : '#333'
           },
           mb: 2
         }}
@@ -139,7 +151,7 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
             ),
           },
         }}
-      />
+        />
 
       <Dialog
         open={showNotes}

@@ -46,7 +46,7 @@ import PaletteIcon from '@mui/icons-material/Palette';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import TaskInput from '@/components/tasks/TaskInput';
-import EnhancedTaskList from '@/features/tasks/EnhancedTaskList';
+import EnhancedTaskList from '@/components/tasks/EnhancedTaskList';
 import TaskFilters from '@/components/tasks/TaskFilters';
 import { getTasks, supabase, getUserNotes, saveUserNote } from '@/lib/supabase/client';
 import Layout from '@/components/layout/Layout';
@@ -213,31 +213,15 @@ function MainContent() {
     
     // Load saved notes from database
     const loadNotes = async () => {
-      console.log('🔍 Notes: Starting to load notes from database...');
-      
-      // Check if user is authenticated first
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      console.log('🔐 Notes: Auth check - User:', user?.id || 'none', 'Error:', authError);
-      
-      if (!user) {
-        console.log('❌ Notes: No authenticated user, skipping database load');
-        return;
-      }
-      
       try {
-        const result = await getUserNotes();
-        console.log('📋 Notes: Got result from getUserNotes:', result);
-        const notesFromDB = result.notes;
-        console.log('📝 Notes: Extracted notes:', notesFromDB);
+        const notesFromDB = await getUserNotes();
         const updatedNoteTabs = noteTabs.map(tab => {
           const content = notesFromDB[tab.id] || '';
-          console.log(`📄 Notes: Tab ${tab.id} content:`, content);
           return { ...tab, content };
         });
         
         setNoteTabs(updatedNoteTabs);
         setLastSavedNotesState(notesFromDB);
-        console.log('✅ Notes: Successfully loaded notes from database');
       } catch (error) {
         // Fallback to localStorage if database fails
         const loadedNotesState: any = {};
@@ -272,40 +256,31 @@ function MainContent() {
   }, [lastSavedNotesState]);
 
   const debouncedSaveNotes = useCallback((tabId: number, content: string) => {
-    console.log(`⏰ Notes: Setting up debounced save for tab ${tabId}, content length: ${content.length}`);
     // Clear existing timeout for this tab
     if (notesDebounceRefs.current[tabId]) {
       clearTimeout(notesDebounceRefs.current[tabId]);
     }
     
     notesDebounceRefs.current[tabId] = setTimeout(() => {
-      console.log(`💾 Notes: Debounce timer fired for tab ${tabId}`);
       saveNotesToStorage(tabId, content);
     }, 2500);
   }, [saveNotesToStorage]);
 
   const handleNotesBlur = (tabId: number, content: string) => {
-    console.log(`👁️ Notes: Blur event on tab ${tabId}, content length: ${content.length}`);
     // Clear debounce timer
     if (notesDebounceRefs.current[tabId]) {
       clearTimeout(notesDebounceRefs.current[tabId]);
-      console.log(`⏰ Notes: Cleared debounce timer for tab ${tabId}`);
     }
     
     // Immediate save on blur if content changed
     const lastSavedContent = lastSavedNotesState[tabId];
-    console.log(`🔄 Notes: Comparing content - last saved: "${lastSavedContent}", current: "${content}"`);
     if (content !== lastSavedContent) {
-      console.log(`💾 Notes: Content changed, saving immediately on blur for tab ${tabId}`);
       saveNotesToStorage(tabId, content);
-    } else {
-      console.log(`⚠️ Notes: No changes detected, skipping save for tab ${tabId}`);
     }
   };
 
   const handleNoteContentChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = event.target.value;
-    console.log(`📝 Notes: Content changed on tab ${activeNoteTab}, new length: ${newContent.length}`);
     
     const updatedTabs = noteTabs.map(tab => 
       tab.id === activeNoteTab ? { ...tab, content: newContent } : tab
@@ -313,7 +288,6 @@ function MainContent() {
     setNoteTabs(updatedTabs);
     
     // Trigger auto-save
-    console.log(`🔄 Notes: Triggering debounced save for tab ${activeNoteTab}`);
     debouncedSaveNotes(activeNoteTab, newContent);
   };
 
@@ -389,21 +363,18 @@ function MainContent() {
               '& .MuiTab-root': {
                 py: 1.5,
                 px: 2,
-                fontSize: '1rem',
+                fontSize: '0.875rem',
                 fontWeight: 500,
                 textTransform: 'none',
                 minHeight: 48,
                 color: theme.palette.text.secondary,
-                textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
                 transition: 'all 0.2s ease',
                 '&:hover': {
                   color: theme.palette.text.primary,
-                  bgcolor: theme.palette.action.hover,
-                  textShadow: '1px 1px 2px rgba(0,0,0,0.3)'
+                  bgcolor: theme.palette.action.hover
                 },
                 '&.Mui-selected': {
                   color: theme.palette.primary.main,
-                  textShadow: '1px 1px 2px rgba(0,0,0,0.3)',
                   fontWeight: 600
                 }
               },
@@ -424,11 +395,9 @@ function MainContent() {
           <Box sx={{ 
             display: 'flex',
             flexDirection: 'column',
-            gap: 3,
+            gap: 2,
             height: '100%',
-            flex: 1,
-            pt: 2,
-            px: 2
+            flex: 1
           }}>
             <TaskInput 
               onTaskAdded={handleTaskAdded}
@@ -440,22 +409,11 @@ function MainContent() {
               onSearchChange={handleSearchChange}
               onStatusFilterChange={handleStatusFilterClick}
             />
-            <Paper sx={{
-              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-              borderRadius: 2,
-              border: `1px solid ${theme.palette.divider}`,
-              overflow: 'hidden',
-              '&:hover': {
-                boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
-                transition: 'all 0.3s ease'
-              }
-            }}>
-              <EnhancedTaskList 
-                refreshTrigger={refreshTrigger}
-                searchFilter={searchFilter}
-                statusFilter={statusFilter}
-              />
-            </Paper>
+            <EnhancedTaskList 
+              refreshTrigger={refreshTrigger}
+              searchFilter={searchFilter}
+              statusFilter={statusFilter}
+            />
           </Box>
         </TabPanel>
         
@@ -483,37 +441,31 @@ function MainContent() {
                     display: 'none'
                   },
                   '& .MuiTab-root': {
-                    minHeight: 36,
+                    minHeight: 28,
                     textTransform: 'none',
-                    fontWeight: 600,
-                    fontSize: '1rem',
+                    fontWeight: 400,
+                    fontSize: '0.8rem',
                     bgcolor: 'transparent',
-                    color: theme.palette.text.secondary,
-                    borderRadius: '8px 8px 0 0',
-                    border: `1px solid ${theme.palette.divider}`,
-                    borderBottom: 'none',
+                    color: '#888',
+                    borderRadius: '6px 6px 0 0',
+                    border: 'none',
                     mx: 0.5,
-                    px: 3,
-                    py: 1,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    minWidth: 100,
-                    transition: 'all 0.2s ease',
+                    px: 2,
+                    py: 0.5,
+                    minWidth: 90,
                     '&.Mui-selected': {
                       bgcolor: theme.palette.background.paper,
-                      color: theme.palette.primary.main,
-                      fontWeight: 700,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
-                      transform: 'translateY(-1px)',
-                      border: `1px solid ${theme.palette.primary.main}`,
+                      color: theme.palette.text.primary,
+                      fontWeight: 600,
+                      boxShadow: theme.palette.mode === 'dark' ? '0 1px 3px rgba(0,0,0,0.3)' : '0 1px 3px rgba(0,0,0,0.1)',
+                      border: `1px solid ${theme.palette.divider}`,
                       borderBottom: `1px solid ${theme.palette.background.paper}`,
                       zIndex: 1,
                       position: 'relative'
                     },
                     '&:hover:not(.Mui-selected)': {
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
-                      color: theme.palette.primary.main,
-                      transform: 'translateY(-1px)',
-                      boxShadow: '0 3px 10px rgba(0,0,0,0.12)'
+                      bgcolor: theme.palette.action.hover,
+                      color: theme.palette.text.secondary
                     }
                   }
                 }}
@@ -1260,7 +1212,7 @@ function MainContent() {
             >
               <AddIcon />
             </Fab>
-            <Box sx={{ position: 'fixed', bottom: 80, right: 80, zIndex: 1000 }}>
+            <Box sx={{ position: 'fixed', bottom: 24, right: 16, zIndex: 1000 }}>
               <Tooltip title="Start Recording">
                 <DynamicFloatingMicButton onTranscript={handleFloatingMicTranscript} transcriptionService={transcriptionService} />
               </Tooltip>
@@ -1268,7 +1220,7 @@ function MainContent() {
           </Box>
         ) : (
           activeTab === 0 && !isMobile && (
-            <Box sx={{ position: 'fixed', bottom: 80, right: 80, zIndex: 1000 }}>
+            <Box sx={{ position: 'fixed', bottom: 24, right: 24, zIndex: 1000 }}>
               <DynamicFloatingMicButton onTranscript={handleFloatingMicTranscript} transcriptionService={transcriptionService} />
             </Box>
           )  

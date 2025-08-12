@@ -131,6 +131,8 @@ html, body, #__next {
   color: #6658DD;
 }
 
+/* (reverted white input overrides) */
+
 /* Smooth transitions for theme switching */
 .MuiPaper-root,
 .MuiCard-root,

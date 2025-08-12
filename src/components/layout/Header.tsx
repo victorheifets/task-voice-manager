@@ -26,8 +26,10 @@ import DarkModeIcon from '@mui/icons-material/DarkMode';
 import TranslateIcon from '@mui/icons-material/Translate';
 import PersonIcon from '@mui/icons-material/Person';
 import HelpIcon from '@mui/icons-material/Help';
-import TaskAltIcon from '@mui/icons-material/TaskAlt';
+import AssignmentIcon from '@mui/icons-material/Assignment';
 import MenuIcon from '@mui/icons-material/Menu';
+import ViewModuleIcon from '@mui/icons-material/ViewModule';
+import ViewStreamIcon from '@mui/icons-material/ViewStream';
 import { useThemeContext } from '../../contexts/ThemeContext';
 import { useLanguageContext } from '../../contexts/LanguageContext';
 import { useTranslation } from 'react-i18next';
@@ -38,9 +40,11 @@ import LogoutIcon from '@mui/icons-material/Logout';
 interface HeaderProps {
   onTabChange?: (tabIndex: number) => void;
   onMenuClick?: () => void;
+  isWideView?: boolean;
+  onViewToggle?: () => void;
 }
 
-export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
+export default function Header({ onTabChange, onMenuClick, isWideView = true, onViewToggle }: HeaderProps) {
   const { t } = useTranslation(['common']);
   const { mode, toggleTheme } = useThemeContext();
   const { language, changeLanguage } = useLanguageContext();
@@ -50,11 +54,11 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Theme-consistent colors - White text on blue background for light mode
-  const PRIMARY_COLOR = theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff'; // White for light mode
-  const ICON_COLOR = theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff'; // Ensure icons are white in light mode
-  const ICON_BG_COLOR = theme.palette.mode === 'dark' ? 'rgba(77, 208, 225, 0.12)' : 'rgba(255, 255, 255, 0.15)';
-  const ICON_BORDER_COLOR = theme.palette.mode === 'dark' ? 'rgba(77, 208, 225, 0.3)' : 'rgba(255, 255, 255, 0.3)';
+  // Enhanced brightness for better visibility
+  const PRIMARY_COLOR = theme.palette.mode === 'dark' ? '#ffffff' : '#ffffff'; // Pure white for both modes
+  const ICON_COLOR = theme.palette.mode === 'dark' ? '#ffffff' : '#ffffff'; // Pure white for all icons
+  const ICON_BG_COLOR = theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.2)';
+  const ICON_BORDER_COLOR = theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.4)';
 
   const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
     if (onTabChange) {
@@ -111,11 +115,16 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
       color={theme.palette.mode === 'dark' ? 'default' : 'primary'}
       elevation={mode === 'light' ? 1 : 0}
       sx={{
-        backgroundColor: theme.palette.mode === 'dark' ? '#1a1a1a !important' : '#2196F3 !important', // Force colors
+        background: theme.palette.mode === 'dark' ? 
+          'linear-gradient(to bottom, #1a1a1a 0%, #2c2c2c 50%, #1e1e1e 100%)' : 
+          'linear-gradient(to bottom, #1976d2 0%, #2196F3 50%, #42a5f5 100%)',
         borderBottom: `1px solid ${theme.palette.divider}`,
-        color: theme.palette.mode === 'dark' ? '#9e9e9e !important' : '#ffffff !important', // Force text colors
+        color: '#ffffff !important', // Pure white for maximum contrast
+        borderRadius: 0,
+        boxShadow: theme.palette.mode === 'dark' ? 
+          '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.15)',
         '& .MuiToolbar-root': {
-          color: theme.palette.mode === 'dark' ? '#9e9e9e !important' : '#ffffff !important'
+          color: '#ffffff !important'
         }
       }}
     >
@@ -137,11 +146,11 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
           }}
           onClick={handleLogoClick}
         >
-          <TaskAltIcon 
+          <AssignmentIcon 
             sx={{ 
-              mr: 1.5, 
+              mr: 2.5, 
               color: PRIMARY_COLOR,
-              fontSize: '2rem'
+              fontSize: '2.2rem'
             }} 
           />
           <Typography 
@@ -150,19 +159,21 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
             sx={{ 
               fontWeight: 600,
               color: PRIMARY_COLOR,
-              letterSpacing: '0.5px'
+              letterSpacing: '0.5px',
+              ml: 0.5,
+              mr: 1
             }}
           >
             {t('app.title')}
           </Typography>
         </Box>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-          {isMobile && onMenuClick && (
-            <Tooltip title="Menu">
+          {onViewToggle && (
+            <Tooltip title={isWideView ? 'Switch to Narrow View' : 'Switch to Wide View'}>
               <IconButton 
-                onClick={onMenuClick}
+                onClick={onViewToggle}
                 color="inherit" 
-                size="small"
+                size={isMobile ? 'small' : 'medium'}
                 sx={{ 
                   borderRadius: '50%',
                   padding: '8px',
@@ -170,13 +181,18 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
                   border: `1px solid ${ICON_BORDER_COLOR}`,
                   transition: 'all 0.2s',
                   '&:hover': {
-                    backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
-                    borderColor: PRIMARY_COLOR,
-                    transform: 'translateY(-2px)'
-                  }
+                    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                    borderColor: '#ffffff',
+                    transform: 'translateY(-2px)',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                  },
+                  display: isMobile ? 'none' : 'flex' // Hide on mobile
                 }}
               >
-                <MenuIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
+                {isWideView 
+                  ? <ViewStreamIcon sx={{ color: '#ffffff' }} />
+                  : <ViewModuleIcon sx={{ color: '#ffffff' }} />
+                }
               </IconButton>
             </Tooltip>
           )}
@@ -192,13 +208,15 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
                 border: `1px solid ${ICON_BORDER_COLOR}`,
                 transition: 'all 0.2s',
                 '&:hover': {
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
-                  borderColor: PRIMARY_COLOR,
-                  transform: 'translateY(-2px)'
-                }
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  borderColor: '#ffffff',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                },
+                display: isMobile ? 'none' : 'flex' // Hide on mobile
               }}
             >
-              <SettingsIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
+              <SettingsIcon sx={{ color: '#ffffff' }} />
             </IconButton>
           </Tooltip>
           <Tooltip title={mode === 'light' ? t('theme.dark') : t('theme.light')}>
@@ -213,9 +231,10 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
                 border: `1px solid ${ICON_BORDER_COLOR}`,
                 transition: 'all 0.2s',
                 '&:hover': {
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
-                  borderColor: PRIMARY_COLOR,
-                  transform: 'translateY(-2px)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  borderColor: '#ffffff',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                 }
               }}
             >
@@ -236,12 +255,13 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
                 backgroundColor: ICON_BG_COLOR,
                 transition: 'all 0.2s',
                 '&:hover': {
-                  backgroundColor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(255, 255, 255, 0.2)',
-                  transform: 'translateY(-2px)'
+                  backgroundColor: 'rgba(255, 255, 255, 0.25)',
+                  transform: 'translateY(-2px)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                 }
               }}
             >
-              <TranslateIcon sx={{ color: theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff' }} />
+              <TranslateIcon sx={{ color: '#ffffff' }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Account">
@@ -251,7 +271,7 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
                 ml: 1, 
                 width: 36, 
                 height: 36,
-                border: `2px solid ${theme.palette.mode === 'dark' ? '#9e9e9e' : '#ffffff'}`,
+                border: '2px solid #ffffff',
                 cursor: 'pointer',
                 transition: 'transform 0.2s',
                 backgroundColor: theme.palette.mode === 'dark' ? '#9e9e9e' : '#1976d2',
@@ -282,7 +302,7 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
             sx: { 
               mt: 1.5,
               overflow: 'visible',
-              borderRadius: 2,
+              borderRadius: 0, // Sharp corners for page header menus
               border: `1px solid ${theme.palette.divider}`,
               boxShadow: mode === 'light' 
                 ? '0 6px 16px rgba(0,0,0,0.1)'
@@ -308,7 +328,7 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
             selected={language === 'en'} 
             onClick={() => handleLanguageChange('en')}
             sx={{
-              borderRadius: '6px',
+              borderRadius: 0, // Sharp corners for menu items
               mx: 0.5,
               my: 0.25,
               '&.Mui-selected': {
@@ -332,7 +352,7 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
             selected={language === 'es'} 
             onClick={() => handleLanguageChange('es')}
             sx={{
-              borderRadius: '8px',
+              borderRadius: 0, // Sharp corners for menu items
               mx: 0.5,
               my: 0.25,
               '&.Mui-selected': {
@@ -356,7 +376,7 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
             selected={language === 'fr'} 
             onClick={() => handleLanguageChange('fr')}
             sx={{
-              borderRadius: '6px',
+              borderRadius: 0, // Sharp corners for menu items
               mx: 0.5,
               my: 0.25,
               '&.Mui-selected': {
@@ -397,7 +417,7 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
               mt: 1.5,
               minWidth: 200,
               overflow: 'visible',
-              borderRadius: '12px',
+              borderRadius: 0, // Sharp corners for avatar menu
               border: `1px solid ${theme.palette.divider}`,
               boxShadow: mode === 'light' 
                 ? '0 8px 24px rgba(0,0,0,0.12)'
@@ -419,7 +439,7 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
             }
           }}
         >
-          <MenuItem onClick={handleAvatarClose} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
+          <MenuItem onClick={handleAvatarClose} sx={{ borderRadius: 0, mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
               <PersonIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
             </ListItemIcon>
@@ -435,20 +455,20 @@ export default function Header({ onTabChange, onMenuClick }: HeaderProps) {
             </ListItemText>
           </MenuItem>
           <Divider sx={{ my: 1 }} />
-          <MenuItem onClick={handleProfileClick} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
+          <MenuItem onClick={handleProfileClick} sx={{ borderRadius: 0, mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
               <PersonIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
             </ListItemIcon>
             <ListItemText>Profile</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleHelpClick} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25 }}>
+          <MenuItem onClick={handleHelpClick} sx={{ borderRadius: 0, mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
               <HelpIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
             </ListItemIcon>
             <ListItemText>Help & Support</ListItemText>
           </MenuItem>
           <Divider sx={{ my: 1 }} />
-          <MenuItem onClick={handleLogout} sx={{ borderRadius: '8px', mx: 0.5, my: 0.25, color: 'error.main' }}>
+          <MenuItem onClick={handleLogout} sx={{ borderRadius: 0, mx: 0.5, my: 0.25, color: 'error.main' }}>
             <ListItemIcon>
               <LogoutIcon fontSize="small" color="error" />
             </ListItemIcon>

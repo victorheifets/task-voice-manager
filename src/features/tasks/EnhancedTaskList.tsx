@@ -9,6 +9,7 @@ import {
   TableContainer,
   TableHead,
   TableRow,
+  TableSortLabel,
   Paper,
   Checkbox,
   IconButton,
@@ -49,6 +50,11 @@ import {
   Info,
   ContentCopy,
   Add,
+  Assignment as TaskIcon,
+  Event as EventIcon,
+  Person as PersonIcon,
+  PriorityHigh as PriorityIcon,
+  LocalOffer as TagIcon,
 } from '@mui/icons-material';
 import { format, parseISO, isToday, isTomorrow, isThisWeek } from 'date-fns';
 import { getTasks, updateTask, deleteTask } from '@/lib/supabase/client';
@@ -61,15 +67,21 @@ interface Props {
   refreshTrigger?: number;
   searchFilter?: string;
   statusFilter?: string;
+  selectedTasks?: Set<string>;
+  onSelectedTasksChange?: (tasks: Set<string>) => void;
 }
 
 export function EnhancedTaskList({
   refreshTrigger,
   searchFilter = '',
   statusFilter = 'all',
+  selectedTasks,
+  onSelectedTasksChange,
 }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState<keyof Task>('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   // Load tasks from Supabase
   const loadTasks = async () => {
@@ -202,24 +214,38 @@ export function EnhancedTaskList({
       });
     }
 
-    // Sort by priority and due date
+    // Sort by selected column and order
     return filtered.sort((a, b) => {
-      if (a.completed !== b.completed) {
+      // Always show completed tasks at bottom unless sorting by completed status
+      if (sortBy !== 'completed' && a.completed !== b.completed) {
         return a.completed ? 1 : -1;
       }
-      
-      const priorityOrder: Record<string, number> = { high: 3, medium: 2, low: 1, none: 0, urgent: 4 };
-      if (a.priority !== b.priority) {
-        return (priorityOrder[b.priority] || 0) - (priorityOrder[a.priority] || 0);
+
+      let aValue: any = a[sortBy];
+      let bValue: any = b[sortBy];
+
+      // Handle different data types
+      if (sortBy === 'dueDate') {
+        aValue = aValue ? parseISO(aValue).getTime() : 0;
+        bValue = bValue ? parseISO(bValue).getTime() : 0;
+      } else if (sortBy === 'priority') {
+        const priorityOrder: Record<string, number> = { urgent: 4, high: 3, medium: 2, low: 1 };
+        aValue = priorityOrder[aValue] || 0;
+        bValue = priorityOrder[bValue] || 0;
+      } else if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
+        aValue = aValue ? new Date(aValue).getTime() : 0;
+        bValue = bValue ? new Date(bValue).getTime() : 0;
+      } else if (typeof aValue === 'string') {
+        aValue = aValue.toLowerCase();
+        bValue = (bValue || '').toLowerCase();
       }
 
-      if (a.dueDate && b.dueDate) {
-        return parseISO(a.dueDate).getTime() - parseISO(b.dueDate).getTime();
-      }
-
+      // Apply sort order
+      if (aValue < bValue) return sortOrder === 'asc' ? -1 : 1;
+      if (aValue > bValue) return sortOrder === 'asc' ? 1 : -1;
       return 0;
     });
-  }, [tasks, statusFilter, searchFilter]);
+  }, [tasks, statusFilter, searchFilter, sortBy, sortOrder]);
 
   // Handlers
   const handleMenuClick = (event: React.MouseEvent<HTMLElement>, task: Task) => {
@@ -239,8 +265,18 @@ export function EnhancedTaskList({
   const saveEdit = () => {
     if (!editing) return;
     
+    let updateValue: any = editing.value;
+    
+    // Handle tags - convert comma-separated string to array
+    if (editing.field === 'tags') {
+      updateValue = editing.value
+        .split(',')
+        .map(tag => tag.trim())
+        .filter(tag => tag.length > 0);
+    }
+    
     onTaskUpdate(editing.taskId, {
-      [editing.field]: editing.value
+      [editing.field]: updateValue
     });
     setEditing(null);
   };
@@ -296,6 +332,51 @@ export function EnhancedTaskList({
     setEditingTask(null);
   };
 
+  // Selection handlers
+  const handleSelectTask = (taskId: string, checked: boolean) => {
+    if (!onSelectedTasksChange || !selectedTasks) return;
+    
+    const newSelected = new Set(selectedTasks);
+    if (checked) {
+      newSelected.add(taskId);
+    } else {
+      newSelected.delete(taskId);
+    }
+    onSelectedTasksChange(newSelected);
+  };
+
+  const handleSelectAllTasks = (checked: boolean) => {
+    if (!onSelectedTasksChange) return;
+    
+    if (checked) {
+      const allTaskIds = new Set(filteredAndSortedTasks.map(task => task.id));
+      onSelectedTasksChange(allTaskIds);
+    } else {
+      onSelectedTasksChange(new Set());
+    }
+  };
+
+  const handleBulkDeleteInternal = async () => {
+    if (!selectedTasks || !onSelectedTasksChange) return;
+    
+    try {
+      const deletePromises = Array.from(selectedTasks).map(taskId => onTaskDelete(taskId));
+      await Promise.all(deletePromises);
+      onSelectedTasksChange(new Set());
+      setSnackbar({ open: true, message: `${selectedTasks.size} tasks deleted`, severity: 'success' });
+    } catch (error) {
+      console.error('Failed to delete tasks:', error);
+      setSnackbar({ open: true, message: 'Failed to delete some tasks', severity: 'error' });
+    }
+  };
+
+  const handleSort = (column: keyof Task) => {
+    const isCurrentColumn = sortBy === column;
+    const newOrder = isCurrentColumn && sortOrder === 'asc' ? 'desc' : 'asc';
+    setSortBy(column);
+    setSortOrder(newOrder);
+  };
+
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return theme.palette.error.main;
@@ -343,31 +424,25 @@ export function EnhancedTaskList({
               borderLeft: `5px solid ${getPriorityColor(task.priority)}`,
               opacity: task.completed ? 0.65 : 1,
               bgcolor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#ffffff',
-              border: `1px solid ${theme.palette.mode === 'dark' ? '#404040' : '#e0e0e0'}`,
+              border: `1px solid ${theme.palette.mode === 'dark' ? '#404040' : '#2196F3'}`,
               boxShadow: theme.palette.mode === 'dark' 
-                ? '0 4px 12px rgba(0, 0, 0, 0.3)' 
-                : '0 2px 8px rgba(0, 0, 0, 0.1)',
+                ? '0 0 20px rgba(128, 128, 128, 0.2), 0 0 10px rgba(128, 128, 128, 0.15)' 
+                : '0 0 20px rgba(0, 0, 0, 0.15), 0 0 10px rgba(0, 0, 0, 0.1)',
               transition: 'all 0.2s ease-in-out',
               cursor: 'pointer',
+              minHeight: 120, // Fixed minimum height for consistent card sizes
+              display: 'flex',
+              flexDirection: 'column',
               '&:hover': { 
                 elevation: 4,
                 transform: 'translateY(-1px)',
                 boxShadow: theme.palette.mode === 'dark' 
-                  ? '0 6px 16px rgba(0, 0, 0, 0.4)' 
-                  : '0 4px 12px rgba(0, 0, 0, 0.15)'
+                  ? '0 0 32px rgba(128, 128, 128, 0.25), 0 0 16px rgba(128, 128, 128, 0.2)' 
+                  : '0 0 24px rgba(0, 0, 0, 0.2), 0 0 12px rgba(0, 0, 0, 0.15)'
               }
             }}
           >
             <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, minHeight: 'auto' }}>
-              <Checkbox
-                checked={task.completed}
-                onChange={(e) => onTaskToggle(task.id, e.target.checked)}
-                sx={{ 
-                  mt: -0.5, 
-                  ml: -1, 
-                  '& .MuiSvgIcon-root': { fontSize: 20 }
-                }}
-              />
               
               <Box sx={{ flex: 1, minWidth: 0 }}>
                 <Typography
@@ -375,8 +450,8 @@ export function EnhancedTaskList({
                   sx={{
                     textDecoration: task.completed ? 'line-through' : 'none',
                     wordBreak: 'break-word',
-                    fontSize: '1.05rem',
-                    fontWeight: 700,
+                    fontSize: '0.95rem',
+                    fontWeight: 600,
                     lineHeight: 1.3,
                     color: theme.palette.mode === 'dark' ? '#ffffff' : '#1a1a1a',
                     mb: 0.5
@@ -393,7 +468,7 @@ export function EnhancedTaskList({
                         variant="body2" 
                         sx={{ 
                           color: theme.palette.text.secondary,
-                          fontSize: '0.875rem',
+                          fontSize: '0.8rem',
                           fontWeight: 500
                         }}
                       >
@@ -413,7 +488,7 @@ export function EnhancedTaskList({
                         variant="outlined"
                         sx={{
                           height: 24,
-                          fontSize: '0.75rem',
+                          fontSize: '0.7rem',
                           fontWeight: 500,
                           borderRadius: '12px',
                           '& .MuiChip-label': {
@@ -529,7 +604,7 @@ export function EnhancedTaskList({
         {/* Edit Dialog */}
         <Dialog open={editDialogOpen} onClose={handleEditDialogClose} maxWidth="sm" fullWidth>
           <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>Edit Task</DialogTitle>
-          <DialogContent sx={{ pt: 3 }}>
+          <DialogContent sx={{ pt: 4 }}>
             {editingTask && (
               <Grid container spacing={2}>
                 <Grid item xs={12}>
@@ -642,70 +717,152 @@ export function EnhancedTaskList({
 
   // Desktop Table Layout
   return (
-    <Box sx={{ position: 'relative' }}>
-      <TableContainer component={Paper} elevation={2}>
+    <>
+      <TableContainer 
+        component={Paper} 
+        sx={{
+          borderRadius: 2,
+          bgcolor: 'background.paper',
+          border: '1px solid',
+          borderColor: 'divider',
+          borderLeft: '1px solid rgba(158, 158, 158, 0.3)',
+          borderRight: '1px solid rgba(158, 158, 158, 0.3)', 
+          // Stronger shadow around all sides like task input
+          boxShadow: '0 0 32px rgba(128, 128, 128, 0.15), 0 0 16px rgba(128, 128, 128, 0.1)',
+          elevation: 3,
+          maxHeight: 'calc(100vh - 300px)',
+          overflow: 'auto',
+          transition: 'box-shadow 0.3s ease',
+          '&:hover': {
+            boxShadow: '0 0 40px rgba(128, 128, 128, 0.2), 0 0 20px rgba(128, 128, 128, 0.15)',
+          }
+        }}
+      >
         <Table stickyHeader>
           <TableHead>
-            <TableRow>
-              <TableCell 
-                padding="checkbox"
-                sx={{ 
-                  backgroundColor: theme.palette.background.paper,
-                  borderBottom: `1px solid ${theme.palette.divider}`,
-                  fontWeight: 600
-                }}
-              >
-                <Checkbox disabled />
-              </TableCell>
-              <TableCell sx={{ 
-                backgroundColor: theme.palette.background.paper,
-                borderBottom: `1px solid ${theme.palette.divider}`,
+            <TableRow sx={{ 
+              '& .MuiTableCell-root': {
+                background: theme.palette.mode === 'dark' ? 
+                  'linear-gradient(to bottom, #424242 0%, #616161 50%, #424242 100%)' : 
+                  'linear-gradient(to bottom, #1976d2 0%, #2196F3 50%, #42a5f5 100%)',
+                borderBottom: `2px solid ${theme.palette.primary.main}`,
                 fontWeight: 600,
-                color: theme.palette.text.primary
-              }}>
-                Title
+                color: '#ffffff', // Pure white for both modes
+                '&:first-of-type': {
+                  borderTopLeftRadius: 8 // Rounded corners
+                },
+                '&:last-of-type': {
+                  borderTopRightRadius: 8 // Rounded corners
+                }
+              }
+            }}>
+              <TableCell padding="checkbox">
+                <Checkbox 
+                  indeterminate={(selectedTasks?.size || 0) > 0 && (selectedTasks?.size || 0) < filteredAndSortedTasks.length}
+                  checked={filteredAndSortedTasks.length > 0 && (selectedTasks?.size || 0) === filteredAndSortedTasks.length}
+                  onChange={(e) => handleSelectAllTasks(e.target.checked)}
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#e0e0e0' : 'white',
+                    '&.Mui-checked': {
+                      color: theme.palette.mode === 'dark' ? '#e0e0e0' : 'white'
+                    },
+                    '&.MuiCheckbox-indeterminate': {
+                      color: theme.palette.mode === 'dark' ? '#e0e0e0' : 'white'
+                    }
+                  }}
+                />
               </TableCell>
-              <TableCell sx={{ 
-                backgroundColor: theme.palette.background.paper,
-                borderBottom: `1px solid ${theme.palette.divider}`,
-                fontWeight: 600,
-                color: theme.palette.text.primary
-              }}>
-                Due Date
+              <TableCell sx={{ width: '40%' }}>
+                <TableSortLabel
+                  active={sortBy === 'title'}
+                  direction={sortBy === 'title' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('title')}
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#e0e0e0 !important' : 'white !important', 
+                    '& .MuiTableSortLabel-icon': { 
+                      color: theme.palette.mode === 'dark' ? '#e0e0e0 !important' : 'white !important' 
+                    } 
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TaskIcon sx={{ fontSize: 18 }} />
+                    Title
+                  </Box>
+                </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ 
-                backgroundColor: theme.palette.background.paper,
-                borderBottom: `1px solid ${theme.palette.divider}`,
-                fontWeight: 600,
-                color: theme.palette.text.primary
-              }}>
-                Assignee
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'dueDate'}
+                  direction={sortBy === 'dueDate' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('dueDate')}
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#e0e0e0 !important' : 'white !important', 
+                    '& .MuiTableSortLabel-icon': { 
+                      color: theme.palette.mode === 'dark' ? '#e0e0e0 !important' : 'white !important' 
+                    } 
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <EventIcon sx={{ fontSize: 18 }} />
+                    Due Date
+                  </Box>
+                </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ 
-                backgroundColor: theme.palette.background.paper,
-                borderBottom: `1px solid ${theme.palette.divider}`,
-                fontWeight: 600,
-                color: theme.palette.text.primary
-              }}>
-                Priority
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'assignee'}
+                  direction={sortBy === 'assignee' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('assignee')}
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#e0e0e0 !important' : 'white !important', 
+                    '& .MuiTableSortLabel-icon': { 
+                      color: theme.palette.mode === 'dark' ? '#e0e0e0 !important' : 'white !important' 
+                    } 
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PersonIcon sx={{ fontSize: 18 }} />
+                    Assignee
+                  </Box>
+                </TableSortLabel>
               </TableCell>
-              <TableCell sx={{ 
-                backgroundColor: theme.palette.background.paper,
-                borderBottom: `1px solid ${theme.palette.divider}`,
-                fontWeight: 600,
-                color: theme.palette.text.primary
-              }}>
-                Tags
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'priority'}
+                  direction={sortBy === 'priority' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('priority')}
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#e0e0e0 !important' : 'white !important', 
+                    '& .MuiTableSortLabel-icon': { 
+                      color: theme.palette.mode === 'dark' ? '#e0e0e0 !important' : 'white !important' 
+                    } 
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <PriorityIcon sx={{ fontSize: 18 }} />
+                    Priority
+                  </Box>
+                </TableSortLabel>
               </TableCell>
-              <TableCell 
-                align="right" 
-                sx={{ 
-                  backgroundColor: theme.palette.background.paper,
-                  borderBottom: `1px solid ${theme.palette.divider}`,
-                  fontWeight: 600,
-                  color: theme.palette.text.primary
-                }}
-              >
+              <TableCell>
+                <TableSortLabel
+                  active={sortBy === 'tags'}
+                  direction={sortBy === 'tags' ? sortOrder : 'asc'}
+                  onClick={() => handleSort('tags')}
+                  sx={{ 
+                    color: theme.palette.mode === 'dark' ? '#e0e0e0 !important' : 'white !important', 
+                    '& .MuiTableSortLabel-icon': { 
+                      color: theme.palette.mode === 'dark' ? '#e0e0e0 !important' : 'white !important' 
+                    } 
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <TagIcon sx={{ fontSize: 18 }} />
+                    Tags
+                  </Box>
+                </TableSortLabel>
+              </TableCell>
+              <TableCell align="center" sx={{ pr: 3 }}>
                 Actions
               </TableCell>
             </TableRow>
@@ -714,15 +871,28 @@ export function EnhancedTaskList({
             {filteredAndSortedTasks.map((task) => (
               <TableRow
                 key={task.id}
+                selected={selectedTasks?.has(task.id) || false}
                 sx={{
                   opacity: task.completed ? 0.6 : 1,
-                  '&:hover': { backgroundColor: 'action.hover' },
+                  '&:hover': { 
+                    bgcolor: theme.palette.mode === 'dark' 
+                      ? 'rgba(128, 128, 128, 0.1)' 
+                      : 'rgba(0,0,0,0.04)' 
+                  },
+                  bgcolor: selectedTasks?.has(task.id) 
+                    ? theme.palette.mode === 'dark'
+                      ? 'rgba(144, 202, 249, 0.15)'
+                      : 'rgba(33, 150, 243, 0.08)'
+                    : 'background.paper', // Theme-aware background
+                  borderBottom: theme.palette.mode === 'dark' 
+                    ? `1px solid rgba(128, 128, 128, 0.2)` 
+                    : `1px solid rgba(0,0,0,0.08)` // Theme-aware divider
                 }}
               >
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={task.completed}
-                    onChange={(e) => onTaskToggle(task.id, e.target.checked)}
+                    checked={selectedTasks?.has(task.id) || false}
+                    onChange={(e) => handleSelectTask(task.id, e.target.checked)}
                   />
                 </TableCell>
                 
@@ -772,38 +942,43 @@ export function EnhancedTaskList({
                         onChange={(newValue: Dayjs | null) => {
                           const dateString = newValue ? newValue.format('YYYY-MM-DD') : '';
                           setEditing({ ...editing, value: dateString });
+                          // Auto-save on date selection
+                          setTimeout(() => saveEdit(), 100);
                         }}
+                        open={true}
                         onClose={saveEdit}
                         slotProps={{
                           textField: {
                             size: 'small',
                             variant: 'standard',
-                            autoFocus: true,
-                            onKeyDown: (e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                saveEdit();
-                              }
-                              if (e.key === 'Escape') {
-                                e.preventDefault();
-                                cancelEdit();
-                              }
-                            }
+                            sx: { width: 120 }
+                          },
+                          popper: {
+                            placement: 'bottom-start'
                           }
                         }}
                       />
                     </LocalizationProvider>
                   ) : (
-                    <span
+                    <Box 
                       onClick={() => startEditing(task.id, 'dueDate', task.dueDate || '')}
-                      style={{ cursor: 'pointer' }}
+                      sx={{ 
+                        cursor: 'pointer',
+                        p: 0.5,
+                        borderRadius: 1,
+                        '&:hover': { bgcolor: 'action.hover' },
+                        minHeight: 32,
+                        display: 'flex',
+                        alignItems: 'center',
+                        userSelect: 'none'
+                      }}
                     >
                       {getDueDateChip(task.dueDate) || (
                         <Typography variant="body2" color="text.disabled">
                           Set date
                         </Typography>
                       )}
-                    </span>
+                    </Box>
                   )}
                 </TableCell>
                 
@@ -843,32 +1018,136 @@ export function EnhancedTaskList({
                 </TableCell>
                 
                 <TableCell>
-                  <Chip
-                    label={task.priority}
-                    size="small"
-                    sx={{
-                      backgroundColor: getPriorityColor(task.priority),
-                      color: 'white',
-                      '&:hover': {
-                        backgroundColor: getPriorityColor(task.priority),
-                        opacity: 0.8,
-                      }
-                    }}
-                  />
+                  {editing?.taskId === task.id && editing?.field === 'priority' ? (
+                    <FormControl size="small" sx={{ minWidth: 100 }}>
+                      <Select
+                        value={editing.value}
+                        onChange={(e) => {
+                          setEditing({ ...editing, value: e.target.value });
+                          setTimeout(() => saveEdit(), 100);
+                        }}
+                        variant="standard"
+                        autoFocus
+                      >
+                        <MenuItem value="low">Low</MenuItem>
+                        <MenuItem value="medium">Medium</MenuItem>
+                        <MenuItem value="high">High</MenuItem>
+                        <MenuItem value="urgent">Urgent</MenuItem>
+                      </Select>
+                    </FormControl>
+                  ) : (
+                    <Box 
+                      onClick={() => startEditing(task.id, 'priority', task.priority)}
+                      sx={{ 
+                        cursor: 'pointer',
+                        p: 0.5,
+                        borderRadius: 1,
+                        '&:hover': { bgcolor: 'action.hover' },
+                        minHeight: 32,
+                        display: 'flex',
+                        alignItems: 'center',
+                        userSelect: 'none'
+                      }}
+                    >
+                      <Chip
+                        label={task.priority}
+                        size="small"
+                        sx={{
+                          backgroundColor: getPriorityColor(task.priority),
+                          color: 'white',
+                          textTransform: 'capitalize',
+                          '&:hover': {
+                            backgroundColor: getPriorityColor(task.priority),
+                            opacity: 0.8,
+                          }
+                        }}
+                      />
+                    </Box>
+                  )}
                 </TableCell>
                 
                 <TableCell>
-                  <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {task.tags?.map((tag, index) => (
-                      <Chip key={index} label={tag} size="small" variant="outlined" />
-                    ))}
-                  </Box>
+                  {editing?.taskId === task.id && editing?.field === 'tags' ? (
+                    <TextField
+                      value={editing.value}
+                      onChange={(e) => setEditing({ ...editing, value: e.target.value })}
+                      size="small"
+                      variant="standard"
+                      fullWidth
+                      placeholder="tag1, tag2, tag3"
+                      autoFocus
+                      onBlur={saveEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          saveEdit();
+                        }
+                        if (e.key === 'Escape') {
+                          e.preventDefault();
+                          cancelEdit();
+                        }
+                      }}
+                      sx={{
+                        '& .MuiInput-root': {
+                          fontSize: 'inherit',
+                          color: theme.palette.mode === 'dark' ? '#fff' : '#333',
+                          bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                          padding: '4px 8px',
+                          borderRadius: 1,
+                          border: theme.palette.mode === 'dark' ? '1px solid rgba(255,255,255,0.1)' : '1px solid rgba(0,0,0,0.1)',
+                          '&:before': { display: 'none' },
+                          '&:after': { display: 'none' }
+                        }
+                      }}
+                    />
+                  ) : (
+                    <Box 
+                      onClick={() => startEditing(task.id, 'tags', task.tags?.join(', ') || '')}
+                      sx={{ 
+                        cursor: 'pointer',
+                        p: 0.5,
+                        borderRadius: 1,
+                        '&:hover': { bgcolor: 'action.hover' },
+                        minHeight: 32,
+                        display: 'flex',
+                        alignItems: 'center',
+                        userSelect: 'none'
+                      }}
+                    >
+                      {task.tags && task.tags.length > 0 ? (
+                        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                          {task.tags.map((tag, index) => (
+                            <Chip 
+                              key={index} 
+                              label={tag} 
+                              size="small" 
+                              variant="outlined"
+                              sx={{
+                                fontSize: '0.75rem',
+                                bgcolor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.2)' : 'rgba(33, 150, 243, 0.1)',
+                                color: theme.palette.mode === 'dark' ? '#90caf9' : '#1976d2',
+                                border: `1px solid ${theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.3)' : 'rgba(33, 150, 243, 0.2)'}`,
+                                '&:hover': {
+                                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(144, 202, 249, 0.3)' : 'rgba(33, 150, 243, 0.2)'
+                                }
+                              }}
+                            />
+                          ))}
+                        </Box>
+                      ) : (
+                        <Typography variant="body2" color="text.disabled">
+                          Add tags
+                        </Typography>
+                      )}
+                    </Box>
+                  )}
                 </TableCell>
                 
-                <TableCell align="right">
+                <TableCell align="center" sx={{ pr: 3 }}>
                   <IconButton
                     size="small"
                     onClick={(e) => handleMenuClick(e, task)}
+                    sx={{ mr: 1 }}
                   >
                     <MoreVert />
                   </IconButton>
@@ -969,6 +1248,7 @@ export function EnhancedTaskList({
         </DialogActions>
       </Dialog>
 
+
       {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
@@ -979,6 +1259,8 @@ export function EnhancedTaskList({
           {snackbar.message}
         </Alert>
       </Snackbar>
-    </Box>
+    </>
   );
 }
+
+export default EnhancedTaskList;

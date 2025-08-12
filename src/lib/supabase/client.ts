@@ -100,6 +100,8 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
 }
 
 export async function updateTask(taskId: string, updates: Partial<Task>) {
+  console.log('🔄 updateTask called with:', { taskId, updates });
+  
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -113,6 +115,13 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
   if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate
   if (updates.completed !== undefined) updateData.completed = updates.completed
   if (updates.notes !== undefined) updateData.notes = updates.notes
+  if (updates.assignee !== undefined) {
+    updateData.assigned_to = updates.assignee  // Database column is 'assigned_to', not 'assignee'
+  }
+  if (updates.priority !== undefined) updateData.priority = updates.priority
+  if (updates.tags !== undefined) updateData.tags = updates.tags
+  
+  console.log('📤 Sending to database:', updateData);
 
   const { data, error } = await supabase
     .from('tasks')
@@ -122,7 +131,10 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
     .select()
     .single()
 
-  if (error) throw error
+  if (error) {
+    console.error('Database error updating task:', error)
+    throw new Error(`Failed to update task: ${error.message || JSON.stringify(error)}`)
+  }
 
   // Return with safe property access
   return {
@@ -207,7 +219,7 @@ export async function getUserUsage() {
 }
 
 // Notes management functions
-export async function getUserNotes(): Promise<{[key: number]: string}> {
+export async function getUserNotes(): Promise<{notes: {[key: number]: string}, error?: string}> {
   console.log('📋 Loading user notes from database...');
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
@@ -219,21 +231,51 @@ export async function getUserNotes(): Promise<{[key: number]: string}> {
 
   if (error) {
     console.error('❌ Error loading notes:', error);
-    throw error;
+    // Handle specific Supabase errors
+    if (error.code === '42P01') {
+      // Table doesn't exist
+      console.warn('📝 Notes table does not exist yet, using local storage fallback');
+      return { 
+        notes: {}, 
+        error: `Notes table not found in database. Using local storage instead.`
+      };
+    } else if (error.code === 'PGRST116') {
+      // No rows found (not an error)
+      console.log('📝 No notes found in database (new user)');
+      return { notes: {} };
+    } else {
+      const errorMessage = error.message || error.details || 'Unknown database error';
+      console.error('💥 Database error details:', {
+        message: error.message,
+        details: error.details,
+        hint: error.hint,
+        code: error.code
+      });
+      return { 
+        notes: {}, 
+        error: `Notes could not be loaded from database: ${errorMessage}. Using local storage instead.`
+      };
+    }
   }
   
   console.log('📥 Raw database notes:', data);
   
   // Convert to tab_id -> content mapping
+  // Each tab will be stored as a separate record with title like "Tab 0", "Tab 1", etc.
   const notesMap: {[key: number]: string} = {};
   if (data) {
     data.forEach(note => {
-      notesMap[note.tab_id] = note.content;
+      // Extract tab number from title (e.g., "Tab 0" -> 0)
+      const tabMatch = note.title.match(/^Tab (\d+)$/);
+      if (tabMatch) {
+        const tabId = parseInt(tabMatch[1]);
+        notesMap[tabId] = note.content;
+      }
     });
   }
   
   console.log('📤 Mapped notes for UI:', notesMap);
-  return notesMap;
+  return { notes: notesMap };
 }
 
 export async function saveUserNote(tabId: number, content: string): Promise<void> {
@@ -245,14 +287,18 @@ export async function saveUserNote(tabId: number, content: string): Promise<void
     .from('user_notes')
     .upsert({
       user_id: user.id,
-      tab_id: tabId,
+      title: `Tab ${tabId}`,
       content: content,
       updated_at: new Date().toISOString()
+    }, {
+      onConflict: 'user_id,title'  // Use user_id and title as unique constraint
     })
 
   if (error) {
     console.error('❌ Error saving note:', error);
-    throw error;
+    console.warn('⚠️ Note save failed, continuing without saving notes');
+    // Don't throw - just log and continue to prevent app crashes
+    return;
   }
   
   console.log('✅ Note saved to database successfully');
