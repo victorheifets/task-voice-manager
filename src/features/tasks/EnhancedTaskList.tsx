@@ -69,6 +69,7 @@ interface Props {
   statusFilter?: string;
   selectedTasks?: Set<string>;
   onSelectedTasksChange?: (tasks: Set<string>) => void;
+  onBulkDelete?: () => Promise<void>;
 }
 
 export function EnhancedTaskList({
@@ -77,11 +78,14 @@ export function EnhancedTaskList({
   statusFilter = 'all',
   selectedTasks,
   onSelectedTasksChange,
+  onBulkDelete,
 }: Props) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState<keyof Task>('createdAt');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [priorityMenuAnchor, setPriorityMenuAnchor] = useState<null | HTMLElement>(null);
+  const [priorityEditingTask, setPriorityEditingTask] = useState<Task | null>(null);
 
   // Load tasks from Supabase
   const loadTasks = async () => {
@@ -151,7 +155,7 @@ export function EnhancedTaskList({
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [editing, setEditing] = useState<{
     taskId: string;
-    field: string;
+    field: 'title' | 'dueDate' | 'assignee' | 'tags';
     value: string;
   } | null>(null);
   const [infoDialogOpen, setInfoDialogOpen] = useState(false);
@@ -258,8 +262,25 @@ export function EnhancedTaskList({
     setSelectedTask(null);
   };
 
-  const startEditing = (taskId: string, field: string, value: string) => {
+  const startEditing = (taskId: string, field: 'title' | 'dueDate' | 'assignee' | 'tags', value: string) => {
     setEditing({ taskId, field, value });
+  };
+
+  const handlePriorityClick = (event: React.MouseEvent<HTMLElement>, task: Task) => {
+    setPriorityMenuAnchor(event.currentTarget);
+    setPriorityEditingTask(task);
+  };
+
+  const handlePriorityMenuClose = () => {
+    setPriorityMenuAnchor(null);
+    setPriorityEditingTask(null);
+  };
+
+  const handlePriorityChange = (newPriority: Priority) => {
+    if (priorityEditingTask) {
+      onTaskUpdate(priorityEditingTask.id, { priority: newPriority });
+    }
+    handlePriorityMenuClose();
   };
 
   const saveEdit = () => {
@@ -379,6 +400,7 @@ export function EnhancedTaskList({
 
   const getPriorityColor = (priority: string) => {
     switch (priority) {
+      case 'urgent': return '#d32f2f'; // Dark red for urgent
       case 'high': return theme.palette.error.main;
       case 'medium': return theme.palette.warning.main;
       case 'low': return theme.palette.success.main;
@@ -1018,52 +1040,32 @@ export function EnhancedTaskList({
                 </TableCell>
                 
                 <TableCell>
-                  {editing?.taskId === task.id && editing?.field === 'priority' ? (
-                    <FormControl size="small" sx={{ minWidth: 100 }}>
-                      <Select
-                        value={editing.value}
-                        onChange={(e) => {
-                          setEditing({ ...editing, value: e.target.value });
-                          setTimeout(() => saveEdit(), 100);
-                        }}
-                        variant="standard"
-                        autoFocus
-                      >
-                        <MenuItem value="low">Low</MenuItem>
-                        <MenuItem value="medium">Medium</MenuItem>
-                        <MenuItem value="high">High</MenuItem>
-                        <MenuItem value="urgent">Urgent</MenuItem>
-                      </Select>
-                    </FormControl>
-                  ) : (
-                    <Box 
-                      onClick={() => startEditing(task.id, 'priority', task.priority)}
-                      sx={{ 
+                  <Box 
+                    sx={{ 
+                      p: 0.5,
+                      borderRadius: 1,
+                      minHeight: 32,
+                      display: 'flex',
+                      alignItems: 'center',
+                      userSelect: 'none'
+                    }}
+                  >
+                    <Chip
+                      label={task.priority}
+                      size="small"
+                      onClick={(e) => handlePriorityClick(e, task)}
+                      sx={{
+                        backgroundColor: getPriorityColor(task.priority),
+                        color: 'white',
+                        textTransform: 'capitalize',
                         cursor: 'pointer',
-                        p: 0.5,
-                        borderRadius: 1,
-                        '&:hover': { bgcolor: 'action.hover' },
-                        minHeight: 32,
-                        display: 'flex',
-                        alignItems: 'center',
-                        userSelect: 'none'
-                      }}
-                    >
-                      <Chip
-                        label={task.priority}
-                        size="small"
-                        sx={{
+                        '&:hover': {
                           backgroundColor: getPriorityColor(task.priority),
-                          color: 'white',
-                          textTransform: 'capitalize',
-                          '&:hover': {
-                            backgroundColor: getPriorityColor(task.priority),
-                            opacity: 0.8,
-                          }
-                        }}
-                      />
-                    </Box>
-                  )}
+                          opacity: 0.8,
+                        }
+                      }}
+                    />
+                  </Box>
                 </TableCell>
                 
                 <TableCell>
@@ -1207,6 +1209,77 @@ export function EnhancedTaskList({
         }}>
           <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
           <ListItemText>Delete</ListItemText>
+        </MenuItem>
+      </Menu>
+
+      {/* Priority Menu */}
+      <Menu
+        anchorEl={priorityMenuAnchor}
+        open={Boolean(priorityMenuAnchor)}
+        onClose={handlePriorityMenuClose}
+        anchorOrigin={{
+          vertical: 'bottom',
+          horizontal: 'left',
+        }}
+        transformOrigin={{
+          vertical: 'top',
+          horizontal: 'left',
+        }}
+        PaperProps={{
+          elevation: 3,
+          sx: {
+            border: `1px solid ${theme.palette.divider}`,
+            borderRadius: 1,
+            minWidth: 160,
+            boxShadow: theme.palette.mode === 'dark' 
+              ? '0 4px 20px rgba(0,0,0,0.4)'
+              : '0 4px 20px rgba(0,0,0,0.15)'
+          }
+        }}
+      >
+        <MenuItem 
+          onClick={() => handlePriorityChange('low')}
+          sx={{
+            color: getPriorityColor('low'),
+            '&:hover': {
+              backgroundColor: `${getPriorityColor('low')}20`,
+            }
+          }}
+        >
+          Low Priority
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handlePriorityChange('medium')}
+          sx={{
+            color: getPriorityColor('medium'),
+            '&:hover': {
+              backgroundColor: `${getPriorityColor('medium')}20`,
+            }
+          }}
+        >
+          Medium Priority
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handlePriorityChange('high')}
+          sx={{
+            color: getPriorityColor('high'),
+            '&:hover': {
+              backgroundColor: `${getPriorityColor('high')}20`,
+            }
+          }}
+        >
+          High Priority
+        </MenuItem>
+        <MenuItem 
+          onClick={() => handlePriorityChange('urgent')}
+          sx={{
+            color: getPriorityColor('urgent'),
+            '&:hover': {
+              backgroundColor: `${getPriorityColor('urgent')}20`,
+            }
+          }}
+        >
+          Urgent Priority
         </MenuItem>
       </Menu>
 

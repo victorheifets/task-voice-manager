@@ -137,9 +137,12 @@ function MainContent() {
   const [azureRegion, setAzureRegion] = useState('');
   const [lastSavedNotesState, setLastSavedNotesState] = useState<any>({});
   const notesDebounceRefs = useRef<{[key: number]: NodeJS.Timeout}>({});
+  const [isWideView, setIsWideView] = useState(true);
+  const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
   
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('lg')); // lg is ~1200px
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
@@ -152,6 +155,23 @@ function MainContent() {
   const handleMenuClick = () => {
     // Handle mobile menu click - could open a drawer or show mobile navigation
     console.log('Menu clicked');
+  };
+
+  const handleViewToggle = () => {
+    setIsWideView(prev => !prev);
+  };
+
+  const handleBulkDelete = async () => {
+    try {
+      const { deleteTask } = await import('@/lib/supabase/client');
+      const deletePromises = Array.from(selectedTasks).map(taskId => deleteTask(taskId));
+      await Promise.all(deletePromises);
+      setSelectedTasks(new Set());
+      setRefreshTrigger(prev => prev + 1);
+      console.log(`${selectedTasks.size} tasks deleted successfully`);
+    } catch (error) {
+      console.error('Failed to delete tasks:', error);
+    }
   };
 
   const handleNoteTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -367,14 +387,22 @@ function MainContent() {
 
 
   return (
-    <Layout onTabChange={handleHeaderTabChange} onMenuClick={handleMenuClick}>
+    <Layout 
+      onTabChange={handleHeaderTabChange} 
+      onMenuClick={handleMenuClick}
+      isWideView={isWideView}
+      onViewToggle={handleViewToggle}
+    >
       <Box sx={{ 
         flexGrow: 1, 
         pb: isMobile ? 8 : 2,
         overflow: 'hidden', // Remove outer scroll completely
         display: 'flex',
         flexDirection: 'column',
-        height: '100%'
+        height: '100%',
+        maxWidth: (isMobile || isTablet || isWideView) ? '100%' : '1200px',
+        mx: 'auto',
+        transition: 'all 0.3s ease'
       }}>
         {!isMobile && (
           <Tabs 
@@ -425,10 +453,14 @@ function MainContent() {
             display: 'flex',
             flexDirection: 'column',
             gap: 3,
-            height: '100%',
+            height: activeTab === 0 ? 'calc(100vh - 200px)' : '100%', // Fixed height only for tasks tab
             flex: 1,
+            overflow: activeTab === 0 ? 'hidden' : 'auto', // Prevent scroll only on tasks tab
             pt: 2,
-            px: 2
+            px: (isMobile || isTablet || isWideView) ? 2 : 6,
+            maxWidth: (isMobile || isTablet || isWideView || activeTab === 1) ? '100%' : '1200px', // Notes tab always full width
+            mx: 'auto',
+            transition: 'all 0.3s ease'
           }}>
             <TaskInput 
               onTaskAdded={handleTaskAdded}
@@ -439,6 +471,8 @@ function MainContent() {
               statusFilter={statusFilter}
               onSearchChange={handleSearchChange}
               onStatusFilterChange={handleStatusFilterClick}
+              selectedTasks={selectedTasks}
+              onBulkDelete={handleBulkDelete}
             />
             <Paper sx={{
               boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
@@ -454,6 +488,8 @@ function MainContent() {
                 refreshTrigger={refreshTrigger}
                 searchFilter={searchFilter}
                 statusFilter={statusFilter}
+                selectedTasks={selectedTasks}
+                onSelectedTasksChange={setSelectedTasks}
               />
             </Paper>
           </Box>
@@ -464,7 +500,11 @@ function MainContent() {
             display: 'flex', 
             flexDirection: 'column', 
             height: '100%',
-            bgcolor: theme.palette.background.default
+            bgcolor: theme.palette.background.default,
+            maxWidth: '100%', // Notes always full width
+            mx: 'auto',
+            px: 0, // Notes always full padding
+            transition: 'all 0.3s ease'
           }}>
             <Box sx={{ 
               borderBottom: 'none',

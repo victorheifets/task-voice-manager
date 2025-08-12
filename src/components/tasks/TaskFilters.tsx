@@ -29,6 +29,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import AllInclusiveIcon from '@mui/icons-material/AllInclusive';
 import CloseIcon from '@mui/icons-material/Close';
+import DeleteIcon from '@mui/icons-material/Delete';
 import { useTranslation } from 'react-i18next';
 
 interface TaskFiltersProps {
@@ -36,13 +37,17 @@ interface TaskFiltersProps {
   statusFilter: string;
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (status: string) => void;
+  selectedTasks?: Set<string>;
+  onBulkDelete?: () => void;
 }
 
 export default function TaskFilters({ 
   searchFilter, 
   statusFilter, 
   onSearchChange, 
-  onStatusFilterChange 
+  onStatusFilterChange,
+  selectedTasks,
+  onBulkDelete
 }: TaskFiltersProps) {
   const { t } = useTranslation(['common']);
   const theme = useTheme();
@@ -300,57 +305,81 @@ export default function TaskFilters({
             {filter.label}
           </Button>
         ))}
+        
+        {/* Bulk Delete Button - moved to left side with filters */}
+        {selectedTasks && selectedTasks.size > 0 && onBulkDelete && (
+          <Button
+            variant="contained"
+            color="error"
+            startIcon={<DeleteIcon />}
+            onClick={onBulkDelete}
+            sx={{
+              borderRadius: 2,
+              boxShadow: '0 4px 12px rgba(244, 67, 54, 0.3)',
+              ml: 1,
+              '&:hover': {
+                boxShadow: '0 6px 16px rgba(244, 67, 54, 0.4)',
+                transform: 'translateY(-1px)'
+              }
+            }}
+          >
+            Delete {selectedTasks.size}
+          </Button>
+        )}
       </Box>
-      <TextField
-        placeholder="Search tasks... (e.g., 'John', 'urgent', 'meeting')"
-        size="small"
-        value={searchFilter}
-        onChange={handleSearchChange}
-        InputProps={{
-          startAdornment: (
-            <InputAdornment position="start">
-              <SearchIcon color="action" />
-            </InputAdornment>
-          ),
-        }}
-        sx={{
-          width: 350,
-          '& .MuiOutlinedInput-root': {
-            borderRadius: 2,
-            bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-            border: `1px solid ${theme.palette.mode === 'dark' ? theme.palette.divider : 'rgba(0,0,0,0.1)'}`,
-            '& fieldset': {
-              border: 'none',
+      
+      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+        <TextField
+          placeholder="Search tasks... (e.g., 'John', 'urgent', 'meeting')"
+          size="small"
+          value={searchFilter}
+          onChange={handleSearchChange}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            width: 350,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2,
+              bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+              border: `1px solid ${theme.palette.mode === 'dark' ? theme.palette.divider : 'rgba(0,0,0,0.1)'}`,
+              '& fieldset': {
+                border: 'none',
+              },
+              '&:hover': {
+                boxShadow: theme.palette.mode === 'dark' ? 
+                  '0 6px 20px rgba(0,0,0,0.35)' : '0 6px 20px rgba(0,0,0,0.35)',
+                borderColor: theme.palette.primary.main,
+                bgcolor: theme.palette.mode === 'dark' ? 
+                  alpha(theme.palette.primary.main, 0.08) : '#ffffff',
+              },
+              '&:hover fieldset': {
+                border: 'none',
+              },
+              '&.Mui-focused': {
+                boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
+                bgcolor: theme.palette.mode === 'dark' ? 
+                  alpha(theme.palette.primary.main, 0.08) : '#ffffff',
+              },
+              '&.Mui-focused fieldset': {
+                border: 'none',
+              }
             },
-            '&:hover': {
-              boxShadow: theme.palette.mode === 'dark' ? 
-                '0 6px 20px rgba(0,0,0,0.35)' : '0 6px 20px rgba(0,0,0,0.35)',
-              borderColor: theme.palette.primary.main,
-              bgcolor: theme.palette.mode === 'dark' ? 
-                alpha(theme.palette.primary.main, 0.08) : '#ffffff',
+            '& .MuiInputBase-input': {
+              color: theme.palette.text.primary
             },
-            '&:hover fieldset': {
-              border: 'none',
-            },
-            '&.Mui-focused': {
-              boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
-              bgcolor: theme.palette.mode === 'dark' ? 
-                alpha(theme.palette.primary.main, 0.08) : '#ffffff',
-            },
-            '&.Mui-focused fieldset': {
-              border: 'none',
+            '& input::placeholder': {
+              color: '#999999',
+              opacity: 1
             }
-          },
-          '& .MuiInputBase-input': {
-            color: theme.palette.text.primary
-          },
-          '& input::placeholder': {
-            color: '#999999',
-            opacity: 1
-          }
-        }}
-      />
+          }}
+        />
+      </Box>
     </Box>
   );
 } 
