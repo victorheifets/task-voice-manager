@@ -75,122 +75,129 @@ export default function TaskFilters({
       label: 'All', 
       icon: <AllInclusiveIcon fontSize="small" />,
       color: '#2196F3', // Blue
-      bgColor: '#E3F2FD'
+      bgColor: alpha('#2196F3', 0.1)
     },
     { 
       id: 'today', 
       label: 'Today', 
       icon: <TodayIcon fontSize="small" />,
       color: '#4CAF50', // Green
-      bgColor: '#E8F5E9'
+      bgColor: alpha('#4CAF50', 0.1)
     },
     { 
       id: 'tomorrow', 
       label: 'Tomorrow', 
       icon: <EventIcon fontSize="small" />,
       color: '#FF9800', // Orange
-      bgColor: '#FFF3E0'
+      bgColor: alpha('#FF9800', 0.1)
     },
     { 
       id: 'thisweek', 
       label: 'This Week', 
       icon: <DateRangeIcon fontSize="small" />,
       color: '#00BCD4', // Cyan
-      bgColor: '#E0F2F1'
+      bgColor: alpha('#00BCD4', 0.1)
     },
     { 
       id: 'nextweek', 
       label: 'Next Week', 
       icon: <DateRangeIcon fontSize="small" />,
       color: '#9C27B0', // Purple
-      bgColor: '#F3E5F5'
+      bgColor: alpha('#9C27B0', 0.1)
     },
     { 
       id: 'overdue', 
       label: 'Overdue', 
       icon: <ErrorOutlineIcon fontSize="small" />,
       color: '#FF5722', // Softer red
-      bgColor: '#FFEBEE'
+      bgColor: alpha('#FF5722', 0.1)
     },
     { 
       id: 'completed', 
       label: 'Completed', 
       icon: <CheckCircleOutlineIcon fontSize="small" />,
       color: '#4CAF50', // Green
-      bgColor: '#E8F5E9'
+      bgColor: alpha('#4CAF50', 0.1)
     }
   ];
+
+  // Get current filter info
+  const currentFilter = filterOptions.find(filter => filter.id === statusFilter) || filterOptions[0];
 
   // Mobile layout
   if (isMobile) {
     return (
       <>
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center',
-          gap: 1,
-          mb: 2
-        }}>
-          <Paper
+        <Box sx={{ mb: 2 }}>
+          <TextField
+            placeholder="Search tasks, assignees, tags..."
+            size="medium"
+            value={searchFilter}
+            onChange={handleSearchChange}
+            fullWidth
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <Chip
+                    label={currentFilter.label}
+                    size="small"
+                    icon={currentFilter.icon}
+                    onClick={toggleMobileFilter}
+                    sx={{
+                      cursor: 'pointer',
+                      bgcolor: currentFilter.bgColor,
+                      color: currentFilter.color,
+                      fontWeight: 500,
+                      '& .MuiChip-icon': {
+                        color: currentFilter.color
+                      },
+                      '&:hover': {
+                        bgcolor: alpha(currentFilter.color, 0.2)
+                      }
+                    }}
+                  />
+                </InputAdornment>
+              ),
+            }}
             sx={{
-              p: '2px 4px',
-              display: 'flex',
-              alignItems: 'center',
-              flex: 1,
-              borderRadius: 2,
-              bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
-              border: `2px solid ${theme.palette.mode === 'dark' ? theme.palette.divider : 'rgba(0,0,0,0.1)'}`,
-              boxShadow: theme.palette.mode === 'dark' ? 
-                '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.15)',
-              '&:hover': {
+              '& .MuiOutlinedInput-root': {
+                borderRadius: 2,
+                bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
+                border: `2px solid ${theme.palette.mode === 'dark' ? theme.palette.divider : 'rgba(0,0,0,0.1)'}`,
                 boxShadow: theme.palette.mode === 'dark' ? 
-                  '0 6px 28px rgba(0,0,0,0.4)' : '0 6px 28px rgba(0,0,0,0.2)',
-                bgcolor: theme.palette.mode === 'dark' ? 
-                  alpha(theme.palette.primary.main, 0.08) : '#ffffff',
-              }
+                  '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.15)',
+                '& fieldset': {
+                  border: 'none',
+                },
+                '&:hover': {
+                  boxShadow: theme.palette.mode === 'dark' ? 
+                    '0 6px 28px rgba(0,0,0,0.4)' : '0 6px 28px rgba(0,0,0,0.2)',
+                  bgcolor: theme.palette.mode === 'dark' ? 
+                    alpha(theme.palette.primary.main, 0.08) : '#ffffff',
+                },
+                '&.Mui-focused': {
+                  boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
+                  bgcolor: theme.palette.mode === 'dark' ? 
+                    alpha(theme.palette.primary.main, 0.08) : '#ffffff',
+                },
+                '&.Mui-focused fieldset': {
+                  border: 'none',
+                }
+              },
+              '& .MuiInputBase-input': {
+                color: theme.palette.text.primary,
+              },
+              '& input::placeholder': {
+                color: theme.palette.text.secondary,
+                opacity: 1,
+              },
             }}
-          >
-            <TextField
-              placeholder="Search tasks, assignees, tags..."
-              size="small"
-              value={searchFilter}
-              onChange={handleSearchChange}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{
-                width: 300,
-                '& .MuiOutlinedInput-root': {
-                  borderRadius: 2,
-                  bgcolor: theme.palette.mode === 'dark' ? theme.palette.background.paper : '#ffffff',
-                },
-                '& .MuiInputBase-input': {
-                  color: theme.palette.text.primary,
-                },
-                '& input::placeholder': {
-                  color: theme.palette.text.secondary,
-                  opacity: 1,
-                },
-              }}
-            />
-          </Paper>
-          
-          <IconButton 
-            onClick={toggleMobileFilter}
-            sx={{ 
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              color: theme.palette.primary.main,
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.2),
-              }
-            }}
-          >
-            <FilterListIcon />
-          </IconButton>
+          />
         </Box>
         
         <Drawer

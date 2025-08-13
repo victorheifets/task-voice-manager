@@ -135,7 +135,7 @@ function MainContent() {
   const [apiKey, setApiKey] = useState('');
   const [azureKey, setAzureKey] = useState('');
   const [azureRegion, setAzureRegion] = useState('');
-  const [lastSavedNotesState, setLastSavedNotesState] = useState<any>({});
+  const [lastSavedNotesState, setLastSavedNotesState] = useState<{[key: number]: string}>({});
   const notesDebounceRefs = useRef<{[key: number]: NodeJS.Timeout}>({});
   const [isWideView, setIsWideView] = useState(true);
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
@@ -392,6 +392,7 @@ function MainContent() {
       onMenuClick={handleMenuClick}
       isWideView={isWideView}
       onViewToggle={handleViewToggle}
+      activeTab={activeTab}
     >
       <Box sx={{ 
         flexGrow: 1, 
@@ -400,7 +401,7 @@ function MainContent() {
         display: 'flex',
         flexDirection: 'column',
         height: '100%',
-        maxWidth: (isMobile || isTablet || isWideView) ? '100%' : '1200px',
+        maxWidth: (isMobile || isTablet || isWideView || activeTab === 1) ? '100%' : '1200px',
         mx: 'auto',
         transition: 'all 0.3s ease'
       }}>
@@ -455,17 +456,19 @@ function MainContent() {
             gap: 3,
             height: activeTab === 0 ? 'calc(100vh - 200px)' : '100%', // Fixed height only for tasks tab
             flex: 1,
-            overflow: activeTab === 0 ? 'hidden' : 'auto', // Prevent scroll only on tasks tab
-            pt: 2,
+            overflow: activeTab === 0 ? 'visible' : 'auto', // Allow scroll on tasks tab
+            pt: isMobile ? 0 : 2,
             px: (isMobile || isTablet || isWideView) ? 2 : 6,
             maxWidth: (isMobile || isTablet || isWideView || activeTab === 1) ? '100%' : '1200px', // Notes tab always full width
             mx: 'auto',
             transition: 'all 0.3s ease'
           }}>
-            <TaskInput 
-              onTaskAdded={handleTaskAdded}
-              transcript={currentTranscript}
-            />
+            {!isMobile && (
+              <TaskInput 
+                onTaskAdded={handleTaskAdded}
+                transcript={currentTranscript}
+              />
+            )}
             <TaskFilters 
               searchFilter={searchFilter}
               statusFilter={statusFilter}
@@ -474,24 +477,44 @@ function MainContent() {
               selectedTasks={selectedTasks}
               onBulkDelete={handleBulkDelete}
             />
-            <Paper sx={{
-              boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
-              borderRadius: 2,
-              border: `1px solid ${theme.palette.divider}`,
-              overflow: 'hidden',
-              '&:hover': {
-                boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
-                transition: 'all 0.3s ease'
-              }
-            }}>
-              <EnhancedTaskList 
-                refreshTrigger={refreshTrigger}
-                searchFilter={searchFilter}
-                statusFilter={statusFilter}
-                selectedTasks={selectedTasks}
-                onSelectedTasksChange={setSelectedTasks}
-              />
-            </Paper>
+            {!isMobile ? (
+              <Paper sx={{
+                boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+                borderRadius: 2,
+                border: `1px solid ${theme.palette.divider}`,
+                overflow: 'hidden',
+                '&:hover': {
+                  boxShadow: '0 6px 20px rgba(0,0,0,0.35)',
+                  transition: 'all 0.3s ease'
+                }
+              }}>
+                <EnhancedTaskList 
+                  refreshTrigger={refreshTrigger}
+                  searchFilter={searchFilter}
+                  statusFilter={statusFilter}
+                  selectedTasks={selectedTasks}
+                  onSelectedTasksChange={setSelectedTasks}
+                  onBulkDelete={handleBulkDelete}
+                />
+              </Paper>
+            ) : (
+              <Box sx={{ 
+                height: 'calc(100vh - 120px)', 
+                overflow: 'auto',
+                borderTop: `1px solid ${theme.palette.divider}`,
+                pb: 0, // Remove bottom padding
+                mb: '-56px' // Overlap with nav bar
+              }}>
+                <EnhancedTaskList 
+                  refreshTrigger={refreshTrigger}
+                  searchFilter={searchFilter}
+                  statusFilter={statusFilter}
+                  selectedTasks={selectedTasks}
+                  onSelectedTasksChange={setSelectedTasks}
+                  onBulkDelete={handleBulkDelete}
+                />
+              </Box>
+            )}
           </Box>
         </TabPanel>
         
@@ -501,9 +524,9 @@ function MainContent() {
             flexDirection: 'column', 
             height: '100%',
             bgcolor: theme.palette.background.default,
-            maxWidth: '100%', // Notes always full width
+            maxWidth: '100%',
             mx: 'auto',
-            px: 0, // Notes always full padding
+            px: 0,
             transition: 'all 0.3s ease'
           }}>
             <Box sx={{ 
@@ -519,30 +542,39 @@ function MainContent() {
                 scrollButtons="auto"
                 sx={{ 
                   minHeight: 'auto',
+                  width: '100%',
                   '& .MuiTabs-indicator': {
                     display: 'none'
                   },
+                  '& .MuiTabs-scrollButtons': {
+                    width: 'auto'
+                  },
+                  '& .MuiTabs-scroller': {
+                    overflow: 'auto !important'
+                  },
                   '& .MuiTab-root': {
-                    minHeight: 36,
+                    minHeight: 32,
                     textTransform: 'none',
-                    fontWeight: 600,
-                    fontSize: '1rem',
+                    fontWeight: 500,
+                    fontSize: '0.85rem',
                     bgcolor: 'transparent',
                     color: theme.palette.text.secondary,
-                    borderRadius: '8px 8px 0 0',
+                    borderRadius: '6px 6px 0 0',
                     border: `1px solid ${theme.palette.divider}`,
                     borderBottom: 'none',
-                    mx: 0.5,
-                    px: 3,
-                    py: 1,
-                    boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                    minWidth: 100,
+                    mx: 0.25,
+                    px: 2,
+                    py: 0.5,
+                    boxShadow: '0 1px 4px rgba(0,0,0,0.08)',
+                    minWidth: 80,
+                    maxWidth: 150,
                     transition: 'all 0.2s ease',
                     '&.Mui-selected': {
                       bgcolor: theme.palette.background.paper,
                       color: theme.palette.primary.main,
-                      fontWeight: 700,
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+                      fontWeight: 600,
+                      fontSize: '0.85rem',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.12)',
                       transform: 'translateY(-1px)',
                       border: `1px solid ${theme.palette.primary.main}`,
                       borderBottom: `1px solid ${theme.palette.background.paper}`,
@@ -550,10 +582,10 @@ function MainContent() {
                       position: 'relative'
                     },
                     '&:hover:not(.Mui-selected)': {
-                      bgcolor: alpha(theme.palette.primary.main, 0.1),
+                      bgcolor: alpha(theme.palette.primary.main, 0.08),
                       color: theme.palette.primary.main,
                       transform: 'translateY(-1px)',
-                      boxShadow: '0 3px 10px rgba(0,0,0,0.12)'
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.1)'
                     }
                   }
                 }}
@@ -645,7 +677,7 @@ function MainContent() {
             <Box sx={{ 
               flexGrow: 1, 
               overflow: 'auto', 
-              height: '100%',
+              maxHeight: 'calc(100vh - 250px)',
               bgcolor: theme.palette.background.paper,
               borderTop: `1px solid ${theme.palette.divider}`,
               position: 'relative',
@@ -697,9 +729,12 @@ function MainContent() {
             display: 'flex', 
             flexDirection: 'column', 
             gap: { xs: 2, md: 3 }, 
-            maxWidth: 1200, 
-            mx: { xs: 0, sm: 'auto' },
-            px: { xs: 0, sm: 2 }
+            maxWidth: (isMobile || isTablet || isWideView) ? '100%' : '1200px',
+            mx: 'auto',
+            px: (isMobile || isTablet || isWideView) ? 2 : 6,
+            maxHeight: 'calc(100vh - 200px)',
+            overflow: 'auto',
+            transition: 'all 0.3s ease'
           }}>
             
             <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', md: 'repeat(2, 1fr)' }, gap: { xs: 2, md: 3 } }}>
@@ -1277,34 +1312,15 @@ function MainContent() {
       {/* Floating action buttons */}
       <ClientOnly>
         {isMobile ? (
-          <Box component="div">
-            <Fab 
-              color="primary"
-              aria-label="add task" 
-              sx={{ 
-                position: 'fixed', 
-                bottom: 90, 
-                right: 16,
-                width: 56,
-                height: 56,
-                background: 'linear-gradient(180deg, #2196F3 0%, #1976D2 100%)',
-                boxShadow: '0 4px 12px rgba(33, 150, 243, 0.3)',
-                '&:hover': {
-                  boxShadow: '0 6px 16px rgba(33, 150, 243, 0.4)',
-                  transform: 'translateY(-1px)',
-                }
-              }}
-              onClick={() => {
-                setShowMobileTextInput(true);
-              }}
-            >
-              <AddIcon />
-            </Fab>
-            <Box sx={{ position: 'fixed', bottom: 80, right: 80, zIndex: 1000 }}>
-              <Tooltip title="Start Recording">
-                <DynamicFloatingMicButton onTranscript={handleFloatingMicTranscript} transcriptionService={transcriptionService} />
-              </Tooltip>
-            </Box>
+          <Box sx={{ position: 'fixed', bottom: 80, right: 16, zIndex: 1000 }}>
+            <Tooltip title="Add Task (Voice or Text)">
+              <DynamicFloatingMicButton 
+                onTranscript={handleFloatingMicTranscript} 
+                transcriptionService={transcriptionService} 
+                showTextOption={true}
+                onTextInput={() => setShowMobileTextInput(true)}
+              />
+            </Tooltip>
           </Box>
         ) : (
           activeTab === 0 && !isMobile && (
@@ -1373,24 +1389,23 @@ function MainContent() {
           sx: { 
             borderRadius: 2,
             position: 'fixed',
-            bottom: 0,
+            top: '50%',
+            left: '50%',
+            transform: 'translate(-50%, -50%)',
             m: 0,
-            borderBottomLeftRadius: 0,
-            borderBottomRightRadius: 0,
-            boxShadow: '0 -4px 12px rgba(0, 0, 0, 0.15)',
+            boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
           }
         }}
       >
-        <DialogTitle sx={{ 
-          borderBottom: '1px solid',
-          borderColor: 'divider',
-          py: 2,
-          fontWeight: 600,
-          color: 'primary.main'
-        }}>
-          Add Task
-        </DialogTitle>
-        <DialogContent sx={{ p: 3 }}>
+        <DialogContent sx={{ p: 2.5 }}>
+          <Typography variant="h6" gutterBottom sx={{ 
+            fontSize: '1.1rem', 
+            fontWeight: 600, 
+            color: 'primary.main' 
+          }}>
+            Add Task
+          </Typography>
+          <Divider sx={{ mb: 2.5 }} />
           <TaskInput 
             onTaskAdded={() => {
               handleTaskAdded();

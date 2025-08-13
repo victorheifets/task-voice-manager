@@ -10,9 +10,10 @@ interface LayoutProps {
   onMenuClick?: () => void;
   isWideView?: boolean;
   onViewToggle?: () => void;
+  activeTab?: number;
 }
 
-export default function Layout({ children, onTabChange, onMenuClick, isWideView, onViewToggle }: LayoutProps) {
+export default function Layout({ children, onTabChange, onMenuClick, isWideView, onViewToggle, activeTab }: LayoutProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
@@ -37,9 +38,9 @@ export default function Layout({ children, onTabChange, onMenuClick, isWideView,
         display: 'flex',
         flexDirection: 'column',
         bgcolor: theme.palette.background.default,
-        // Smart padding: enough space for shadows but not cramped
-        px: isMobile ? 2 : 3, // More side padding for shadow space and breathing room
-        py: 2, // Top/bottom padding for shadow space
+        // Smart padding: enough space for shadows but not cramped, except notes should be full width
+        px: activeTab === 1 ? 0 : (isMobile ? 2 : 3), // No padding for notes tab, normal padding for others
+        py: isMobile ? 0 : 2, // Remove padding on mobile for seamless nav bar effect
         width: '100%',
         minHeight: isMobile ? 'calc(100vh - 56px - 56px)' : 'auto'
       }}>
