@@ -5,21 +5,14 @@
   "installCommand": "npm install",
   "devCommand": "npm run dev",
   "regions": ["iad1"],
-  "builds": [
-    {
-      "src": "package.json",
-      "use": "@vercel/next",
-      "config": {
-        "memory": 3008
-      }
-    }
-  ],
   "functions": {
     "app/api/transcribe/route.ts": {
-      "maxDuration": 30
+      "maxDuration": 30,
+      "memory": 3008
     },
     "app/api/tasks/parse/route.ts": {
-      "maxDuration": 15
+      "maxDuration": 15,
+      "memory": 3008
     }
   },
   "headers": [
