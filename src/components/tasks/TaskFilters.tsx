@@ -128,7 +128,7 @@ export default function TaskFilters({
   if (isMobile) {
     return (
       <>
-        <Box sx={{ mb: 2 }}>
+        <Box sx={{ mb: 1 }}>
           <TextField
             placeholder="Search tasks, assignees, tags..."
             size="medium"

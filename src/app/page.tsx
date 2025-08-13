@@ -457,7 +457,7 @@ function MainContent() {
             height: activeTab === 0 ? 'calc(100vh - 200px)' : '100%', // Fixed height only for tasks tab
             flex: 1,
             overflow: activeTab === 0 ? 'visible' : 'auto', // Allow scroll on tasks tab
-            pt: isMobile ? 0 : 2,
+            pt: isMobile ? 3 : 2,
             px: (isMobile || isTablet || isWideView) ? 2 : 6,
             maxWidth: (isMobile || isTablet || isWideView || activeTab === 1) ? '100%' : '1200px', // Notes tab always full width
             mx: 'auto',
