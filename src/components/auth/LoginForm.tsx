@@ -11,8 +11,10 @@ import {
   Alert,
   Tab,
   Tabs,
-  CircularProgress
+  CircularProgress,
+  Divider
 } from '@mui/material'
+import GoogleIcon from '@mui/icons-material/Google'
 import { useAuth } from './AuthProvider'
 
 interface TabPanelProps {
@@ -34,6 +36,7 @@ export function LoginForm() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [loading, setLoading] = useState(false)
+  const [googleLoading, setGoogleLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [tabValue, setTabValue] = useState(0)
@@ -97,6 +100,30 @@ export function LoginForm() {
     }
   }
 
+  const handleGoogleSignIn = async () => {
+    setGoogleLoading(true)
+    setError('')
+    setMessage('')
+
+    try {
+      // Import supabase client dynamically to avoid SSR issues
+      const { supabase } = await import('../../lib/supabase/client')
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`
+        }
+      })
+      if (error) {
+        setError(error.message)
+      }
+    } catch (err: any) {
+      setError(err.message)
+    } finally {
+      setGoogleLoading(false)
+    }
+  }
+
   return (
     <Box
       sx={{
@@ -116,6 +143,33 @@ export function LoginForm() {
           <Typography variant="subtitle1" textAlign="center" mb={3} color="text.secondary">
             Voice-powered task management with AI
           </Typography>
+
+          {/* Google OAuth Button */}
+          <Button
+            fullWidth
+            variant="outlined"
+            onClick={handleGoogleSignIn}
+            disabled={googleLoading}
+            startIcon={googleLoading ? <CircularProgress size={20} /> : <GoogleIcon />}
+            sx={{ 
+              mb: 2,
+              py: 1.5,
+              borderColor: '#db4437',
+              color: '#db4437',
+              '&:hover': {
+                borderColor: '#db4437',
+                backgroundColor: 'rgba(219, 68, 55, 0.04)'
+              }
+            }}
+          >
+            {googleLoading ? 'Signing in...' : 'Continue with Google'}
+          </Button>
+
+          <Divider sx={{ my: 2 }}>
+            <Typography variant="body2" color="text.secondary">
+              or
+            </Typography>
+          </Divider>
 
           <Tabs value={tabValue} onChange={handleTabChange} centered>
             <Tab label="Sign In" />
