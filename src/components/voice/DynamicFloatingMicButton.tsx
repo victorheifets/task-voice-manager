@@ -3,6 +3,13 @@
 import dynamic from 'next/dynamic';
 import { Box } from '@mui/material';
 
+interface DynamicFloatingMicButtonProps {
+  onTranscript: (text: string) => void;
+  transcriptionService?: 'browser' | 'whisper' | 'azure' | 'hybrid';
+  showTextOption?: boolean;
+  onTextInput?: () => void;
+}
+
 const FloatingMicButton = dynamic(
   () => import('./FloatingMicButton'),
   {
@@ -31,4 +38,8 @@ const FloatingMicButton = dynamic(
   }
 );
 
-export default FloatingMicButton;
+const DynamicFloatingMicButton: React.FC<DynamicFloatingMicButtonProps> = (props) => {
+  return <FloatingMicButton {...props} />;
+};
+
+export default DynamicFloatingMicButton;

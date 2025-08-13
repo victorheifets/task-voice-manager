@@ -1,18 +1,28 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Box, Fab, Tooltip } from '@mui/material';
+import { Box, Fab, Tooltip, SpeedDial, SpeedDialAction, SpeedDialIcon } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import StopIcon from '@mui/icons-material/Stop';
+import AddIcon from '@mui/icons-material/Add';
+import EditIcon from '@mui/icons-material/Edit';
 import VoiceRecorder from './VoiceRecorder';
 
 interface FloatingMicButtonProps {
   onTranscript: (text: string) => void;
   transcriptionService?: 'browser' | 'whisper' | 'azure' | 'hybrid';
+  showTextOption?: boolean;
+  onTextInput?: () => void;
 }
 
-const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({ onTranscript, transcriptionService = 'browser' }) => {
+const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({ 
+  onTranscript, 
+  transcriptionService = 'browser', 
+  showTextOption = false, 
+  onTextInput 
+}) => {
   const [isRecording, setIsRecording] = useState(false);
   const [voiceRecorderMounted, setVoiceRecorderMounted] = useState(false);
   const [voiceLanguage, setVoiceLanguage] = useState('en-US');
+  const [speedDialOpen, setSpeedDialOpen] = useState(false);
   const voiceRecorderRef = useRef<{ startRecording: () => Promise<void>; stopRecording: () => Promise<void> }>(null);
 
   // Load voice recognition language from localStorage
@@ -73,6 +83,95 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({ onTranscript, tra
     setIsRecording(false);
   };
 
+  // If we have text option and not recording, show SpeedDial
+  if (showTextOption && !isRecording) {
+    return (
+      <Box sx={{ position: 'relative' }}>
+        {/* Voice Recorder (Hidden) - Only mount when needed */}
+        {voiceRecorderMounted && (
+          <Box sx={{ position: 'absolute', left: -9999, top: -9999, opacity: 0 }}>
+            <VoiceRecorder
+              ref={voiceRecorderRef}
+              onTranscript={handleVoiceRecorderResult}
+              onRecordingStateChange={(recording) => {
+                setIsRecording(recording);
+              }}
+              language={voiceLanguage}
+              transcriptionService={transcriptionService}
+            />
+          </Box>
+        )}
+
+        <SpeedDial
+          ariaLabel="Add Task Options"
+          sx={{ 
+            position: 'absolute', 
+            bottom: 0, 
+            right: 0,
+            '& .MuiFab-primary': {
+              background: 'linear-gradient(135deg, #2196f3 0%, #1976d2 50%, #0d47a1 100%)',
+              '&:hover': {
+                background: 'linear-gradient(135deg, #1e88e5 0%, #1565c0 50%, #0a2e5e 100%)',
+              }
+            }
+          }}
+          icon={<SpeedDialIcon icon={<AddIcon />} openIcon={<AddIcon sx={{ transform: 'rotate(45deg)' }} />} />}
+          onClose={() => setSpeedDialOpen(false)}
+          onOpen={() => setSpeedDialOpen(true)}
+          open={speedDialOpen}
+          direction="up"
+        >
+          <SpeedDialAction
+            key="voice"
+            icon={<MicIcon />}
+            tooltipTitle="Voice Input"
+            onClick={() => {
+              setSpeedDialOpen(false);
+              handleFloatingMicClick();
+            }}
+            sx={{
+              '& .MuiSpeedDialAction-fab': {
+                bgcolor: '#4caf50',
+                '&:hover': { bgcolor: '#388e3c' }
+              }
+            }}
+          />
+          <SpeedDialAction
+            key="text"
+            icon={<EditIcon />}
+            tooltipTitle="Text Input"
+            onClick={() => {
+              setSpeedDialOpen(false);
+              onTextInput?.();
+            }}
+            sx={{
+              '& .MuiSpeedDialAction-fab': {
+                bgcolor: '#ff9800',
+                '&:hover': { bgcolor: '#f57c00' }
+              }
+            }}
+          />
+        </SpeedDial>
+
+        {/* Pulse Animation */}
+        <style jsx>{`
+          @keyframes pulse {
+            0% {
+              box-shadow: 0 0 0 0 rgba(244, 67, 54, 0.7);
+            }
+            70% {
+              box-shadow: 0 0 0 10px rgba(244, 67, 54, 0);
+            }
+            100% {
+              box-shadow: 0 0 0 0 rgba(244, 67, 54, 0);
+            }
+          }
+        `}</style>
+      </Box>
+    );
+  }
+
+  // Recording mode or regular voice button
   return (
     <Box sx={{ position: 'relative' }}>
       {/* Voice Recorder (Hidden) - Only mount when needed */}

@@ -38,6 +38,7 @@ import {
   InputLabel,
   Select,
   Grid,
+  Divider,
 } from '@mui/material';
 import { DatePicker } from '@mui/x-date-pickers/DatePicker';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
@@ -431,202 +432,168 @@ export function EnhancedTaskList({
     return <Chip label={label} size="small" color={color} />;
   };
 
+
   // Mobile Card Layout
   if (isMobile) {
+
     return (
-      <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, p: 2 }}>
-        {filteredAndSortedTasks.map((task) => (
-          <Paper
-            key={task.id}
-            elevation={3}
-            onClick={(e) => handleCardClick(task, e)}
-            sx={{
-              p: 2,
-              borderRadius: 2,
-              borderLeft: `5px solid ${getPriorityColor(task.priority)}`,
-              opacity: task.completed ? 0.65 : 1,
-              bgcolor: theme.palette.mode === 'dark' ? '#2a2a2a' : '#ffffff',
-              border: `1px solid ${theme.palette.mode === 'dark' ? '#404040' : '#2196F3'}`,
-              boxShadow: theme.palette.mode === 'dark' 
-                ? '0 0 20px rgba(128, 128, 128, 0.2), 0 0 10px rgba(128, 128, 128, 0.15)' 
-                : '0 0 20px rgba(0, 0, 0, 0.15), 0 0 10px rgba(0, 0, 0, 0.1)',
-              transition: 'all 0.2s ease-in-out',
-              cursor: 'pointer',
-              minHeight: 120, // Fixed minimum height for consistent card sizes
-              display: 'flex',
-              flexDirection: 'column',
-              '&:hover': { 
-                elevation: 4,
-                transform: 'translateY(-1px)',
-                boxShadow: theme.palette.mode === 'dark' 
-                  ? '0 0 32px rgba(128, 128, 128, 0.25), 0 0 16px rgba(128, 128, 128, 0.2)' 
-                  : '0 0 24px rgba(0, 0, 0, 0.2), 0 0 12px rgba(0, 0, 0, 0.15)'
-              }
-            }}
-          >
-            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2, minHeight: 'auto' }}>
-              
-              <Box sx={{ flex: 1, minWidth: 0 }}>
-                <Typography
-                  variant="h6"
+      <>
+        <Box sx={{ px: 1 }}>
+          {filteredAndSortedTasks.map((task, index) => (
+            <React.Fragment key={task.id}>
+              <Card 
+                sx={{ 
+                  mx: 0,
+                  mb: 0.25,
+                  minHeight: 140,
+                  borderRadius: 3,
+                  cursor: 'pointer',
+                  bgcolor: 'background.paper',
+                  boxShadow: theme.palette.mode === 'dark'
+                    ? '0 2px 8px rgba(0,0,0,0.3)'
+                    : '0 2px 8px rgba(0,0,0,0.1)',
+                  border: theme.palette.mode === 'dark'
+                    ? '1px solid rgba(255,255,255,0.12)'
+                    : '1px solid rgba(0,0,0,0.08)',
+                  position: 'relative',
+                  transform: 'translateZ(0) scale(1)',
+                  '&:hover': {
+                    transform: 'translateY(-1px) translateZ(0)',
+                    boxShadow: theme.palette.mode === 'dark'
+                      ? '0 4px 12px rgba(0,0,0,0.4)'
+                      : '0 4px 12px rgba(0,0,0,0.15)',
+                  },
+                  '&:active': {
+                    transform: 'translateY(-1px) translateZ(0) scale(0.98)',
+                    transition: 'all 0.1s ease'
+                  },
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
+                }}
+                onClick={(e) => handleCardClick(task, e)}
+              >
+                
+                {/* Task Card Content */}
+                <CardContent
                   sx={{
-                    textDecoration: task.completed ? 'line-through' : 'none',
-                    wordBreak: 'break-word',
-                    fontSize: '0.95rem',
-                    fontWeight: 600,
-                    lineHeight: 1.3,
-                    color: theme.palette.mode === 'dark' ? '#ffffff' : '#1a1a1a',
-                    mb: 0.5
+                    position: 'relative',
+                    opacity: task.completed ? 0.65 : 1,
+                    display: 'flex',
+                    flexDirection: 'column',
+                    p: 2.5,
+                    '&:last-child': { pb: 2.5 }
                   }}
                 >
-                  {task.title}
-                </Typography>
-                
-                {(task.dueDate || task.assignee) && (
-                  <Box sx={{ mt: 0.75, display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-                    {task.dueDate && getDueDateChip(task.dueDate)}
-                    {task.assignee && (
-                      <Typography 
-                        variant="body2" 
-                        sx={{ 
-                          color: theme.palette.text.secondary,
-                          fontSize: '0.8rem',
-                          fontWeight: 500
-                        }}
-                      >
-                        👤 {task.assignee}
-                      </Typography>
-                    )}
-                  </Box>
-                )}
-                
-                {task.tags && task.tags.length > 0 && (
-                  <Box sx={{ mt: 0.75, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
-                    {task.tags.map((tag, index) => (
-                      <Chip 
-                        key={index} 
-                        label={tag} 
-                        size="small" 
-                        variant="outlined"
-                        sx={{
-                          height: 24,
-                          fontSize: '0.7rem',
-                          fontWeight: 500,
-                          borderRadius: '12px',
-                          '& .MuiChip-label': {
-                            px: 1.5
-                          }
-                        }}
-                      />
-                    ))}
-                  </Box>
-                )}
-              </Box>
-              
-              <IconButton
-                size="small"
-                onClick={(e) => handleMenuClick(e, task)}
-              >
-                <MoreVert />
-              </IconButton>
-            </Box>
-          </Paper>
-        ))}
-
-        {/* Menu */}
-        <Menu
-          anchorEl={anchorEl}
-          open={Boolean(anchorEl)}
-          onClose={handleMenuClose}
-        >
-          <MenuItem onClick={() => {
-            if (selectedTask) {
-              setSelectedTaskForInfo(selectedTask);
-              setTaskNotes(selectedTask.notes || '');
-              setInfoDialogOpen(true);
-            }
-            handleMenuClose();
-          }}>
-            <ListItemIcon><Info fontSize="small" /></ListItemIcon>
-            <ListItemText>View Details</ListItemText>
-          </MenuItem>
-          
-          <MenuItem onClick={() => {
-            if (selectedTask && onTaskCreate) {
-              const duplicateTaskData = {
-                title: `${selectedTask.title} (Copy)`,
-                dueDate: selectedTask.dueDate,
-                assignee: selectedTask.assignee,
-                priority: selectedTask.priority,
-                tags: selectedTask.tags || [],
-                notes: selectedTask.notes,
-                completed: false,
-                createdAt: new Date().toISOString(),
-                updatedAt: null
-              };
-              onTaskCreate(duplicateTaskData);
-              setSnackbar({ open: true, message: 'Task duplicated successfully', severity: 'success' });
-            }
-            handleMenuClose();
-          }}>
-            <ListItemIcon><ContentCopy fontSize="small" /></ListItemIcon>
-            <ListItemText>Duplicate</ListItemText>
-          </MenuItem>
-          
-          <MenuItem onClick={() => {
-            if (selectedTask) {
-              onTaskDelete(selectedTask.id);
-              setSnackbar({ open: true, message: 'Task deleted', severity: 'success' });
-            }
-            handleMenuClose();
-          }}>
-            <ListItemIcon><Delete fontSize="small" /></ListItemIcon>
-            <ListItemText>Delete</ListItemText>
-          </MenuItem>
-        </Menu>
-
-        {/* Info Dialog */}
-        <Dialog open={infoDialogOpen} onClose={() => setInfoDialogOpen(false)} maxWidth="sm" fullWidth>
-          <DialogTitle>Task Details</DialogTitle>
-          <DialogContent>
-            {selectedTaskForInfo && (
-              <Box sx={{ pt: 2 }}>
-                <Typography variant="h6" gutterBottom>{selectedTaskForInfo.title}</Typography>
-                
-                <Box sx={{ mb: 2 }}>
-                  <Typography variant="body2" color="text.secondary">Priority: {selectedTaskForInfo.priority}</Typography>
-                  {selectedTaskForInfo.dueDate && (
-                    <Typography variant="body2" color="text.secondary">
-                      Due: {format(parseISO(selectedTaskForInfo.dueDate), 'PPP')}
-                    </Typography>
-                  )}
-                  {selectedTaskForInfo.assignee && (
-                    <Typography variant="body2" color="text.secondary">Assignee: {selectedTaskForInfo.assignee}</Typography>
-                  )}
-                </Box>
-
-                <TextField
-                  fullWidth
-                  multiline
-                  rows={4}
-                  label="Notes"
-                  value={taskNotes}
-                  onChange={(e) => setTaskNotes(e.target.value)}
-                  variant="outlined"
-                />
-              </Box>
-            )}
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setInfoDialogOpen(false)}>Cancel</Button>
-            <Button onClick={handleInfoDialogSave} variant="contained">Save</Button>
-          </DialogActions>
-        </Dialog>
+                      <Box sx={{ flex: 1, minWidth: 0 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 0.5 }}>
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              textDecoration: task.completed ? 'line-through' : 'none',
+                              fontSize: '0.95rem',
+                              fontWeight: 600,
+                              lineHeight: 1.3,
+                              color: theme.palette.mode === 'dark' ? '#ffffff' : '#1a1a1a',
+                              flex: 1,
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              whiteSpace: 'nowrap'
+                            }}
+                          >
+                            {task.title}
+                          </Typography>
+                          <Chip
+                            label={task.priority}
+                            size="small"
+                            sx={{
+                              height: 20,
+                              fontSize: '0.7rem',
+                              fontWeight: 600,
+                              bgcolor: getPriorityColor(task.priority),
+                              color: 'white',
+                              textTransform: 'uppercase',
+                              '& .MuiChip-label': { px: 1 }
+                            }}
+                          />
+                        </Box>
+                        
+                        {(task.dueDate || task.assignee) && (
+                          <Box sx={{ mt: 0.75, display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
+                            {task.dueDate && getDueDateChip(task.dueDate)}
+                            {task.assignee && (
+                              <Chip
+                                icon={<PersonIcon sx={{ fontSize: '0.9rem' }} />}
+                                label={task.assignee}
+                                size="small"
+                                variant="outlined"
+                                sx={{
+                                  height: 24,
+                                  fontSize: '0.75rem',
+                                  fontWeight: 500,
+                                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.05)' : 'rgba(0,0,0,0.02)',
+                                  borderColor: theme.palette.mode === 'dark' ? 'rgba(255,255,255,0.2)' : 'rgba(0,0,0,0.12)',
+                                  '& .MuiChip-label': { px: 1 }
+                                }}
+                              />
+                            )}
+                          </Box>
+                        )}
+                        
+                        {task.tags && task.tags.length > 0 && (
+                          <Box sx={{ mt: 0.75, display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
+                            {task.tags.map((tag, index) => (
+                              <Chip 
+                                key={index} 
+                                label={tag} 
+                                size="small"
+                                sx={{
+                                  height: 24,
+                                  fontSize: '0.7rem',
+                                  fontWeight: 500,
+                                  borderRadius: '12px',
+                                  bgcolor: '#2196f3',
+                                  color: 'white',
+                                  '& .MuiChip-label': {
+                                    px: 1.5
+                                  }
+                                }}
+                              />
+                            ))}
+                          </Box>
+                        )}
+                      </Box>
+              </CardContent>
+              </Card>
+              </React.Fragment>
+            ))}
+        </Box>
 
         {/* Edit Dialog */}
-        <Dialog open={editDialogOpen} onClose={handleEditDialogClose} maxWidth="sm" fullWidth>
-          <DialogTitle sx={{ bgcolor: 'primary.main', color: 'white' }}>Edit Task</DialogTitle>
-          <DialogContent sx={{ pt: 4 }}>
+        <Dialog 
+          open={editDialogOpen} 
+          onClose={handleEditDialogClose} 
+          maxWidth="sm" 
+          fullWidth
+          PaperProps={{
+            sx: { 
+              borderRadius: 2,
+              position: 'fixed',
+              top: '50%',
+              left: '50%',
+              transform: 'translate(-50%, -50%)',
+              m: 0,
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.12)',
+            }
+          }}
+        >
+          <DialogContent sx={{ p: 2.5 }}>
+            <Typography variant="h6" gutterBottom sx={{ 
+              fontSize: '1.1rem', 
+              fontWeight: 600, 
+              color: 'primary.main' 
+            }}>
+              Edit Task
+            </Typography>
+            <Divider sx={{ mb: 2.5 }} />
             {editingTask && (
               <Grid container spacing={2}>
                 <Grid item xs={12}>
@@ -711,12 +678,40 @@ export function EnhancedTaskList({
             )}
           </DialogContent>
           <DialogActions sx={{ p: 2.5, gap: 1 }}>
-            <Button onClick={handleEditDialogClose} color="inherit">Cancel</Button>
+            <Button 
+              onClick={handleEditDialogClose} 
+              variant="outlined"
+              sx={{
+                color: theme.palette.text.primary,
+                borderColor: theme.palette.mode === 'dark' ? '#616161' : 'primary.main',
+                '&:hover': {
+                  borderColor: theme.palette.mode === 'dark' ? '#757575' : 'primary.dark',
+                  bgcolor: theme.palette.mode === 'dark' ? 'rgba(97, 97, 97, 0.1)' : 'rgba(25, 118, 210, 0.04)'
+                }
+              }}
+            >
+              Cancel
+            </Button>
             <Button 
               onClick={handleEditDialogSave} 
               variant="contained" 
               disabled={!editForm.title.trim()}
-              sx={{ minWidth: 80 }}
+              sx={{ 
+                minWidth: 80,
+                background: theme.palette.mode === 'dark'
+                  ? 'linear-gradient(180deg, #616161 0%, #424242 100%)'
+                  : 'linear-gradient(180deg, #2196F3 0%, #1976D2 100%)',
+                color: '#ffffff',
+                '&:hover': {
+                  background: theme.palette.mode === 'dark'
+                    ? 'linear-gradient(180deg, #757575 0%, #616161 100%)'
+                    : 'linear-gradient(180deg, #1976D2 0%, #1565C0 100%)',
+                },
+                '&:disabled': {
+                  background: theme.palette.mode === 'dark' ? '#2a2a2a' : '#e0e0e0',
+                  color: theme.palette.mode === 'dark' ? '#666' : '#999'
+                }
+              }}
             >
               Save
             </Button>
@@ -733,7 +728,7 @@ export function EnhancedTaskList({
             {snackbar.message}
           </Alert>
         </Snackbar>
-      </Box>
+      </>
     );
   }
 
