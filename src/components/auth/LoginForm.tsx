@@ -106,7 +106,6 @@ export function LoginForm() {
     setMessage('')
 
     try {
-      // Import supabase client dynamically to avoid SSR issues
       const { supabase } = await import('../../lib/supabase/client')
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -144,7 +143,6 @@ export function LoginForm() {
             Voice-powered task management with AI
           </Typography>
 
-          {/* Google OAuth Button */}
           <Button
             fullWidth
             variant="outlined"
