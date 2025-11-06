@@ -63,14 +63,26 @@ export function LoginForm() {
         : await signIn(email, password)
 
       if (error) {
-        setError(error.message)
+        // Better error messages
+        if (error.message?.includes('fetch') || error.message?.includes('network')) {
+          setError('Cannot connect to server. Please check your internet connection and try again.')
+        } else {
+          setError(error.message)
+        }
       } else if (isSignUp) {
         setMessage('Check your email for a confirmation link!')
       } else {
         setMessage('Welcome back!')
       }
     } catch (err: any) {
-      setError(err.message)
+      // Better error messages for network issues
+      if (err.message?.includes('fetch') || err.message?.includes('Failed to fetch')) {
+        setError('Cannot connect to authentication server. Please check your internet connection.')
+      } else if (err.message?.includes('resolve')) {
+        setError('Authentication service is currently unavailable. Please try again later.')
+      } else {
+        setError(err.message || 'An unexpected error occurred')
+      }
     } finally {
       setLoading(false)
     }
@@ -89,12 +101,20 @@ export function LoginForm() {
     try {
       const { error } = await signInWithMagicLink(email)
       if (error) {
-        setError(error.message)
+        if (error.message?.includes('fetch') || error.message?.includes('network')) {
+          setError('Cannot connect to server. Please check your internet connection.')
+        } else {
+          setError(error.message)
+        }
       } else {
         setMessage('Check your email for a magic link!')
       }
     } catch (err: any) {
-      setError(err.message)
+      if (err.message?.includes('fetch') || err.message?.includes('Failed to fetch')) {
+        setError('Cannot connect to authentication server. Please check your internet connection.')
+      } else {
+        setError(err.message || 'An unexpected error occurred')
+      }
     } finally {
       setLoading(false)
     }
@@ -114,10 +134,18 @@ export function LoginForm() {
         }
       })
       if (error) {
-        setError(error.message)
+        if (error.message?.includes('fetch') || error.message?.includes('network')) {
+          setError('Cannot connect to Google authentication. Please check your internet connection.')
+        } else {
+          setError(error.message)
+        }
       }
     } catch (err: any) {
-      setError(err.message)
+      if (err.message?.includes('fetch') || err.message?.includes('Failed to fetch')) {
+        setError('Cannot connect to authentication server. Please check your internet connection.')
+      } else {
+        setError(err.message || 'An unexpected error occurred')
+      }
     } finally {
       setGoogleLoading(false)
     }
@@ -185,6 +213,7 @@ export function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 margin="normal"
                 required
+                autoComplete="email"
               />
               <TextField
                 fullWidth
@@ -194,6 +223,7 @@ export function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 margin="normal"
                 required
+                autoComplete="current-password"
               />
               <Button
                 fullWidth
@@ -217,6 +247,7 @@ export function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 margin="normal"
                 required
+                autoComplete="email"
               />
               <TextField
                 fullWidth
@@ -226,6 +257,7 @@ export function LoginForm() {
                 onChange={(e) => setPassword(e.target.value)}
                 margin="normal"
                 required
+                autoComplete="new-password"
                 helperText="Password should be at least 6 characters"
               />
               <Button
@@ -250,6 +282,7 @@ export function LoginForm() {
                 onChange={(e) => setEmail(e.target.value)}
                 margin="normal"
                 required
+                autoComplete="email"
                 helperText="We'll send you a magic link to sign in"
               />
               <Button
