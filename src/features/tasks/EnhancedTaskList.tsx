@@ -774,18 +774,11 @@ export function EnhancedTaskList({
               }
             }}>
               <TableCell padding="checkbox">
-                <Checkbox 
-                  indeterminate={(selectedTasks?.size || 0) > 0 && (selectedTasks?.size || 0) < filteredAndSortedTasks.length}
-                  checked={filteredAndSortedTasks.length > 0 && (selectedTasks?.size || 0) === filteredAndSortedTasks.length}
-                  onChange={(e) => handleSelectAllTasks(e.target.checked)}
-                  sx={{ 
+                <Checkbox
+                  disabled
+                  sx={{
                     color: theme.palette.mode === 'dark' ? '#e0e0e0' : 'white',
-                    '&.Mui-checked': {
-                      color: theme.palette.mode === 'dark' ? '#e0e0e0' : 'white'
-                    },
-                    '&.MuiCheckbox-indeterminate': {
-                      color: theme.palette.mode === 'dark' ? '#e0e0e0' : 'white'
-                    }
+                    opacity: 0.3
                   }}
                 />
               </TableCell>
@@ -908,8 +901,8 @@ export function EnhancedTaskList({
               >
                 <TableCell padding="checkbox">
                   <Checkbox
-                    checked={selectedTasks?.has(task.id) || false}
-                    onChange={(e) => handleSelectTask(task.id, e.target.checked)}
+                    checked={task.completed || false}
+                    onChange={(e) => onTaskToggle(task.id, e.target.checked)}
                   />
                 </TableCell>
                 
@@ -1195,9 +1188,9 @@ export function EnhancedTaskList({
           <ListItemText>Duplicate</ListItemText>
         </MenuItem>
         
-        <MenuItem onClick={() => {
+        <MenuItem onClick={async () => {
           if (selectedTask) {
-            onTaskDelete(selectedTask.id);
+            await onTaskDelete(selectedTask.id);
             setSnackbar({ open: true, message: 'Task deleted', severity: 'success' });
           }
           handleMenuClose();
