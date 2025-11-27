@@ -22,7 +22,7 @@ import {
 } from '@mui/material';
 import { getTasks } from '@/lib/supabase/client';
 import { Task } from '@/types/task';
-import TaskInput from '@/components/tasks/TaskInput';
+import TaskInput from '@/features/tasks/TaskInput';
 import { 
   format, 
   startOfMonth, 

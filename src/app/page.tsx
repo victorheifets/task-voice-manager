@@ -45,17 +45,16 @@ import NotesIcon from '@mui/icons-material/Notes';
 import PaletteIcon from '@mui/icons-material/Palette';
 import BottomNavigation from '@mui/material/BottomNavigation';
 import BottomNavigationAction from '@mui/material/BottomNavigationAction';
-import TaskInput from '@/components/tasks/TaskInput';
+import TaskInput from '@/features/tasks/TaskInput';
 import EnhancedTaskList from '@/features/tasks/EnhancedTaskList';
-import TaskFilters from '@/components/tasks/TaskFilters';
+import TaskFilters from '@/features/tasks/TaskFilters';
 import { getTasks, supabase, getUserNotes, saveUserNote } from '@/lib/supabase/client';
 import Layout from '@/components/layout/Layout';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
-import DynamicFloatingMicButton from '@/components/voice/DynamicFloatingMicButton';
+import DynamicFloatingMicButton from '@/features/voice/DynamicFloatingMicButton';
 import { TranscriptionProvider, useTranscriptionConfig } from '@/contexts/TranscriptionContext';
-import ClientOnly from '@/components/ui/ClientOnly';
-import BrowserWarning from '@/components/ui/BrowserWarning';
+import { ClientOnly, BrowserWarning } from '@/shared/ui';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { UsageDashboard } from '@/components/auth/UsageDashboard';
@@ -154,7 +153,6 @@ function MainContent() {
 
   const handleMenuClick = () => {
     // Handle mobile menu click - could open a drawer or show mobile navigation
-    console.log('Menu clicked');
   };
 
   const handleViewToggle = () => {
@@ -168,7 +166,6 @@ function MainContent() {
       await Promise.all(deletePromises);
       setSelectedTasks(new Set());
       setRefreshTrigger(prev => prev + 1);
-      console.log(`${selectedTasks.size} tasks deleted successfully`);
     } catch (error) {
       console.error('Failed to delete tasks:', error);
     }
@@ -380,7 +377,6 @@ function MainContent() {
   };
 
   const handleFloatingMicTranscript = (text: string) => {
-    console.log('Received transcript:', text);
     setCurrentTranscript(text);
   };
 
@@ -469,12 +465,12 @@ function MainContent() {
                 transcript={currentTranscript}
               />
             )}
-            <TaskFilters 
+            <TaskFilters
               searchFilter={searchFilter}
               statusFilter={statusFilter}
               onSearchChange={handleSearchChange}
               onStatusFilterChange={handleStatusFilterClick}
-              selectedTasks={selectedTasks}
+              selectedTasksCount={selectedTasks.size}
               onBulkDelete={handleBulkDelete}
             />
             {!isMobile ? (

@@ -1,6 +1,6 @@
 import { Task } from '@/types/task';
 import { addDays, subDays, format } from 'date-fns';
-import { Priority } from '@/components/tasks/PrioritySelect';
+import { Priority } from '@/features/tasks/PrioritySelect';
 
 // Helper function to get ISO date string
 const toISODate = (date: Date) => format(date, 'yyyy-MM-dd');

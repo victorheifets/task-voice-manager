@@ -25,7 +25,7 @@ import AddIcon from '@mui/icons-material/Add';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
-import TaskInput from '@/components/tasks/TaskInput';
+import TaskInput from '@/features/tasks/TaskInput';
 import { teal, blue, orange, grey } from '@mui/material/colors';
 import Link from 'next/link';
 

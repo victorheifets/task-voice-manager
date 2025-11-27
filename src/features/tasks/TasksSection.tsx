@@ -32,7 +32,7 @@ import ErrorOutlineIcon from '@mui/icons-material/ErrorOutline';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import AllInclusiveIcon from '@mui/icons-material/AllInclusive';
 import TaskInput from './TaskInput';
-import EnhancedTaskList from '../../components/tasks/EnhancedTaskList';
+import EnhancedTaskList from './EnhancedTaskList';
 import TaskFilters from './TaskFilters';
 import { deleteTask } from '@/lib/supabase/client';
 

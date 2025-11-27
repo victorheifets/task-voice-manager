@@ -1,6 +1,6 @@
 import { mockTasks } from './mockData';
 import { v4 as uuidv4 } from 'uuid';
-import { Priority } from '@/components/tasks/PrioritySelect';
+import { Priority } from '@/features/tasks/PrioritySelect';
 
 // In-memory task storage
 let tasks = [...mockTasks];

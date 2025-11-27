@@ -60,7 +60,7 @@ import {
 import { format, parseISO, isToday, isTomorrow, isThisWeek } from 'date-fns';
 import { getTasks, updateTask, deleteTask } from '@/lib/supabase/client';
 import { Task } from '@/types/task';
-import { Priority } from '@/components/tasks/PrioritySelect';
+import { Priority } from '@/features/tasks/PrioritySelect';
 
 // Types
 

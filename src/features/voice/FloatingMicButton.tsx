@@ -7,9 +7,16 @@ import { useSpeechRecognition } from '../../hooks/useSpeechRecognition';
 interface FloatingMicButtonProps {
   onTranscript: (text: string) => void;
   transcriptionService?: 'browser' | 'whisper' | 'azure' | 'hybrid';
+  showTextOption?: boolean;
+  onTextInput?: () => void;
 }
 
-const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({ onTranscript, transcriptionService = 'browser' }) => {
+const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
+  onTranscript,
+  transcriptionService = 'browser',
+  showTextOption = false,
+  onTextInput
+}) => {
   const [currentTranscript, setCurrentTranscript] = useState('');
   
   const {

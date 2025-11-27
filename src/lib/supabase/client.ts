@@ -9,7 +9,6 @@ export const supabase = createBrowserClient(supabaseUrl, supabaseAnonKey)
 
 // Task management functions
 export async function getTasks(): Promise<Task[]> {
-  console.log('📋 Loading tasks from database...');
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -24,12 +23,9 @@ export async function getTasks(): Promise<Task[]> {
     throw error;
   }
   
-  console.log('📥 Raw database tasks:', data);
-  console.log('🔍 First task detailed:', data?.[0] ? JSON.stringify(data[0], null, 2) : 'No tasks');
   
   // Map database fields to Task interface
   const mappedTasks = (data || []).map(dbTask => {
-    console.log('🔄 Mapping task:', dbTask.id, 'Title:', dbTask.title);
     return {
       id: dbTask.id,
       title: dbTask.title,
@@ -44,17 +40,13 @@ export async function getTasks(): Promise<Task[]> {
     };
   });
   
-  console.log('📤 Mapped tasks for UI:', mappedTasks);
-  console.log('🔍 First mapped task detailed:', mappedTasks?.[0] ? JSON.stringify(mappedTasks[0], null, 2) : 'No mapped tasks');
   return mappedTasks;
 }
 
 export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedAt'>): Promise<Task> {
-  console.log('🔐 Checking authentication...');
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
   
-  console.log('✅ User authenticated:', user.id);
 
   // Create base task data with only core columns that exist in database
   const taskData: any = {
@@ -67,7 +59,6 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
   // Add optional columns only if they exist in the schema (graceful handling)
   if (task.dueDate) taskData.due_date = task.dueDate
   
-  console.log('📝 Inserting task data:', taskData);
   
   const { data, error } = await supabase
     .from('tasks')
@@ -80,7 +71,6 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
     throw error;
   }
   
-  console.log('✅ Database insert successful:', data);
 
   // Return task with safe property access
   const createdTask = {
@@ -95,12 +85,10 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
     priority: data.priority || task.priority || 'medium'
   };
   
-  console.log('📤 Returning created task:', createdTask);
   return createdTask;
 }
 
 export async function updateTask(taskId: string, updates: Partial<Task>) {
-  console.log('🔄 updateTask called with:', { taskId, updates });
   
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
@@ -121,7 +109,6 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
   if (updates.priority !== undefined) updateData.priority = updates.priority
   if (updates.tags !== undefined) updateData.tags = updates.tags
   
-  console.log('📤 Sending to database:', updateData);
 
   const { data, error } = await supabase
     .from('tasks')
@@ -220,7 +207,6 @@ export async function getUserUsage() {
 
 // Notes management functions
 export async function getUserNotes(): Promise<{notes: {[key: number]: string}, error?: string}> {
-  console.log('📋 Loading user notes from database...');
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -241,7 +227,6 @@ export async function getUserNotes(): Promise<{notes: {[key: number]: string}, e
       };
     } else if (error.code === 'PGRST116') {
       // No rows found (not an error)
-      console.log('📝 No notes found in database (new user)');
       return { notes: {} };
     } else {
       const errorMessage = error.message || error.details || 'Unknown database error';
@@ -258,7 +243,6 @@ export async function getUserNotes(): Promise<{notes: {[key: number]: string}, e
     }
   }
   
-  console.log('📥 Raw database notes:', data);
   
   // Convert to tab_id -> content mapping
   // Each tab will be stored as a separate record with title like "Tab 0", "Tab 1", etc.
@@ -274,12 +258,10 @@ export async function getUserNotes(): Promise<{notes: {[key: number]: string}, e
     });
   }
   
-  console.log('📤 Mapped notes for UI:', notesMap);
   return { notes: notesMap };
 }
 
 export async function saveUserNote(tabId: number, content: string): Promise<void> {
-  console.log('💾 Saving note to database for tab:', tabId, 'Content length:', content.length);
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) throw new Error('User not authenticated')
 
@@ -301,5 +283,4 @@ export async function saveUserNote(tabId: number, content: string): Promise<void
     return;
   }
   
-  console.log('✅ Note saved to database successfully');
 }

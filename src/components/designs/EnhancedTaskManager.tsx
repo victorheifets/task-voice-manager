@@ -43,7 +43,7 @@ import MicIcon from '@mui/icons-material/Mic';
 import { format, isToday, isTomorrow, isPast, parseISO } from 'date-fns';
 import { Task } from '@/types/task';
 import { getTasks } from '@/lib/supabase/client';
-import TaskInput from '../tasks/TaskInput';
+import TaskInput from '@/features/tasks/TaskInput';
 import VoiceRecorder from '../voice/VoiceRecorder';
 
 interface EnhancedTaskManagerProps {
