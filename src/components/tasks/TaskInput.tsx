@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import { createTask } from '@/lib/supabase/client';
 import { ParsedTaskData } from '@/types/task';
-import { parseMultipleTasks } from '@/lib/openai/parser';
 
 import SendIcon from '@mui/icons-material/Send';
 
@@ -56,33 +55,44 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
     setIsSubmitting(true);
 
     try {
-      // Use AI to parse the tasks
-      const parsedTasks = await parseMultipleTasks(input.trim());
-      console.log('📋 Parsed tasks to create:', parsedTasks);
-      
-      // Create all parsed tasks
-      for (const taskData of parsedTasks) {
-        console.log('💾 Creating task:', taskData);
-        
-        const createdTask = await createTask({
-          title: taskData.title,
-          dueDate: taskData.dueDate,
-          assignee: taskData.assignee,
-          tags: taskData.tags,
-          completed: false,
-          priority: taskData.priority || 'medium'
-        });
-        
-        console.log('✅ Task created successfully:', createdTask);
+      // Use server-side API to parse the task (secure - API key not exposed to client)
+      const response = await fetch('/api/tasks/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskText: input.trim() })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to parse task');
       }
+
+      const { task: parsedTask } = await response.json();
+      console.log('📋 Parsed task to create:', parsedTask);
+
+      // Create the parsed task
+      console.log('💾 Creating task:', parsedTask);
+
+      const createdTask = await createTask({
+        title: parsedTask.title,
+        dueDate: parsedTask.dueDate,
+        assignee: parsedTask.assignee,
+        tags: parsedTask.tags || [],
+        completed: false,
+        priority: parsedTask.priority || 'medium'
+      });
+
+      console.log('✅ Task created successfully:', createdTask);
 
       setInput('');
       previousTranscriptRef.current = '';
       onTaskAdded();
-      console.log('🎉 All tasks created and UI updated');
+      console.log('🎉 Task created and UI updated');
     } catch (error: any) {
       console.error('❌ Error creating task:', error);
       console.error('Error details:', error?.message, error?.stack);
+      // Show error to user
+      alert(error instanceof Error ? error.message : 'Failed to create task');
     } finally {
       setIsSubmitting(false);
     }

@@ -139,7 +139,7 @@ function MainContent() {
   const notesDebounceRefs = useRef<{[key: number]: NodeJS.Timeout}>({});
   const [isWideView, setIsWideView] = useState(true);
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
-  
+
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const isTablet = useMediaQuery(theme.breakpoints.down('lg')); // lg is ~1200px

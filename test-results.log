@@ -1,0 +1,15 @@
+🚀 Starting comprehensive E2E security testing...
+
+📋 TEST 1: Login and Authentication
+✅ Login page loaded
+✅ Login successful
+❌ Test error: page.waitForSelector: Timeout 10000ms exceeded.
+Call log:
+[2m  - waiting for locator('text=Tasks') to be visible[22m
+
+    at runE2ETests (/Users/heifets/Desktop/MSD/PRIVATE/new_dev/task-voice-manager/test-e2e-security.js:67:16) {
+  name: 'TimeoutError'
+}
+
+⏳ Keeping browser open for 10 seconds for review...
+✅ Testing complete!

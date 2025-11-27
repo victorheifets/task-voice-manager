@@ -3,6 +3,7 @@ import OpenAI from 'openai';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
+import { createClient } from '@/lib/supabase/server';
 
 // Initialize the OpenAI client with server-side API key
 const openai = new OpenAI({
@@ -11,6 +12,13 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
+    // SECURITY: Check authentication FIRST
+    const supabase = await createClient();
+    const { data: { user }, error: authError } = await supabase.auth.getUser();
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     // Check if OpenAI API key is configured
     if (!process.env.OPENAI_API_KEY) {
       console.error('OpenAI API key not found in environment variables');

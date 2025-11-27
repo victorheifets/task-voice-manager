@@ -19,7 +19,6 @@ import {
 } from '@mui/material';
 import { createTask } from '@/lib/supabase/client';
 import { ParsedTaskData } from '@/types/task';
-import { parseMultipleTasks } from '@/lib/openai/parser';
 
 import SendIcon from '@mui/icons-material/Send';
 
@@ -56,26 +55,37 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
     setIsSubmitting(true);
 
     try {
-      // Use AI to parse the tasks
-      const parsedTasks = await parseMultipleTasks(input.trim());
-      
-      // Create all parsed tasks
-      for (const taskData of parsedTasks) {
-        await createTask({
-          title: taskData.title,
-          dueDate: taskData.dueDate,
-          assignee: taskData.assignee,
-          tags: taskData.tags,
-          completed: false,
-          priority: taskData.priority || 'medium'
-        });
+      // Use server-side API to parse the task (secure - API key not exposed to client)
+      const response = await fetch('/api/tasks/parse', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ taskText: input.trim() })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to parse task');
       }
+
+      const { task: parsedTask } = await response.json();
+
+      // Create the parsed task
+      await createTask({
+        title: parsedTask.title,
+        dueDate: parsedTask.dueDate,
+        assignee: parsedTask.assignee,
+        tags: parsedTask.tags || [],
+        completed: false,
+        priority: parsedTask.priority || 'medium'
+      });
 
       setInput('');
       previousTranscriptRef.current = '';
       onTaskAdded();
     } catch (error) {
       console.error('Error creating task:', error);
+      // Show error to user
+      alert(error instanceof Error ? error.message : 'Failed to create task');
     } finally {
       setIsSubmitting(false);
     }

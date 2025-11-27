@@ -167,9 +167,15 @@ export function LoginForm() {
           <Typography variant="h4" component="h1" textAlign="center" mb={3}>
             TaskGPT
           </Typography>
-          <Typography variant="subtitle1" textAlign="center" mb={3} color="text.secondary">
+          <Typography variant="subtitle1" textAlign="center" mb={2} color="text.secondary">
             Voice-powered task management with AI
           </Typography>
+
+          <Alert severity="info" sx={{ mb: 2, fontSize: '0.875rem' }}>
+            <strong>Test Account:</strong><br />
+            Email: test@test.com<br />
+            Password: test123456
+          </Alert>
 
           <Button
             fullWidth

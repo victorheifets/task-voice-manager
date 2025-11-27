@@ -84,7 +84,7 @@ export default function SettingsSection() {
     {
       title: 'API Configuration',
       content: (
-        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+        <Box component="form" sx={{ display: 'flex', flexDirection: 'column', gap: 2 }} onSubmit={(e: React.FormEvent) => e.preventDefault()}>
           <TextField
             fullWidth
             label="OpenAI API Key"

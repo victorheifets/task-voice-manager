@@ -36,7 +36,7 @@ export async function getTasks(): Promise<Task[]> {
       dueDate: dbTask.due_date || null,
       assignee: dbTask.assigned_to || dbTask.assignee || null, // Handle both database column names
       tags: dbTask.tags || [],
-      completed: dbTask.completed || false,
+      completed: dbTask.status === 'completed', // Map status to completed boolean
       createdAt: dbTask.created_at,
       updatedAt: dbTask.updated_at,
       priority: dbTask.priority || 'medium',
@@ -87,9 +87,9 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
     id: data.id,
     title: data.title,
     dueDate: data.due_date || null,
-    assignee: data.assignee || task.assignee || null,
+    assignee: data.assigned_to || task.assignee || null,
     tags: data.tags || task.tags || [],
-    completed: data.completed || false,
+    completed: data.status === 'completed', // Map status to completed boolean
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     priority: data.priority || task.priority || 'medium'
@@ -113,7 +113,7 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
   // Only update columns that exist in the database
   if (updates.title !== undefined) updateData.title = updates.title
   if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate
-  if (updates.completed !== undefined) updateData.completed = updates.completed
+  if (updates.completed !== undefined) updateData.status = updates.completed ? 'completed' : 'pending' // Map completed boolean to status
   if (updates.notes !== undefined) updateData.notes = updates.notes
   if (updates.assignee !== undefined) {
     updateData.assigned_to = updates.assignee  // Database column is 'assigned_to', not 'assignee'
@@ -141,9 +141,9 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
     id: data.id,
     title: data.title,
     dueDate: data.due_date || null,
-    assignee: data.assignee || updates.assignee || null,
+    assignee: data.assigned_to || updates.assignee || null,
     tags: data.tags || updates.tags || [],
-    completed: data.completed || false,
+    completed: data.status === 'completed', // Map status to completed boolean
     createdAt: data.created_at,
     updatedAt: data.updated_at,
     priority: data.priority || updates.priority || 'medium',
