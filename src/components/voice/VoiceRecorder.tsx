@@ -1,7 +1,7 @@
 'use client';
 
 import React from 'react';
-import { IconButton, Tooltip, Dialog, DialogContent, Typography, Button, Box } from '@mui/material';
+import { IconButton, Tooltip, Dialog, DialogContent, Typography, Button, Box, useTheme, alpha } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import StopIcon from '@mui/icons-material/Stop';
 import ErrorIcon from '@mui/icons-material/Error';
@@ -28,6 +28,7 @@ const VoiceRecorder = React.forwardRef<
   transcriptionService = 'browser',
   onRecordingStateChange
 }, ref) => {
+  const theme = useTheme();
 
   const {
     isRecording,
@@ -42,11 +43,10 @@ const VoiceRecorder = React.forwardRef<
     azureRegion,
     transcriptionService,
     onTranscript: (text) => {
-      console.log('Transcript updated:', text);
       onTranscript(text);
     },
-    onError: (error) => {
-      console.log('Recording error:', error);
+    onError: () => {
+      // Errors are handled by the useSpeechRecognition hook
     }
   });
 
@@ -56,25 +56,20 @@ const VoiceRecorder = React.forwardRef<
   }));
 
   const startRecording = async () => {
-    console.log('Starting recording...');
     try {
       await originalStartRecording();
-      console.log('Recording started successfully');
       onRecordingStateChange?.(true);
-    } catch (error) {
-      console.error('Failed to start recording:', error);
+    } catch {
       onRecordingStateChange?.(false);
     }
   };
 
   const stopRecording = async () => {
-    console.log('Stopping recording...');
     try {
       await originalStopRecording();
-      console.log('Recording stopped successfully');
       onRecordingStateChange?.(false);
-    } catch (error) {
-      console.error('Failed to stop recording:', error);
+    } catch {
+      // Error handled silently
     }
   };
 
@@ -136,13 +131,13 @@ const VoiceRecorder = React.forwardRef<
         )}
         
         {transcript && !isRecording && (
-          <div 
-            style={{
+          <Box
+            sx={{
               padding: '8px 16px',
               borderRadius: '20px',
-              backgroundColor: 'rgba(33, 150, 243, 0.08)',
-              border: '1px solid rgba(33, 150, 243, 0.2)',
-              color: '#1976d2',
+              backgroundColor: alpha(theme.palette.primary.main, 0.08),
+              border: `1px solid ${alpha(theme.palette.primary.main, 0.2)}`,
+              color: 'primary.main',
               fontSize: '0.875rem',
               maxWidth: '300px',
               overflow: 'hidden',
@@ -151,7 +146,7 @@ const VoiceRecorder = React.forwardRef<
             }}
           >
             {transcript}
-          </div>
+          </Box>
         )}
       </div>
 

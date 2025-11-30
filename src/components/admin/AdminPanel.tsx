@@ -16,6 +16,7 @@ import {
   Alert
 } from '@mui/material';
 import { supabase } from '@/lib/supabase/client';
+import { useNotification } from '@/contexts/NotificationContext';
 
 interface PendingUser {
   id: string;
@@ -25,6 +26,7 @@ interface PendingUser {
 }
 
 export default function AdminPanel() {
+  const { showInfo } = useNotification();
   const [pendingUsers, setPendingUsers] = useState<PendingUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<any>(null);
@@ -62,7 +64,7 @@ export default function AdminPanel() {
       // This would need to be implemented as an admin API endpoint
       console.log('Approving user:', userId);
       // Placeholder for approval logic
-      alert('User approval feature will be implemented on the server side');
+      showInfo('User approval feature will be implemented on the server side');
     } catch (error) {
       console.error('Error approving user:', error);
     }

@@ -8,6 +8,12 @@ const openai = new OpenAI({
 
 const FREE_TIER_LIMIT = 100
 
+// Check if we're in demo mode (Supabase not configured)
+const DEMO_MODE = !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+                  !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ||
+                  process.env.NEXT_PUBLIC_SUPABASE_URL.includes('demo.supabase.co') ||
+                  process.env.NEXT_PUBLIC_SUPABASE_URL.includes('anoupmenvlacdpqcrvzw')
+
 export async function POST(request: NextRequest) {
   try {
     // Check if OpenAI API key is configured
@@ -19,12 +25,17 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient()
-    
-    // Check authentication
-    const { data: { user }, error: authError } = await supabase.auth.getUser()
-    if (authError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    let user = null
+    let supabase = null
+
+    // Skip authentication check in demo mode
+    if (!DEMO_MODE) {
+      supabase = await createClient()
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser()
+      if (authError || !authUser) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      }
+      user = authUser
     }
 
     const { taskText } = await request.json()
@@ -33,20 +44,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Task text is required' }, { status: 400 })
     }
 
-    // Check usage limits
+    // Check usage limits (skip in demo mode)
+    let usage = null
+    let currentCalls = 0
     const currentMonth = new Date().toISOString().substring(0, 7)
-    const { data: usage } = await supabase
-      .from('user_usage')
-      .select('api_calls, tokens_used')
-      .eq('user_id', user.id)
-      .eq('month', currentMonth)
-      .single()
 
-    const currentCalls = usage?.api_calls || 0
-    if (currentCalls >= FREE_TIER_LIMIT) {
-      return NextResponse.json({ 
-        error: 'Monthly API limit exceeded. Please upgrade your plan.' 
-      }, { status: 429 })
+    if (!DEMO_MODE && supabase && user) {
+      const { data: usageData } = await supabase
+        .from('user_usage')
+        .select('api_calls, tokens_used')
+        .eq('user_id', user.id)
+        .eq('month', currentMonth)
+        .single()
+
+      usage = usageData
+      currentCalls = usage?.api_calls || 0
+      if (currentCalls >= FREE_TIER_LIMIT) {
+        return NextResponse.json({
+          error: 'Monthly API limit exceeded. Please upgrade your plan.'
+        }, { status: 429 })
+      }
     }
 
     // Make OpenAI API call
@@ -85,25 +102,27 @@ Be precise with dates and conservative with priorities.`
     const result = completion.choices[0].message.content
     const tokensUsed = completion.usage?.total_tokens || 0
 
-    // Track usage
-    if (usage) {
-      await supabase
-        .from('user_usage')
-        .update({
-          api_calls: usage.api_calls + 1,
-          tokens_used: usage.tokens_used + tokensUsed
-        })
-        .eq('user_id', user.id)
-        .eq('month', currentMonth)
-    } else {
-      await supabase
-        .from('user_usage')
-        .insert({
-          user_id: user.id,
-          month: currentMonth,
-          api_calls: 1,
-          tokens_used: tokensUsed
-        })
+    // Track usage (skip in demo mode)
+    if (!DEMO_MODE && supabase && user) {
+      if (usage) {
+        await supabase
+          .from('user_usage')
+          .update({
+            api_calls: usage.api_calls + 1,
+            tokens_used: usage.tokens_used + tokensUsed
+          })
+          .eq('user_id', user.id)
+          .eq('month', currentMonth)
+      } else {
+        await supabase
+          .from('user_usage')
+          .insert({
+            user_id: user.id,
+            month: currentMonth,
+            api_calls: 1,
+            tokens_used: tokensUsed
+          })
+      }
     }
 
     // Parse the JSON response

@@ -54,11 +54,10 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Enhanced brightness for better visibility
-  const PRIMARY_COLOR = theme.palette.mode === 'dark' ? '#ffffff' : '#ffffff'; // Pure white for both modes
-  const ICON_COLOR = theme.palette.mode === 'dark' ? '#ffffff' : '#ffffff'; // Pure white for all icons
-  const ICON_BG_COLOR = theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.15)' : 'rgba(255, 255, 255, 0.2)';
-  const ICON_BORDER_COLOR = theme.palette.mode === 'dark' ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.4)';
+  // Theme-based colors for header elements (white on colored background)
+  const HEADER_TEXT_COLOR = theme.palette.common.white;
+  const ICON_BG_COLOR = `rgba(255, 255, 255, ${theme.palette.mode === 'dark' ? 0.15 : 0.2})`;
+  const ICON_BORDER_COLOR = `rgba(255, 255, 255, ${theme.palette.mode === 'dark' ? 0.3 : 0.4})`;
 
   const handleSettingsClick = (event: React.MouseEvent<HTMLElement>) => {
     if (onTabChange) {
@@ -115,16 +114,17 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
       color={theme.palette.mode === 'dark' ? 'default' : 'primary'}
       elevation={mode === 'light' ? 1 : 0}
       sx={{
-        background: theme.palette.mode === 'dark' ? 
-          'linear-gradient(to bottom, #1a1a1a 0%, #2c2c2c 50%, #1e1e1e 100%)' : 
-          'linear-gradient(to bottom, #1976d2 0%, #2196F3 50%, #42a5f5 100%)',
+        background: theme.palette.mode === 'dark'
+          ? `linear-gradient(to bottom, #0d0d0d 0%, #2d2d2d 100%)`
+          : `linear-gradient(to bottom, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 50%, ${theme.palette.primary.light} 100%)`,
         borderBottom: `1px solid ${theme.palette.divider}`,
-        color: '#ffffff !important', // Pure white for maximum contrast
+        color: HEADER_TEXT_COLOR,
         borderRadius: 0,
-        boxShadow: theme.palette.mode === 'dark' ? 
-          '0 4px 20px rgba(0,0,0,0.3)' : '0 4px 20px rgba(0,0,0,0.15)',
+        boxShadow: theme.palette.mode === 'dark'
+          ? '0 4px 20px rgba(0,0,0,0.3)'
+          : '0 4px 20px rgba(0,0,0,0.15)',
         '& .MuiToolbar-root': {
-          color: '#ffffff !important'
+          color: HEADER_TEXT_COLOR
         }
       }}
     >
@@ -146,19 +146,19 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
           }}
           onClick={handleLogoClick}
         >
-          <AssignmentIcon 
-            sx={{ 
-              mr: 2.5, 
-              color: PRIMARY_COLOR,
+          <AssignmentIcon
+            sx={{
+              mr: 2.5,
+              color: HEADER_TEXT_COLOR,
               fontSize: '2.2rem'
-            }} 
+            }}
           />
-          <Typography 
-            variant="h6" 
-            component="h1" 
-            sx={{ 
+          <Typography
+            variant="h6"
+            component="h1"
+            sx={{
               fontWeight: 600,
-              color: PRIMARY_COLOR,
+              color: HEADER_TEXT_COLOR,
               letterSpacing: '0.5px',
               ml: 0.5,
               mr: 1
@@ -182,16 +182,16 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
                   transition: 'all 0.2s',
                   '&:hover': {
                     backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                    borderColor: '#ffffff',
+                    borderColor: HEADER_TEXT_COLOR,
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                   },
                   display: useMediaQuery(theme.breakpoints.down('lg')) ? 'none' : 'flex' // Only show on large screens
                 }}
               >
-                {isWideView 
-                  ? <ViewStreamIcon sx={{ color: '#ffffff' }} />
-                  : <ViewModuleIcon sx={{ color: '#ffffff' }} />
+                {isWideView
+                  ? <ViewStreamIcon sx={{ color: HEADER_TEXT_COLOR }} />
+                  : <ViewModuleIcon sx={{ color: HEADER_TEXT_COLOR }} />
                 }
               </IconButton>
             </Tooltip>
@@ -209,14 +209,14 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
                 transition: 'all 0.2s',
                 '&:hover': {
                   backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  borderColor: '#ffffff',
+                  borderColor: HEADER_TEXT_COLOR,
                   transform: 'translateY(-2px)',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                 },
                 display: isMobile ? 'none' : 'flex' // Hide on mobile
               }}
             >
-              <SettingsIcon sx={{ color: '#ffffff' }} />
+              <SettingsIcon sx={{ color: HEADER_TEXT_COLOR }} />
             </IconButton>
           </Tooltip>
           <Tooltip title={mode === 'light' ? t('theme.dark') : t('theme.light')}>
@@ -232,15 +232,15 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
                 transition: 'all 0.2s',
                 '&:hover': {
                   backgroundColor: 'rgba(255, 255, 255, 0.25)',
-                  borderColor: '#ffffff',
+                  borderColor: HEADER_TEXT_COLOR,
                   transform: 'translateY(-2px)',
                   boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                 }
               }}
             >
-              {mode === 'light' 
-                ? <DarkModeIcon sx={{ color: '#ffffff' }} /> 
-                : <LightModeIcon sx={{ color: '#FFB74D' }} />
+              {mode === 'light'
+                ? <DarkModeIcon sx={{ color: HEADER_TEXT_COLOR }} />
+                : <LightModeIcon sx={{ color: theme.palette.warning.light }} />
               }
             </IconButton>
           </Tooltip>
@@ -261,20 +261,20 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
                 }
               }}
             >
-              <TranslateIcon sx={{ color: '#ffffff' }} />
+              <TranslateIcon sx={{ color: HEADER_TEXT_COLOR }} />
             </IconButton>
           </Tooltip>
           <Tooltip title="Account">
-            <Avatar 
+            <Avatar
               onClick={handleAvatarClick}
-              sx={{ 
-                ml: 1, 
-                width: 36, 
+              sx={{
+                ml: 1,
+                width: 36,
                 height: 36,
-                border: '2px solid #ffffff',
+                border: `2px solid ${HEADER_TEXT_COLOR}`,
                 cursor: 'pointer',
                 transition: 'transform 0.2s',
-                backgroundColor: theme.palette.mode === 'dark' ? '#9e9e9e' : '#1976d2',
+                backgroundColor: theme.palette.mode === 'dark' ? theme.palette.grey[500] : theme.palette.primary.dark,
                 '&:hover': {
                   transform: 'scale(1.1)'
                 }
@@ -441,7 +441,7 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
         >
           <MenuItem onClick={handleAvatarClose} sx={{ borderRadius: 0, mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
-              <PersonIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
+              <PersonIcon fontSize="small" color="primary" />
             </ListItemIcon>
             <ListItemText>
               <Box>
@@ -457,13 +457,13 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
           <Divider sx={{ my: 1 }} />
           <MenuItem onClick={handleProfileClick} sx={{ borderRadius: 0, mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
-              <PersonIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
+              <PersonIcon fontSize="small" color="primary" />
             </ListItemIcon>
             <ListItemText>Profile</ListItemText>
           </MenuItem>
           <MenuItem onClick={handleHelpClick} sx={{ borderRadius: 0, mx: 0.5, my: 0.25 }}>
             <ListItemIcon>
-              <HelpIcon fontSize="small" sx={{ color: PRIMARY_COLOR }} />
+              <HelpIcon fontSize="small" color="primary" />
             </ListItemIcon>
             <ListItemText>Help & Support</ListItemText>
           </MenuItem>

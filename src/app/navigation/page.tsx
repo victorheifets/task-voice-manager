@@ -19,47 +19,47 @@ const NavigationPage = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   
   const navigationItems = [
-    { 
-      title: 'Home', 
+    {
+      title: 'Home',
       description: 'Return to the main task input page',
-      icon: <HomeIcon sx={{ fontSize: 28 }} />, 
+      icon: <HomeIcon sx={{ fontSize: 28 }} />,
       path: '/',
-      color: '#4caf50'
+      color: theme.palette.success.main
     },
-    { 
-      title: 'Dashboard', 
+    {
+      title: 'Dashboard',
       description: 'View task statistics and overview',
-      icon: <DashboardIcon sx={{ fontSize: 28 }} />, 
+      icon: <DashboardIcon sx={{ fontSize: 28 }} />,
       path: '/dashboard',
-      color: '#2196f3'
+      color: theme.palette.primary.main
     },
-    { 
-      title: 'Kanban Board', 
+    {
+      title: 'Kanban Board',
       description: 'Manage tasks in a kanban view',
-      icon: <ViewKanbanIcon sx={{ fontSize: 28 }} />, 
+      icon: <ViewKanbanIcon sx={{ fontSize: 28 }} />,
       path: '/kanban',
-      color: '#ff9800'
+      color: theme.palette.warning.main
     },
-    { 
-      title: 'Calendar', 
+    {
+      title: 'Calendar',
       description: 'View tasks in calendar format',
-      icon: <CalendarMonthIcon sx={{ fontSize: 28 }} />, 
+      icon: <CalendarMonthIcon sx={{ fontSize: 28 }} />,
       path: '/calendar',
-      color: '#9c27b0'
+      color: theme.palette.secondary.main
     },
-    { 
-      title: 'Analytics', 
+    {
+      title: 'Analytics',
       description: 'View detailed task statistics',
-      icon: <BarChartIcon sx={{ fontSize: 28 }} />, 
+      icon: <BarChartIcon sx={{ fontSize: 28 }} />,
       path: '/analytics',
-      color: '#f44336'
+      color: theme.palette.error.main
     },
-    { 
-      title: 'Voice Input', 
+    {
+      title: 'Voice Input',
       description: 'Create tasks using voice commands',
-      icon: <MicIcon sx={{ fontSize: 28 }} />, 
+      icon: <MicIcon sx={{ fontSize: 28 }} />,
       path: '/',
-      color: '#795548'
+      color: theme.palette.grey[600]
     }
   ];
 

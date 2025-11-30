@@ -2,8 +2,10 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import i18n from '@/i18n';
+import { useNotification } from '@/contexts/NotificationContext';
 
 export function useSettings() {
+  const { showSuccess } = useNotification();
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language || 'en');
   const [voiceRecognitionLanguage, setVoiceRecognitionLanguage] = useState('en');
   const [apiKey, setApiKey] = useState('');
@@ -57,9 +59,9 @@ export function useSettings() {
     if (azureKey) localStorage.setItem('azureApiKey', azureKey);
     if (azureRegion) localStorage.setItem('azureRegion', azureRegion);
     
-    // Show success message
-    alert('Settings saved successfully!');
-  }, [selectedLanguage, voiceRecognitionLanguage, apiKey, azureKey, azureRegion]);
+    // Show success notification
+    showSuccess('Settings saved successfully!');
+  }, [selectedLanguage, voiceRecognitionLanguage, apiKey, azureKey, azureRegion, showSuccess]);
 
   return {
     // State

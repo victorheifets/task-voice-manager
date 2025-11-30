@@ -31,15 +31,15 @@ export default function Layout({ children, onTabChange, onMenuClick, isWideView,
         isWideView={isWideView}
         onViewToggle={onViewToggle}
       />
-      <Box sx={{ 
-        flexGrow: 1, 
+      <Box sx={{
+        flexGrow: 1,
         // CRITICAL: Allow shadows to render without clipping
         overflow: 'visible',
         display: 'flex',
         flexDirection: 'column',
         bgcolor: theme.palette.background.default,
-        // Smart padding: enough space for shadows but not cramped, except notes should be full width
-        px: activeTab === 1 ? 0 : (isMobile ? 2 : 3), // No padding for notes tab, normal padding for others
+        // Consistent padding across all tabs
+        px: isMobile ? 2 : 3,
         py: isMobile ? 0 : 2, // Remove padding on mobile for seamless nav bar effect
         width: '100%',
         minHeight: isMobile ? 'calc(100vh - 56px - 56px)' : 'auto'

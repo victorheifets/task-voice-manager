@@ -755,22 +755,39 @@ export function EnhancedTaskList({
           }
         }}
       >
-        <Table stickyHeader>
-          <TableHead>
-            <TableRow sx={{ 
+        <Table stickyHeader sx={{
+          '& .MuiTableCell-head': {
+            borderLeft: 'none !important',
+            borderRight: 'none !important',
+            backgroundColor: 'transparent !important',
+          },
+          '& .MuiTableCell-stickyHeader': {
+            backgroundColor: 'transparent !important',
+          },
+          borderCollapse: 'collapse',
+        }}>
+          <TableHead sx={{
+              background: theme.palette.mode === 'dark'
+                ? `linear-gradient(to bottom, #0d0d0d 0%, #2d2d2d 100%)`
+                : `linear-gradient(to bottom, ${theme.palette.primary.dark} 0%, ${theme.palette.primary.main} 50%, ${theme.palette.primary.light} 100%)`,
+              borderBottom: `1px solid ${theme.palette.mode === 'dark' ? theme.palette.divider : theme.palette.primary.main}`,
+              boxShadow: theme.palette.mode === 'dark'
+                ? '0 4px 20px rgba(0,0,0,0.3)'
+                : '0 4px 20px rgba(0,0,0,0.15)',
+              borderTopLeftRadius: 8,
+              borderTopRightRadius: 8,
+            }}>
+            <TableRow sx={{
               '& .MuiTableCell-root': {
-                background: theme.palette.mode === 'dark' ? 
-                  'linear-gradient(to bottom, #424242 0%, #616161 50%, #424242 100%)' : 
-                  'linear-gradient(to bottom, #1976d2 0%, #2196F3 50%, #42a5f5 100%)',
-                borderBottom: `2px solid ${theme.palette.primary.main}`,
+                background: 'transparent !important',
+                backgroundColor: 'transparent !important',
+                border: 'none !important',
+                borderLeft: 'none !important',
+                borderRight: 'none !important',
+                borderTop: 'none !important',
+                borderBottom: 'none !important',
                 fontWeight: 600,
-                color: '#ffffff', // Pure white for both modes
-                '&:first-of-type': {
-                  borderTopLeftRadius: 8 // Rounded corners
-                },
-                '&:last-of-type': {
-                  borderTopRightRadius: 8 // Rounded corners
-                }
+                color: '#ffffff',
               }
             }}>
               <TableCell padding="checkbox">

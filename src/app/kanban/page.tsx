@@ -1,13 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  Paper, 
-  ThemeProvider, 
-  createTheme,
+import {
+  Box,
+  Container,
+  Typography,
+  Paper,
   AppBar,
   Toolbar,
   Button,
@@ -17,7 +15,8 @@ import {
   IconButton,
   Chip,
   Divider,
-  Avatar
+  Avatar,
+  useTheme
 } from '@mui/material';
 import { getTasks, updateTask } from '@/lib/supabase/client';
 import { Task } from '@/types/task';
@@ -26,61 +25,14 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import DeleteIcon from '@mui/icons-material/Delete';
 import CheckCircleOutlineIcon from '@mui/icons-material/CheckCircleOutline';
 import TaskInput from '@/features/tasks/TaskInput';
-import { teal, blue, orange, grey } from '@mui/material/colors';
+import { teal, orange, grey } from '@mui/material/colors';
 import Link from 'next/link';
-
-// Create a light theme with soft colors
-const kanbanTheme = createTheme({
-  palette: {
-    primary: {
-      main: teal[500],
-    },
-    secondary: {
-      main: blue[400],
-    },
-    background: {
-      default: '#f5f7fa',
-    },
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          boxShadow: '0 2px 4px rgba(0,0,0,0.05)',
-          borderRadius: '8px',
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: '12px',
-        },
-      },
-    },
-    MuiChip: {
-      styleOverrides: {
-        root: {
-          fontWeight: 500,
-        },
-      },
-    },
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-    h5: {
-      fontWeight: 600,
-    },
-    h6: {
-      fontWeight: 600,
-    },
-  },
-});
 
 // Define column types
 type ColumnType = 'todo' | 'inProgress' | 'done';
 
 export default function KanbanBoard() {
+  const theme = useTheme();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showTaskInput, setShowTaskInput] = useState(false);
@@ -206,9 +158,8 @@ export default function KanbanBoard() {
   );
 
   return (
-    <ThemeProvider theme={kanbanTheme}>
-      <Box sx={{ 
-        minHeight: '100vh', 
+      <Box sx={{
+        minHeight: '100vh',
         bgcolor: 'background.default',
         display: 'flex',
         flexDirection: 'column'
@@ -271,6 +222,5 @@ export default function KanbanBoard() {
           </Box>
         </Container>
       </Box>
-    </ThemeProvider>
   );
 } 

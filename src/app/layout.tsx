@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from '../providers';
 import { TranscriptionProvider } from '../contexts/TranscriptionContext';
+import { NotificationProvider } from '../contexts/NotificationContext';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 export const metadata: Metadata = {
   title: "Task Voice Manager",
@@ -17,9 +19,13 @@ export default function RootLayout({
     <html lang="en">
       <body className="antialiased">
         <Providers>
-          <TranscriptionProvider>
-            {children}
-          </TranscriptionProvider>
+          <ErrorBoundary>
+            <NotificationProvider>
+              <TranscriptionProvider>
+                {children}
+              </TranscriptionProvider>
+            </NotificationProvider>
+          </ErrorBoundary>
         </Providers>
       </body>
     </html>

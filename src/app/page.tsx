@@ -48,7 +48,7 @@ import BottomNavigationAction from '@mui/material/BottomNavigationAction';
 import TaskInput from '@/features/tasks/TaskInput';
 import EnhancedTaskList from '@/features/tasks/EnhancedTaskList';
 import TaskFilters from '@/features/tasks/TaskFilters';
-import { getTasks, supabase, getUserNotes, saveUserNote } from '@/lib/supabase/client';
+import { getTasks, supabase, getUserNotes, saveUserNote, isInDemoMode } from '@/lib/supabase/client';
 import Layout from '@/components/layout/Layout';
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
@@ -58,6 +58,8 @@ import { ClientOnly, BrowserWarning } from '@/shared/ui';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { UsageDashboard } from '@/components/auth/UsageDashboard';
+import { SPACING, LAYOUT } from '@/constants';
+import { useNotification } from '@/contexts/NotificationContext';
 import dynamic from 'next/dynamic';
 
 interface TabPanelProps {
@@ -113,6 +115,7 @@ function NoteTabPanel(props: NoteTabPanelProps) {
 function MainContent() {
   const { t } = useTranslation(['common', 'notes']);
   const { service: transcriptionService, setService: setTranscriptionService } = useTranscriptionConfig();
+  const { showSuccess } = useNotification();
   const [activeTab, setActiveTab] = useState(0);
   const [activeNoteTab, setActiveNoteTab] = useState(0);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -211,8 +214,8 @@ function MainContent() {
     if (azureKey) localStorage.setItem('azureApiKey', azureKey);
     if (azureRegion) localStorage.setItem('azureRegion', azureRegion);
     
-    // Show success message (you could add a toast notification here)
-    alert('Settings saved successfully!');
+    // Show success notification
+    showSuccess('Settings saved successfully!');
   };
 
   // Load saved settings and notes on component mount
@@ -230,31 +233,23 @@ function MainContent() {
     
     // Load saved notes from database
     const loadNotes = async () => {
-      console.log('🔍 Notes: Starting to load notes from database...');
-      
       // Check if user is authenticated first
-      const { data: { user }, error: authError } = await supabase.auth.getUser();
-      console.log('🔐 Notes: Auth check - User:', user?.id || 'none', 'Error:', authError);
-      
+      const { data: { user } } = await supabase.auth.getUser();
+
       if (!user) {
-        console.log('❌ Notes: No authenticated user, skipping database load');
         return;
       }
-      
+
       try {
         const result = await getUserNotes();
-        console.log('📋 Notes: Got result from getUserNotes:', result);
         const notesFromDB = result.notes;
-        console.log('📝 Notes: Extracted notes:', notesFromDB);
         const updatedNoteTabs = noteTabs.map(tab => {
           const content = notesFromDB[tab.id] || '';
-          console.log(`📄 Notes: Tab ${tab.id} content:`, content);
           return { ...tab, content };
         });
-        
+
         setNoteTabs(updatedNoteTabs);
         setLastSavedNotesState(notesFromDB);
-        console.log('✅ Notes: Successfully loaded notes from database');
       } catch (error) {
         // Fallback to localStorage if database fails
         const loadedNotesState: any = {};
@@ -289,48 +284,38 @@ function MainContent() {
   }, [lastSavedNotesState]);
 
   const debouncedSaveNotes = useCallback((tabId: number, content: string) => {
-    console.log(`⏰ Notes: Setting up debounced save for tab ${tabId}, content length: ${content.length}`);
     // Clear existing timeout for this tab
     if (notesDebounceRefs.current[tabId]) {
       clearTimeout(notesDebounceRefs.current[tabId]);
     }
-    
+
     notesDebounceRefs.current[tabId] = setTimeout(() => {
-      console.log(`💾 Notes: Debounce timer fired for tab ${tabId}`);
       saveNotesToStorage(tabId, content);
     }, 2500);
   }, [saveNotesToStorage]);
 
   const handleNotesBlur = (tabId: number, content: string) => {
-    console.log(`👁️ Notes: Blur event on tab ${tabId}, content length: ${content.length}`);
     // Clear debounce timer
     if (notesDebounceRefs.current[tabId]) {
       clearTimeout(notesDebounceRefs.current[tabId]);
-      console.log(`⏰ Notes: Cleared debounce timer for tab ${tabId}`);
     }
-    
+
     // Immediate save on blur if content changed
     const lastSavedContent = lastSavedNotesState[tabId];
-    console.log(`🔄 Notes: Comparing content - last saved: "${lastSavedContent}", current: "${content}"`);
     if (content !== lastSavedContent) {
-      console.log(`💾 Notes: Content changed, saving immediately on blur for tab ${tabId}`);
       saveNotesToStorage(tabId, content);
-    } else {
-      console.log(`⚠️ Notes: No changes detected, skipping save for tab ${tabId}`);
     }
   };
 
   const handleNoteContentChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newContent = event.target.value;
-    console.log(`📝 Notes: Content changed on tab ${activeNoteTab}, new length: ${newContent.length}`);
-    
-    const updatedTabs = noteTabs.map(tab => 
+
+    const updatedTabs = noteTabs.map(tab =>
       tab.id === activeNoteTab ? { ...tab, content: newContent } : tab
     );
     setNoteTabs(updatedTabs);
-    
+
     // Trigger auto-save
-    console.log(`🔄 Notes: Triggering debounced save for tab ${activeNoteTab}`);
     debouncedSaveNotes(activeNoteTab, newContent);
   };
 
@@ -390,14 +375,15 @@ function MainContent() {
       onViewToggle={handleViewToggle}
       activeTab={activeTab}
     >
-      <Box sx={{ 
-        flexGrow: 1, 
-        pb: isMobile ? 8 : 2,
-        overflow: 'hidden', // Remove outer scroll completely
+      <Box sx={{
+        flexGrow: 1,
+        pb: isMobile ? 0 : 2, // No bottom padding on mobile - handled by content containers
+        overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
-        maxWidth: (isMobile || isTablet || isWideView || activeTab === 1) ? '100%' : '1200px',
+        height: isMobile ? `calc(100vh - ${LAYOUT.BOTTOM_NAV_HEIGHT}px)` : '100%', // Account for bottom nav on mobile
+        width: '100%',
+        maxWidth: (isMobile || isTablet || isWideView) ? '100%' : `${LAYOUT.MAX_CONTENT_WIDTH}px`,
         mx: 'auto',
         transition: 'all 0.3s ease'
       }}>
@@ -446,17 +432,17 @@ function MainContent() {
         )}
         
         <TabPanel value={activeTab} index={0}>
-          <Box sx={{ 
+          <Box sx={{
             display: 'flex',
             flexDirection: 'column',
-            gap: 3,
-            height: activeTab === 0 ? 'calc(100vh - 200px)' : '100%', // Fixed height only for tasks tab
+            gap: { xs: SPACING.GAP_MD, sm: SPACING.GAP_LG },
             flex: 1,
-            overflow: activeTab === 0 ? 'visible' : 'auto', // Allow scroll on tasks tab
-            pt: isMobile ? 3 : 2,
-            px: (isMobile || isTablet || isWideView) ? 2 : 6,
-            maxWidth: (isMobile || isTablet || isWideView || activeTab === 1) ? '100%' : '1200px', // Notes tab always full width
-            mx: 'auto',
+            minHeight: 0,
+            overflow: 'hidden',
+            width: '100%',
+            pt: SPACING.TAB_PANEL_PADDING,
+            px: SPACING.TAB_PANEL_PADDING,
+            pb: { xs: 0, sm: SPACING.TAB_PANEL_PADDING.sm },
             transition: 'all 0.3s ease'
           }}>
             {!isMobile && (
@@ -494,14 +480,16 @@ function MainContent() {
                 />
               </Paper>
             ) : (
-              <Box sx={{ 
-                height: 'calc(100vh - 120px)', 
+              <Box sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                flex: 1,
+                minHeight: 0,
                 overflow: 'auto',
                 borderTop: `1px solid ${theme.palette.divider}`,
-                pb: 0, // Remove bottom padding
-                mb: '-56px' // Overlap with nav bar
+                pb: `${LAYOUT.MOBILE_BOTTOM_PADDING}px`, // Space for bottom navigation
               }}>
-                <EnhancedTaskList 
+                <EnhancedTaskList
                   refreshTrigger={refreshTrigger}
                   searchFilter={searchFilter}
                   statusFilter={statusFilter}
@@ -515,17 +503,18 @@ function MainContent() {
         </TabPanel>
         
         <TabPanel value={activeTab} index={1}>
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
+          <Box sx={{
+            display: 'flex',
+            flexDirection: 'column',
             height: '100%',
+            width: '100%',
             bgcolor: theme.palette.background.default,
-            maxWidth: '100%',
-            mx: 'auto',
-            px: 0,
+            pt: SPACING.TAB_PANEL_PADDING,
+            px: SPACING.TAB_PANEL_PADDING,
             transition: 'all 0.3s ease'
           }}>
-            <Box sx={{ 
+            <Box sx={{
+              width: '100%',
               borderBottom: 'none',
               bgcolor: 'transparent',
               px: 0,
@@ -670,22 +659,26 @@ function MainContent() {
               </Tabs>
             </Box>
             
-            <Box sx={{ 
-              flexGrow: 1, 
-              overflow: 'auto', 
-              maxHeight: 'calc(100vh - 250px)',
+            <Box sx={{
+              flexGrow: 1,
+              overflow: 'auto',
+              flex: 1,
+              minHeight: 0,
+              width: '100%',
+              pb: isMobile ? `${LAYOUT.MOBILE_BOTTOM_PADDING}px` : 0, // Space for bottom nav on mobile
               bgcolor: theme.palette.background.paper,
               borderTop: `1px solid ${theme.palette.divider}`,
+              borderRadius: 1,
               position: 'relative',
               zIndex: 0
             }}>
               {noteTabs.map(tab => (
                 <NoteTabPanel key={tab.id} value={activeNoteTab} index={tab.id}>
-                  <Box sx={{ 
+                  <Box sx={{
                     height: '100%',
                     width: '100%',
                     bgcolor: theme.palette.background.paper,
-                    p: 2
+                    p: SPACING.TAB_PANEL_PADDING
                   }}>
                     <TextField
                       multiline
@@ -721,15 +714,17 @@ function MainContent() {
         
         <TabPanel value={activeTab} index={2}>
           {/* Config Tab */}
-          <Box sx={{ 
-            display: 'flex', 
-            flexDirection: 'column', 
-            gap: { xs: 2, md: 3 }, 
-            maxWidth: (isMobile || isTablet || isWideView) ? '100%' : '1200px',
-            mx: 'auto',
-            px: (isMobile || isTablet || isWideView) ? 2 : 6,
-            maxHeight: 'calc(100vh - 200px)',
+          <Box sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            gap: { xs: SPACING.GAP_MD, md: SPACING.GAP_LG },
+            width: '100%',
+            pt: SPACING.TAB_PANEL_PADDING,
+            px: SPACING.TAB_PANEL_PADDING,
+            flex: 1,
+            minHeight: 0,
             overflow: 'auto',
+            pb: { xs: `${LAYOUT.MOBILE_BOTTOM_PADDING}px`, sm: SPACING.TAB_PANEL_PADDING.sm },
             transition: 'all 0.3s ease'
           }}>
             
@@ -1471,6 +1466,11 @@ export default function Home() {
 
 function AuthenticatedApp() {
   const { user, loading } = useAuth()
+
+  // Allow demo mode access without authentication
+  if (isInDemoMode()) {
+    return <MainContent />
+  }
 
   if (loading) {
     return (

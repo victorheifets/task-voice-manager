@@ -381,7 +381,7 @@ export default function NotesSection() {
               fontWeight: 400,
               fontSize: '0.8rem',
               bgcolor: 'transparent',
-              color: '#888',
+              color: 'text.disabled',
               borderRadius: '6px 6px 0 0',
               border: 'none',
               mx: 0.5,
@@ -572,10 +572,10 @@ export default function NotesSection() {
             onClick={handleDeleteTab} 
             color="error"
             variant="contained"
-            sx={{ 
+            sx={{
               borderRadius: 1,
-              boxShadow: '0 2px 4px rgba(211, 47, 47, 0.25)',
-              background: 'linear-gradient(180deg, #f44336 0%, #d32f2f 100%)',
+              boxShadow: `0 2px 4px ${theme.palette.mode === 'dark' ? 'rgba(0,0,0,0.3)' : 'rgba(211, 47, 47, 0.25)'}`,
+              background: `linear-gradient(180deg, ${theme.palette.error.main} 0%, ${theme.palette.error.dark} 100%)`,
             }}
           >
             {t('actions.delete')}

@@ -33,21 +33,21 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    /* Dark theme variables - Exact Veltrix UI colors */
-    --background: #1A1D2D;
-    --foreground: #EDF2F7;
-    --primary: #6658DD;
-    --primary-light: #8B7AE5;
-    --primary-dark: #4B3DBB;
-    --secondary: #4A5568;
-    --accent: #02C0CE;
-    --success: #0ACF97;
-    --warning: #FF8C00;
-    --error: #FA5C7C;
-    --paper: #242939;
-    --paper-secondary: #2A3042;
-    --border: #374151;
-    --text-secondary: #A0AEC0;
+    /* Dark theme variables - Aligned with MUI theme.ts */
+    --background: #121212;
+    --foreground: #ffffff;
+    --primary: #90caf9;
+    --primary-light: #bbdefb;
+    --primary-dark: #42a5f5;
+    --secondary: #ce93d8;
+    --accent: #80deea;
+    --success: #81c784;
+    --warning: #ffb74d;
+    --error: #ef5350;
+    --paper: #1e1e1e;
+    --paper-secondary: #2d2d2d;
+    --border: rgba(255, 255, 255, 0.15);
+    --text-secondary: #bdbdbd;
   }
 }
 
@@ -90,46 +90,24 @@ html, body, #__next {
 }
 
 .dark-mode {
-  --background: #1A1D2D;
-  --foreground: #EDF2F7;
-  --primary: #6658DD;
-  --primary-light: #8B7AE5;
-  --primary-dark: #4B3DBB;
-  --secondary: #4A5568;
-  --accent: #02C0CE;
-  --success: #0ACF97;
-  --warning: #FF8C00;
-  --error: #FA5C7C;
-  --paper: #242939;
-  --paper-secondary: #2A3042;
-  --border: #374151;
-  --text-secondary: #A0AEC0;
+  /* Dark theme variables - Aligned with MUI theme.ts */
+  --background: #121212;
+  --foreground: #ffffff;
+  --primary: #90caf9;
+  --primary-light: #bbdefb;
+  --primary-dark: #42a5f5;
+  --secondary: #ce93d8;
+  --accent: #80deea;
+  --success: #81c784;
+  --warning: #ffb74d;
+  --error: #ef5350;
+  --paper: #1e1e1e;
+  --paper-secondary: #2d2d2d;
+  --border: rgba(255, 255, 255, 0.15);
+  --text-secondary: #bdbdbd;
 }
 
-/* Direct color overrides for MUI components */
-.light-mode .MuiAppBar-root {
-  background-color: #FFFFFF;
-}
-
-.dark-mode .MuiAppBar-root {
-  background-color: #242939;
-}
-
-.light-mode .MuiButton-containedPrimary {
-  background-color: #2196F3;
-}
-
-.dark-mode .MuiButton-containedPrimary {
-  background-color: #6658DD;
-}
-
-.light-mode .MuiIconButton-colorPrimary {
-  color: #2196F3;
-}
-
-.dark-mode .MuiIconButton-colorPrimary {
-  color: #6658DD;
-}
+/* MUI component colors are handled by theme.ts - no CSS overrides needed */
 
 /* (reverted white input overrides) */
 

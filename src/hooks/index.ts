@@ -4,3 +4,4 @@ export { useSettings } from './useSettings';
 export { useTaskFilters } from './useTaskFilters';
 export { useTabNavigation } from './useTabNavigation';
 export { useSpeechRecognition } from './useSpeechRecognition';
+export { useResponsive } from './useResponsive';

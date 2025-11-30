@@ -1,13 +1,11 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  Paper, 
-  ThemeProvider, 
-  createTheme,
+import {
+  Box,
+  Container,
+  Typography,
+  Paper,
   AppBar,
   Toolbar,
   Button,
@@ -18,78 +16,30 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogActions
+  DialogActions,
+  useTheme
 } from '@mui/material';
 import { getTasks } from '@/lib/supabase/client';
 import { Task } from '@/types/task';
 import TaskInput from '@/features/tasks/TaskInput';
-import { 
-  format, 
-  startOfMonth, 
-  endOfMonth, 
-  eachDayOfInterval, 
-  isSameMonth, 
+import {
+  format,
+  startOfMonth,
+  endOfMonth,
+  eachDayOfInterval,
+  isSameMonth,
   isToday,
   isSameDay,
   addMonths,
   subMonths
 } from 'date-fns';
-import { purple, deepPurple } from '@mui/material/colors';
 import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import AddIcon from '@mui/icons-material/Add';
 import Link from 'next/link';
 
-// Create a purple theme
-const calendarTheme = createTheme({
-  palette: {
-    primary: {
-      main: deepPurple[500],
-    },
-    secondary: {
-      main: purple[300],
-    },
-    background: {
-      default: '#f9f7ff',
-    },
-  },
-  components: {
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
-          borderRadius: '12px',
-        },
-      },
-    },
-    MuiPaper: {
-      styleOverrides: {
-        root: {
-          borderRadius: '12px',
-        },
-      },
-    },
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: '8px',
-          textTransform: 'none',
-        },
-      },
-    },
-  },
-  typography: {
-    fontFamily: '"Inter", "Roboto", "Helvetica", "Arial", sans-serif',
-    h4: {
-      fontWeight: 700,
-    },
-    h6: {
-      fontWeight: 600,
-    },
-  },
-});
-
 export default function CalendarView() {
+  const theme = useTheme();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [currentDate, setCurrentDate] = useState(new Date());
@@ -161,9 +111,8 @@ export default function CalendarView() {
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   return (
-    <ThemeProvider theme={calendarTheme}>
-      <Box sx={{ 
-        minHeight: '100vh', 
+      <Box sx={{
+        minHeight: '100vh',
         bgcolor: 'background.default',
         display: 'flex',
         flexDirection: 'column'
@@ -246,17 +195,17 @@ export default function CalendarView() {
                 
                 return (
                   <Grid item xs key={day.toString()}>
-                    <Paper 
-                      sx={{ 
-                        height: 100, 
+                    <Paper
+                      sx={{
+                        height: 100,
                         p: 1,
                         cursor: 'pointer',
-                        border: isCurrentDay ? `2px solid ${deepPurple[500]}` : 'none',
-                        bgcolor: isCurrentDay ? 'rgba(103, 58, 183, 0.05)' : 'background.paper',
+                        border: isCurrentDay ? `2px solid ${theme.palette.primary.main}` : 'none',
+                        bgcolor: isCurrentDay ? `${theme.palette.primary.main}10` : 'background.paper',
                         display: 'flex',
                         flexDirection: 'column',
                         '&:hover': {
-                          bgcolor: 'rgba(103, 58, 183, 0.1)',
+                          bgcolor: `${theme.palette.primary.main}20`,
                         }
                       }}
                       onClick={() => handleDateClick(day)}
@@ -386,6 +335,5 @@ export default function CalendarView() {
           </DialogActions>
         </Dialog>
       </Box>
-    </ThemeProvider>
   );
 } 
