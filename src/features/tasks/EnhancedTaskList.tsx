@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import {
   Box,
   Table,
@@ -56,6 +56,8 @@ import {
   Person as PersonIcon,
   PriorityHigh as PriorityIcon,
   LocalOffer as TagIcon,
+  CheckCircle,
+  DeleteForever,
 } from '@mui/icons-material';
 import { format, parseISO, isToday, isTomorrow, isThisWeek } from 'date-fns';
 import { getTasks, updateTask, deleteTask } from '@/lib/supabase/client';
@@ -177,6 +179,84 @@ export function EnhancedTaskList({
     message: '',
     severity: 'success' as 'success' | 'error'
   });
+
+  // Swipe state for mobile
+  const [swipeState, setSwipeState] = useState<{
+    taskId: string | null;
+    offset: number;
+    startX: number;
+    startY: number;
+    swiping: boolean;
+  }>({
+    taskId: null,
+    offset: 0,
+    startX: 0,
+    startY: 0,
+    swiping: false
+  });
+
+  const SWIPE_THRESHOLD = 80; // px needed to trigger action
+
+  // Swipe handlers for mobile
+  const handleTouchStart = useCallback((taskId: string, e: React.TouchEvent) => {
+    const touch = e.touches[0];
+    setSwipeState({
+      taskId,
+      offset: 0,
+      startX: touch.clientX,
+      startY: touch.clientY,
+      swiping: false
+    });
+  }, []);
+
+  const handleTouchMove = useCallback((e: React.TouchEvent) => {
+    if (!swipeState.taskId) return;
+
+    const touch = e.touches[0];
+    const deltaX = touch.clientX - swipeState.startX;
+    const deltaY = touch.clientY - swipeState.startY;
+
+    // Only swipe if horizontal movement is greater than vertical
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 10) {
+      e.preventDefault(); // Prevent scroll
+      setSwipeState(prev => ({
+        ...prev,
+        offset: deltaX,
+        swiping: true
+      }));
+    }
+  }, [swipeState.taskId, swipeState.startX, swipeState.startY]);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (!swipeState.taskId || !swipeState.swiping) {
+      setSwipeState({ taskId: null, offset: 0, startX: 0, startY: 0, swiping: false });
+      return;
+    }
+
+    const taskId = swipeState.taskId;
+    const offset = swipeState.offset;
+
+    // Reset swipe state immediately
+    setSwipeState({ taskId: null, offset: 0, startX: 0, startY: 0, swiping: false });
+
+    // Execute action based on swipe direction
+    if (offset > SWIPE_THRESHOLD) {
+      // Swipe right = toggle complete
+      const task = tasks.find(t => t.id === taskId);
+      if (task) {
+        await onTaskToggle(taskId, !task.completed);
+        setSnackbar({
+          open: true,
+          message: task.completed ? 'Task marked as pending' : 'Task completed!',
+          severity: 'success'
+        });
+      }
+    } else if (offset < -SWIPE_THRESHOLD) {
+      // Swipe left = delete
+      await onTaskDelete(taskId);
+      setSnackbar({ open: true, message: 'Task deleted', severity: 'success' });
+    }
+  }, [swipeState.taskId, swipeState.offset, swipeState.swiping, tasks, onTaskToggle, onTaskDelete]);
 
   // Load tasks on mount and refresh
   useEffect(() => {
@@ -334,18 +414,23 @@ export function EnhancedTaskList({
     setEditDialogOpen(true);
   };
 
-  const handleEditDialogSave = () => {
+  const handleEditDialogSave = async () => {
     if (editingTask) {
-      onTaskUpdate(editingTask.id, {
-        title: editForm.title,
-        dueDate: editForm.dueDate || undefined,
-        assignee: editForm.assignee || undefined,
-        priority: editForm.priority as Priority,
-        notes: editForm.notes,
-        tags: editForm.tags.filter(tag => tag.trim() !== '')
-      });
-      setEditDialogOpen(false);
-      setSnackbar({ open: true, message: 'Task updated successfully', severity: 'success' });
+      try {
+        await onTaskUpdate(editingTask.id, {
+          title: editForm.title,
+          dueDate: editForm.dueDate || null, // Use null to clear, not undefined
+          assignee: editForm.assignee || null,
+          priority: editForm.priority as Priority,
+          notes: editForm.notes,
+          tags: editForm.tags.filter(tag => tag.trim() !== '')
+        });
+        setEditDialogOpen(false);
+        setSnackbar({ open: true, message: 'Task updated successfully', severity: 'success' });
+      } catch (error) {
+        console.error('Failed to save task:', error);
+        setSnackbar({ open: true, message: 'Failed to update task', severity: 'error' });
+      }
     }
   };
 
@@ -411,24 +496,28 @@ export function EnhancedTaskList({
 
   const getDueDateChip = (dueDate?: string | null) => {
     if (!dueDate) return null;
-    
+
     const date = parseISO(dueDate);
     const now = new Date();
-    
+
+    // Compare dates at day level (ignore time) for overdue check
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dueDateStart = new Date(date.getFullYear(), date.getMonth(), date.getDate());
+
     let color: 'default' | 'primary' | 'error' | 'warning' = 'default';
     let label = format(date, 'MMM dd');
-    
+
     if (isToday(date)) {
       color = 'primary';
       label = 'Today';
     } else if (isTomorrow(date)) {
       color = 'primary';
       label = 'Tomorrow';
-    } else if (date < now) {
+    } else if (dueDateStart < todayStart) {
       color = 'error';
       label = `${label} (Overdue)`;
     }
-    
+
     return <Chip label={label} size="small" color={color} />;
   };
 
@@ -441,10 +530,69 @@ export function EnhancedTaskList({
         <Box sx={{ px: 1 }}>
           {filteredAndSortedTasks.map((task, index) => (
             <React.Fragment key={task.id}>
-              <Card 
-                sx={{ 
-                  mx: 0,
+              {/* Swipe container */}
+              <Box
+                sx={{
+                  position: 'relative',
                   mb: 0.25,
+                  overflow: 'hidden',
+                  borderRadius: 3,
+                }}
+              >
+                {/* Left action indicator (complete) - shown when swiping right */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-start',
+                    pl: 3,
+                    bgcolor: task.completed ? theme.palette.warning.main : theme.palette.success.main,
+                    opacity: swipeState.taskId === task.id && swipeState.offset > 0
+                      ? Math.min(swipeState.offset / SWIPE_THRESHOLD, 1)
+                      : 0,
+                    transition: swipeState.taskId === task.id ? 'none' : 'opacity 0.2s ease',
+                  }}
+                >
+                  <CheckCircle sx={{ color: 'white', fontSize: 32 }} />
+                  <Typography sx={{ color: 'white', ml: 1, fontWeight: 600 }}>
+                    {task.completed ? 'Undo' : 'Complete'}
+                  </Typography>
+                </Box>
+
+                {/* Right action indicator (delete) - shown when swiping left */}
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    width: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'flex-end',
+                    pr: 3,
+                    bgcolor: theme.palette.error.main,
+                    opacity: swipeState.taskId === task.id && swipeState.offset < 0
+                      ? Math.min(Math.abs(swipeState.offset) / SWIPE_THRESHOLD, 1)
+                      : 0,
+                    transition: swipeState.taskId === task.id ? 'none' : 'opacity 0.2s ease',
+                  }}
+                >
+                  <Typography sx={{ color: 'white', mr: 1, fontWeight: 600 }}>
+                    Delete
+                  </Typography>
+                  <DeleteForever sx={{ color: 'white', fontSize: 32 }} />
+                </Box>
+
+              <Card
+                sx={{
+                  mx: 0,
+                  mb: 0,
                   minHeight: 140,
                   borderRadius: 3,
                   cursor: 'pointer',
@@ -456,20 +604,27 @@ export function EnhancedTaskList({
                     ? '1px solid rgba(255,255,255,0.12)'
                     : '1px solid rgba(0,0,0,0.08)',
                   position: 'relative',
-                  transform: 'translateZ(0) scale(1)',
-                  '&:hover': {
-                    transform: 'translateY(-1px) translateZ(0)',
-                    boxShadow: theme.palette.mode === 'dark'
-                      ? '0 4px 12px rgba(0,0,0,0.4)'
-                      : '0 4px 12px rgba(0,0,0,0.15)',
-                  },
+                  transform: swipeState.taskId === task.id
+                    ? `translateX(${swipeState.offset}px)`
+                    : 'translateX(0)',
+                  transition: swipeState.taskId === task.id && swipeState.swiping
+                    ? 'none'
+                    : 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                   '&:active': {
-                    transform: 'translateY(-1px) translateZ(0) scale(0.98)',
-                    transition: 'all 0.1s ease'
+                    transform: swipeState.taskId === task.id
+                      ? `translateX(${swipeState.offset}px)`
+                      : 'translateX(0)',
                   },
-                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)'
                 }}
-                onClick={(e) => handleCardClick(task, e)}
+                onTouchStart={(e) => handleTouchStart(task.id, e)}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
+                onClick={(e) => {
+                  // Only handle click if not swiping
+                  if (!swipeState.swiping) {
+                    handleCardClick(task, e);
+                  }
+                }}
               >
                 
                 {/* Task Card Content */}
@@ -563,16 +718,18 @@ export function EnhancedTaskList({
                       </Box>
               </CardContent>
               </Card>
+              </Box>
               </React.Fragment>
             ))}
         </Box>
 
         {/* Edit Dialog */}
-        <Dialog 
-          open={editDialogOpen} 
-          onClose={handleEditDialogClose} 
-          maxWidth="sm" 
+        <Dialog
+          open={editDialogOpen}
+          onClose={handleEditDialogClose}
+          maxWidth="sm"
           fullWidth
+          aria-labelledby="edit-task-dialog-title"
           PaperProps={{
             sx: { 
               borderRadius: 2,
@@ -586,11 +743,16 @@ export function EnhancedTaskList({
           }}
         >
           <DialogContent sx={{ p: 2.5 }}>
-            <Typography variant="h6" gutterBottom sx={{ 
-              fontSize: '1.1rem', 
-              fontWeight: 600, 
-              color: 'primary.main' 
-            }}>
+            <Typography
+              id="edit-task-dialog-title"
+              variant="h6"
+              gutterBottom
+              sx={{
+                fontSize: '1.1rem',
+                fontWeight: 600,
+                color: 'primary.main'
+              }}
+            >
               Edit Task
             </Typography>
             <Divider sx={{ mb: 2.5 }} />
@@ -755,7 +917,7 @@ export function EnhancedTaskList({
           }
         }}
       >
-        <Table stickyHeader sx={{
+        <Table stickyHeader aria-label="Tasks table" sx={{
           '& .MuiTableCell-head': {
             borderLeft: 'none !important',
             borderRight: 'none !important',
@@ -920,6 +1082,8 @@ export function EnhancedTaskList({
                   <Checkbox
                     checked={task.completed || false}
                     onChange={(e) => onTaskToggle(task.id, e.target.checked)}
+                    aria-label={`Mark "${task.title}" as ${task.completed ? 'incomplete' : 'complete'}`}
+                    inputProps={{ 'aria-describedby': `task-${task.id}-title` }}
                   />
                 </TableCell>
                 
@@ -968,12 +1132,13 @@ export function EnhancedTaskList({
                         value={editing.value ? dayjs(editing.value) : null}
                         onChange={(newValue: Dayjs | null) => {
                           const dateString = newValue ? newValue.format('YYYY-MM-DD') : '';
-                          setEditing({ ...editing, value: dateString });
-                          // Auto-save on date selection
-                          setTimeout(() => saveEdit(), 100);
+                          const taskId = editing.taskId;
+                          // Save directly without waiting for state update
+                          onTaskUpdate(taskId, { dueDate: dateString || null });
+                          setEditing(null);
                         }}
                         open={true}
-                        onClose={saveEdit}
+                        onClose={() => setEditing(null)}
                         slotProps={{
                           textField: {
                             size: 'small',
@@ -1155,6 +1320,8 @@ export function EnhancedTaskList({
                     size="small"
                     onClick={(e) => handleMenuClick(e, task)}
                     sx={{ mr: 1 }}
+                    aria-label={`Actions for task "${task.title}"`}
+                    aria-haspopup="menu"
                   >
                     <MoreVert />
                   </IconButton>
@@ -1289,8 +1456,14 @@ export function EnhancedTaskList({
       </Menu>
 
       {/* Info Dialog */}
-      <Dialog open={infoDialogOpen} onClose={() => setInfoDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>Task Details</DialogTitle>
+      <Dialog
+        open={infoDialogOpen}
+        onClose={() => setInfoDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+        aria-labelledby="task-details-dialog-title"
+      >
+        <DialogTitle id="task-details-dialog-title">Task Details</DialogTitle>
         <DialogContent>
           {selectedTaskForInfo && (
             <Box sx={{ pt: 2 }}>
@@ -1316,6 +1489,7 @@ export function EnhancedTaskList({
                 value={taskNotes}
                 onChange={(e) => setTaskNotes(e.target.value)}
                 variant="outlined"
+                aria-label="Task notes"
               />
             </Box>
           )}

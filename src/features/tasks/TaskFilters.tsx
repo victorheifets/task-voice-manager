@@ -125,28 +125,52 @@ export default function TaskFilters({
   if (isMobile) {
     return (
       <>
-        <Box sx={{ 
-          display: 'flex', 
+        <Box sx={{
+          display: 'flex',
           alignItems: 'center',
           gap: 1,
-          mb: 2
+          mb: 1,
+          px: 0, // Remove extra horizontal padding
         }}>
-          <Paper elevation={1} sx={{ p: '2px 4px', display: 'flex', alignItems: 'center', flex: 1, borderRadius: '20px', boxShadow: '0 0 8px rgba(128, 128, 128, 0.1)', border: '1px solid #e0e0e0' }}>
-            <TextField
-              placeholder="Search tasks, assignees, tags..."
-              size="small"
-              value={searchFilter}
-              onChange={handleSearchChange}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <SearchIcon color="action" />
-                  </InputAdornment>
-                ),
-              }}
-              sx={{ width: 300, '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
-            />
-          </Paper>
+          <TextField
+            placeholder="Search tasks..."
+            size="small"
+            value={searchFilter}
+            onChange={handleSearchChange}
+            fullWidth
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon color="action" sx={{ fontSize: 20 }} />
+                </InputAdornment>
+              ),
+            }}
+            sx={{
+              flex: 1,
+              '& .MuiOutlinedInput-root': {
+                borderRadius: '20px',
+                height: 40,
+                bgcolor: 'background.paper',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
+                '& fieldset': {
+                  borderColor: theme.palette.mode === 'dark'
+                    ? 'rgba(255,255,255,0.12)'
+                    : 'rgba(0,0,0,0.12)',
+                },
+                '&:hover fieldset': {
+                  borderColor: theme.palette.primary.main,
+                },
+                '&.Mui-focused fieldset': {
+                  borderColor: theme.palette.primary.main,
+                  borderWidth: 1,
+                },
+              },
+              '& .MuiInputBase-input': {
+                py: 1,
+                fontSize: '0.9rem',
+              }
+            }}
+          />
           
           <IconButton 
             onClick={toggleMobileFilter}

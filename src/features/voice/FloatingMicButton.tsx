@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Box, Fab, Tooltip, Typography, IconButton, alpha, useTheme } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, Fab, Tooltip, IconButton, alpha, useTheme } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import StopIcon from '@mui/icons-material/Stop';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
@@ -8,16 +8,20 @@ import { useNotification } from '../../contexts/NotificationContext';
 
 interface FloatingMicButtonProps {
   onTranscript: (text: string) => void;
-  transcriptionService?: 'browser' | 'whisper' | 'azure' | 'hybrid';
+  transcriptionService?: 'browser' | 'whisper' | 'groq' | 'azure' | 'hybrid';
+  language?: string;
   showTextOption?: boolean;
   onTextInput?: () => void;
+  onRecordingStart?: () => void;
 }
 
 const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
   onTranscript,
   transcriptionService = 'browser',
+  language = 'en',
   showTextOption = false,
-  onTextInput
+  onTextInput,
+  onRecordingStart
 }) => {
   const theme = useTheme();
   const { showWarning, showError } = useNotification();
@@ -25,13 +29,14 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
 
   const {
     isRecording,
-    transcript,
+    transcript: _transcript,
     error,
     startRecording,
     stopRecording,
     isInitialized
   } = useSpeechRecognition({
     transcriptionService,
+    defaultLanguage: language,
     onTranscript: (text: string) => {
       setCurrentTranscript(text);
       if (text.trim()) {
@@ -59,14 +64,19 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
       setCurrentTranscript('');
     } else {
       await startRecording();
+      // Notify parent that recording has started (useful for opening dialogs on mobile)
+      onRecordingStart?.();
     }
   };
 
   return (
     <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-      {/* Real-time transcript display */}
+      {/* Real-time transcript display with aria-live for screen readers */}
       {(isRecording && currentTranscript) && (
         <Box
+          role="status"
+          aria-live="polite"
+          aria-label="Voice transcript"
           sx={{
             position: 'absolute',
             right: showTextOption ? 112 : 72,
@@ -100,6 +110,7 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
         <Tooltip title="Type task manually">
           <IconButton
             onClick={onTextInput}
+            aria-label="Open keyboard input for typing task"
             sx={{
               width: 44,
               height: 44,
@@ -127,6 +138,8 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
             color="primary"
             onClick={handleMicClick}
             disabled={!isInitialized}
+            aria-label={!isInitialized ? "Voice recording not available" : isRecording ? "Stop voice recording" : "Start voice recording"}
+            aria-pressed={isRecording}
             sx={{
               width: 56,
               height: 56,

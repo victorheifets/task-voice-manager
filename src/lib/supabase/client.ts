@@ -6,11 +6,10 @@ const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
 
 // Check if Supabase is properly configured
-// Force demo mode if URL is empty or contains a known invalid domain
+// Force demo mode only if URL/key is empty or using demo domain
 const FORCE_DEMO_MODE = !supabaseUrl ||
                         !supabaseAnonKey ||
-                        supabaseUrl.includes('demo.supabase.co') ||
-                        supabaseUrl.includes('anoupmenvlacdpqcrvzw') // Known invalid project
+                        supabaseUrl.includes('demo.supabase.co')
 
 // Demo mode state - will be true when Supabase is unavailable
 let isDemoMode = FORCE_DEMO_MODE
@@ -101,7 +100,7 @@ async function checkSupabaseConnection(): Promise<boolean> {
       return false
     }
     return true
-  } catch (e) {
+  } catch (_e) {
     return false
   }
 }
@@ -263,7 +262,8 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
 
   // Only update columns that exist in the database
   if (updates.title !== undefined) updateData.title = updates.title
-  if (updates.dueDate !== undefined) updateData.due_date = updates.dueDate
+  // Handle dueDate - allow null to clear the date
+  if ('dueDate' in updates) updateData.due_date = updates.dueDate
   if (updates.completed !== undefined) updateData.status = updates.completed ? 'completed' : 'pending' // Map completed boolean to status
   if (updates.notes !== undefined) updateData.notes = updates.notes
   if (updates.assignee !== undefined) {
