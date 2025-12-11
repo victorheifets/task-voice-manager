@@ -1,0 +1,23 @@
+{
+  "title": "Notes",
+  "placeholder": "Écrivez vos notes ici...",
+  "tabs": {
+    "general": "Général",
+    "work": "Travail",
+    "personal": "Personnel",
+    "new": "Note {{number}}",
+    "addNew": "Ajouter une nouvelle note"
+  },
+  "actions": {
+    "edit": "Modifier le titre",
+    "delete": "Supprimer la note"
+  },
+  "deleteConfirm": {
+    "title": "Supprimer la Note",
+    "message": "Êtes-vous sûr de vouloir supprimer cette note?"
+  },
+  "deleteDialog": {
+    "title": "Supprimer l'Onglet de Note",
+    "message": "Êtes-vous sûr de vouloir supprimer cet onglet de note? Cette action est irréversible."
+  }
+}

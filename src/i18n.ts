@@ -9,7 +9,11 @@ import enCommon from '../public/locales/en/common.json';
 import enTasks from '../public/locales/en/tasks.json';
 import enNotes from '../public/locales/en/notes.json';
 import esCommon from '../public/locales/es/common.json';
+import esTasks from '../public/locales/es/tasks.json';
+import esNotes from '../public/locales/es/notes.json';
 import frCommon from '../public/locales/fr/common.json';
+import frTasks from '../public/locales/fr/tasks.json';
+import frNotes from '../public/locales/fr/notes.json';
 import heCommon from '../public/locales/he/common.json';
 import heTasks from '../public/locales/he/tasks.json';
 import heNotes from '../public/locales/he/notes.json';
@@ -28,13 +32,13 @@ if (!i18n.isInitialized) {
         },
         es: {
           common: esCommon,
-          tasks: enTasks, // Fallback to English
-          notes: enNotes,  // Fallback to English
+          tasks: esTasks,
+          notes: esNotes,
         },
         fr: {
           common: frCommon,
-          tasks: enTasks, // Fallback to English
-          notes: enNotes,  // Fallback to English
+          tasks: frTasks,
+          notes: frNotes,
         },
         he: {
           common: heCommon,

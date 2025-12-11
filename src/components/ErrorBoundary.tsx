@@ -30,7 +30,37 @@ export class ErrorBoundary extends Component<Props, State> {
     if (process.env.NODE_ENV === 'development') {
       console.error('ErrorBoundary caught an error:', error, errorInfo);
     }
+
+    // Production error reporting
+    // TODO: Integrate with Sentry, LogRocket, or similar service
+    // Example: Sentry.captureException(error, { extra: errorInfo });
+    if (process.env.NODE_ENV === 'production') {
+      // Log to server endpoint for error tracking
+      this.reportError(error, errorInfo);
+    }
   }
+
+  private reportError = async (error: Error, errorInfo: ErrorInfo) => {
+    try {
+      // Send error to server endpoint (implement when needed)
+      // await fetch('/api/errors', {
+      //   method: 'POST',
+      //   headers: { 'Content-Type': 'application/json' },
+      //   body: JSON.stringify({
+      //     message: error.message,
+      //     stack: error.stack,
+      //     componentStack: errorInfo.componentStack,
+      //     timestamp: new Date().toISOString(),
+      //     url: window.location.href,
+      //     userAgent: navigator.userAgent,
+      //   }),
+      // });
+      console.error('[ErrorBoundary] Production error:', error.message);
+    } catch (reportError) {
+      // Silently fail - don't break the app if error reporting fails
+      console.error('[ErrorBoundary] Failed to report error:', reportError);
+    }
+  };
 
   handleReset = () => {
     this.setState({ hasError: false, error: null });

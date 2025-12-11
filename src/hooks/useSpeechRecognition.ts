@@ -1,13 +1,13 @@
 import { useState, useEffect, useCallback, useMemo, useRef } from 'react';
 import { SpeechService } from '../lib/speech/speechService';
-import { SpeechConfig, TranscriptionResult, SpeechError } from '../lib/speech/types';
+import { TranscriptionResult, SpeechError } from '../lib/speech/types';
 
 interface UseSpeechRecognitionOptions {
   defaultLanguage?: string;
   useAzureFallback?: boolean;
   azureKey?: string;
   azureRegion?: string;
-  transcriptionService?: 'browser' | 'whisper' | 'azure' | 'hybrid';
+  transcriptionService?: 'browser' | 'whisper' | 'groq' | 'azure' | 'hybrid';
   onTranscript?: (text: string) => void;
   onError?: (error: SpeechError) => void;
 }
@@ -19,37 +19,50 @@ export const useSpeechRecognition = (options: UseSpeechRecognitionOptions) => {
   const speechServiceRef = useRef<SpeechService | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
+  // Store callbacks in refs to avoid stale closures
+  const onTranscriptRef = useRef(options.onTranscript);
+  const onErrorRef = useRef(options.onError);
+
+  // Update refs when callbacks change
+  useEffect(() => {
+    onTranscriptRef.current = options.onTranscript;
+    onErrorRef.current = options.onError;
+  }, [options.onTranscript, options.onError]);
+
   const config = useMemo(() => ({
-    defaultLanguage: options.defaultLanguage || 'en-US',
+    defaultLanguage: options.defaultLanguage || 'en',
     useAzureFallback: options.useAzureFallback || false,
     azureKey: options.azureKey,
     azureRegion: options.azureRegion,
     transcriptionService: options.transcriptionService || 'browser',
   }), [options.defaultLanguage, options.useAzureFallback, options.azureKey, options.azureRegion, options.transcriptionService]);
 
-
+  // Reinitialize speech service when config changes (language, service, etc.)
   useEffect(() => {
+    // Clean up existing service
     if (speechServiceRef.current) {
-      return;
+      speechServiceRef.current.cleanup();
+      speechServiceRef.current = null;
+      setIsInitialized(false);
     }
 
     const handleResult = (result: TranscriptionResult) => {
       setTranscript(result.text);
       // Call onTranscript for both interim and final results for real-time display
-      if (options.onTranscript) {
-        options.onTranscript(result.text);
+      if (onTranscriptRef.current) {
+        onTranscriptRef.current(result.text);
       }
     };
 
-    const handleError = (error: SpeechError) => {
+    const handleError = (speechError: SpeechError) => {
       const silentErrors = ['network', 'FALLBACK_MODE', 'USE_TEXT_INPUT', 'language-not-supported', 'no-speech', 'audio-capture'];
-      if (!silentErrors.includes(error.code)) {
-        console.error('Speech recognition error:', error);
+      if (!silentErrors.includes(speechError.code)) {
+        console.error('Speech recognition error:', speechError);
       }
-      setError(error);
+      setError(speechError);
       setIsRecording(false);
-      if (options.onError) {
-        options.onError(error);
+      if (onErrorRef.current) {
+        onErrorRef.current(speechError);
       }
     };
 
@@ -62,7 +75,7 @@ export const useSpeechRecognition = (options: UseSpeechRecognitionOptions) => {
         speechServiceRef.current = null;
       }
     };
-  }, []);
+  }, [config]);
 
   const startRecording = useCallback(async () => {
     if (!speechServiceRef.current) {

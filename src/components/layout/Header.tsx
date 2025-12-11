@@ -53,6 +53,7 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
   const [avatarAnchorEl, setAvatarAnchorEl] = useState<null | HTMLElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+  const isLargeScreen = useMediaQuery(theme.breakpoints.up('lg'));
 
   // Theme-based colors for header elements (white on colored background)
   const HEADER_TEXT_COLOR = theme.palette.common.white;
@@ -186,7 +187,7 @@ export default function Header({ onTabChange, onMenuClick, isWideView = true, on
                     transform: 'translateY(-2px)',
                     boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
                   },
-                  display: useMediaQuery(theme.breakpoints.down('lg')) ? 'none' : 'flex' // Only show on large screens
+                  display: isLargeScreen ? 'flex' : 'none' // Only show on large screens
                 }}
               >
                 {isWideView

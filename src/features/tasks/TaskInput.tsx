@@ -1,15 +1,11 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import { 
-  Box, 
-  Button, 
-  Paper, 
+import {
+  Box,
+  Button,
   CircularProgress,
   useTheme,
-  alpha,
-  InputBase,
-  Tooltip,
   IconButton,
   TextField,
   Dialog,
@@ -18,7 +14,7 @@ import {
   DialogActions
 } from '@mui/material';
 import { createTask } from '@/lib/supabase/client';
-import { ParsedTaskData } from '@/types/task';
+import { useNotification } from '@/contexts/NotificationContext';
 
 import SendIcon from '@mui/icons-material/Send';
 
@@ -34,6 +30,7 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
   const [notes, setNotes] = useState('');
   const previousTranscriptRef = useRef('');
   const theme = useTheme();
+  const { showError, showSuccess: _showSuccess } = useNotification();
   // Update input when transcript changes - simple direct update
   useEffect(() => {
     if (transcript) {
@@ -55,11 +52,14 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
     setIsSubmitting(true);
 
     try {
-      // Use server-side API to parse the task (secure - API key not exposed to client)
+      // Get API key from localStorage (saved in Settings)
+      const apiKey = localStorage.getItem('openaiApiKey') || '';
+
+      // Use server-side API to parse the task
       const response = await fetch('/api/tasks/parse', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ taskText: input.trim() })
+        body: JSON.stringify({ taskText: input.trim(), apiKey })
       });
 
       if (!response.ok) {
@@ -67,17 +67,19 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
         throw new Error(error.error || 'Failed to parse task');
       }
 
-      const { task: parsedTask } = await response.json();
+      const { tasks } = await response.json();
 
-      // Create the parsed task
-      await createTask({
-        title: parsedTask.title,
-        dueDate: parsedTask.dueDate,
-        assignee: parsedTask.assignee,
-        tags: parsedTask.tags || [],
-        completed: false,
-        priority: parsedTask.priority || 'medium'
-      });
+      // Create all parsed tasks
+      for (const parsedTask of tasks) {
+        await createTask({
+          title: parsedTask.title,
+          dueDate: parsedTask.dueDate,
+          assignee: parsedTask.assignee,
+          tags: parsedTask.tags || [],
+          completed: false,
+          priority: parsedTask.priority || 'medium'
+        });
+      }
 
       setInput('');
       previousTranscriptRef.current = '';
@@ -85,7 +87,7 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
     } catch (error) {
       console.error('Error creating task:', error);
       // Show error to user
-      alert(error instanceof Error ? error.message : 'Failed to create task');
+      showError(error instanceof Error ? error.message : 'Failed to create task');
     } finally {
       setIsSubmitting(false);
     }
@@ -107,6 +109,11 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
         variant="outlined"
         size="medium"
         className="task-input"
+        aria-label="Task input field"
+        aria-describedby="task-input-help"
+        inputProps={{
+          'aria-busy': isSubmitting,
+        }}
         sx={{
           borderRadius: 2,
           '& .MuiOutlinedInput-root': {
@@ -150,9 +157,10 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
                   color="primary"
                   onClick={handleSubmit}
                   disabled={!input.trim() || isSubmitting}
+                  aria-label={isSubmitting ? "Submitting task" : "Submit task"}
                 >
                   {isSubmitting ? (
-                    <CircularProgress size={20} />
+                    <CircularProgress size={20} aria-label="Loading" />
                   ) : (
                     <SendIcon />
                   )}

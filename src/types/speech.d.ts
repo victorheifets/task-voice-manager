@@ -46,7 +46,7 @@ interface SpeechRecognition extends EventTarget {
   stop(): void;
 }
 
-interface SpeechRecognitionConstructor {
+interface _SpeechRecognitionConstructor {
   new (): SpeechRecognition;
   prototype: SpeechRecognition;
 }

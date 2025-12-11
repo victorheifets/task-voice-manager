@@ -36,7 +36,13 @@
     "select": "Sélectionner la Langue",
     "en": "Anglais",
     "es": "Espagnol",
-    "fr": "Français"
+    "fr": "Français",
+    "he": "Hébreu"
+  },
+  "menu": {
+    "profile": "Profil",
+    "settings": "Paramètres",
+    "help": "Aide"
   },
   "settings": {
     "account": "Paramètres du Compte",
@@ -44,4 +50,4 @@
     "notifications": "Notifications",
     "help": "Aide"
   }
-} 
+}

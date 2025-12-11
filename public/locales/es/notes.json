@@ -1,0 +1,23 @@
+{
+  "title": "Notas",
+  "placeholder": "Escribe tus notas aquí...",
+  "tabs": {
+    "general": "General",
+    "work": "Trabajo",
+    "personal": "Personal",
+    "new": "Nota {{number}}",
+    "addNew": "Añadir nueva nota"
+  },
+  "actions": {
+    "edit": "Editar título",
+    "delete": "Eliminar nota"
+  },
+  "deleteConfirm": {
+    "title": "Eliminar Nota",
+    "message": "¿Estás seguro de que quieres eliminar esta nota?"
+  },
+  "deleteDialog": {
+    "title": "Eliminar Pestaña de Nota",
+    "message": "¿Estás seguro de que quieres eliminar esta pestaña de nota? Esta acción no se puede deshacer."
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "input": {
+    "placeholder": "Ajouter une tâche... (ex. 'Appeler Jean demain à 15h')",
+    "recording": "Enregistrement...",
+    "processing": "Traitement audio..."
+  },
+  "list": {
+    "empty": "Aucune tâche trouvée",
+    "task": "Tâche",
+    "dueDate": "Date d'échéance",
+    "assignee": "Assigné à",
+    "tags": "Étiquettes",
+    "lastUpdate": "Dernière mise à jour",
+    "priority": "Priorité",
+    "actions": "Actions",
+    "notAssigned": "Non assigné",
+    "notSet": "Non défini"
+  },
+  "details": {
+    "title": "Détails de la Tâche",
+    "created": "Créé",
+    "updated": "Dernière mise à jour",
+    "dueDate": "Date d'échéance",
+    "assignee": "Assigné à",
+    "status": "Statut",
+    "tags": "Étiquettes",
+    "pending": "En attente",
+    "completed": "Terminé"
+  },
+  "mobile": {
+    "swipeLeft": "Glissez à gauche pour terminer",
+    "swipeRight": "Glissez à droite pour les options"
+  }
+}

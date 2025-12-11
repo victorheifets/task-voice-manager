@@ -1,0 +1,34 @@
+{
+  "input": {
+    "placeholder": "Añadir tarea... (ej. 'Llamar a Juan mañana a las 3pm')",
+    "recording": "Grabando...",
+    "processing": "Procesando audio..."
+  },
+  "list": {
+    "empty": "No se encontraron tareas",
+    "task": "Tarea",
+    "dueDate": "Fecha límite",
+    "assignee": "Asignado a",
+    "tags": "Etiquetas",
+    "lastUpdate": "Última actualización",
+    "priority": "Prioridad",
+    "actions": "Acciones",
+    "notAssigned": "No asignado",
+    "notSet": "No establecido"
+  },
+  "details": {
+    "title": "Detalles de la Tarea",
+    "created": "Creado",
+    "updated": "Última actualización",
+    "dueDate": "Fecha límite",
+    "assignee": "Asignado a",
+    "status": "Estado",
+    "tags": "Etiquetas",
+    "pending": "Pendiente",
+    "completed": "Completada"
+  },
+  "mobile": {
+    "swipeLeft": "Desliza a la izquierda para completar",
+    "swipeRight": "Desliza a la derecha para opciones"
+  }
+}

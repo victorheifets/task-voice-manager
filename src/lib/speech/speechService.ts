@@ -1,5 +1,5 @@
 import { TranscriptionResult } from './types';
-import { detectBrowserCapabilities, logBrowserInfo } from '../../utils/browserCompatibility';
+import { detectBrowserCapabilities } from '../../utils/browserCompatibility';
 
 export interface SpeechError {
   code: string;
@@ -12,7 +12,7 @@ export interface SpeechConfig {
   useAzureFallback: boolean;
   azureKey?: string;
   azureRegion?: string;
-  transcriptionService?: 'browser' | 'whisper' | 'azure' | 'hybrid';
+  transcriptionService?: 'browser' | 'whisper' | 'groq' | 'azure' | 'hybrid';
 }
 
 export class SpeechService {
@@ -117,135 +117,132 @@ export class SpeechService {
 
       // Create and configure speech recognition
       this.recognition = new SpeechRecognition();
-      this.recognition.continuous = true;
+      this.recognition.continuous = false; // Auto-stops after silence - more reliable
       this.recognition.interimResults = true;
-      this.recognition.lang = this.config.defaultLanguage;
-      this.recognition.maxAlternatives = 1;
+
+      // Map short language codes to BCP-47 format for Web Speech API
+      // 'auto' means don't set language (browser will use default)
+      const browserLanguageMap: Record<string, string> = {
+        'en': 'en-US',
+        'he': 'he-IL',
+        'ru': 'ru-RU',
+        'es': 'es-ES',
+        'fr': 'fr-FR',
+        'de': 'de-DE',
+        'ar': 'ar-SA',
+        'zh': 'zh-CN',
+        'ja': 'ja-JP'
+      };
+      // For 'auto', don't set language - browser will auto-detect or use default
+      if (this.config.defaultLanguage !== 'auto') {
+        const browserLang = browserLanguageMap[this.config.defaultLanguage] || this.config.defaultLanguage;
+        this.recognition.lang = browserLang;
+      }
+      this.recognition.maxAlternatives = 5; // Get more alternatives for better accuracy
 
       // Set up event handlers
       this.recognition.onstart = () => {
-        console.log('Speech recognition started');
+        console.log('');
+        console.log('='.repeat(50));
+        console.log('✅ SPEECH RECOGNITION STARTED');
+        console.log('='.repeat(50));
+        console.log('Language:', this.recognition?.lang, '(from:', this.config.defaultLanguage + ')');
+        console.log('🎤 MICROPHONE IS ACTIVE - PLEASE SPEAK NOW');
+        console.log('');
+
         this.isRecording = true;
-        this.networkErrorCount = 0; // Reset error count on successful start
+        this.fullTranscript = ''; // Reset transcript at start
+        this.networkErrorCount = 0;
       };
 
 
       this.recognition.onresult = (event: any) => {
-        let finalTranscript = '';
-        let interimTranscript = '';
+        // Only process the latest result (not all accumulated results)
+        const result = event.results[event.resultIndex];
 
-        // Build the full transcript by combining all final results
-        for (let i = 0; i < event.results.length; i++) {
-          const result = event.results[i];
-          const transcript = result[0].transcript;
+        // Get the best alternative (highest confidence)
+        let bestTranscript = result[0].transcript;
+        let bestConfidence = result[0].confidence || 0.8;
 
-          if (result.isFinal) {
-            finalTranscript += transcript;
-          } else {
-            interimTranscript = transcript;
+        // Check all alternatives and pick the best one
+        for (let j = 1; j < result.length; j++) {
+          const altConfidence = result[j].confidence || 0;
+          if (altConfidence > bestConfidence) {
+            bestTranscript = result[j].transcript;
+            bestConfidence = altConfidence;
           }
         }
 
-        // Update the full transcript with final results
-        if (finalTranscript) {
-          this.fullTranscript += finalTranscript;
-        }
+        console.log(`🎤 Result [${result.isFinal ? 'FINAL' : 'interim'}]: "${bestTranscript}" (confidence: ${(bestConfidence * 100).toFixed(1)}%)`);
 
-        // Send the current transcript (accumulated + interim)
-        const textToSend = this.fullTranscript + interimTranscript;
-        if (textToSend) {
-          this.lastSpeechTime = Date.now();
+        if (result.isFinal) {
+          // For final results, this IS the complete transcript
+          this.fullTranscript = bestTranscript;
           this.onResult({
-            text: textToSend.trim(),
-            isFinal: false, // Always send as interim to keep typing effect
-            confidence: event.results[event.resultIndex][0].confidence || 0.8,
+            text: bestTranscript.trim(),
+            isFinal: true,
+            confidence: bestConfidence,
             source: 'webSpeech'
           });
-
-          // Clear any existing silence timeout
-          if (this.silenceTimeout) {
-            clearTimeout(this.silenceTimeout);
-          }
-
-          // Set a new timeout for 5 seconds of silence
-          this.silenceTimeout = setTimeout(() => {
-            if (this.isRecording) {
-              console.log('5 seconds of silence detected, stopping recording');
-              this.stopRecording();
-            }
-          }, 5000);
+        } else {
+          // For interim results, show what we're hearing
+          this.onResult({
+            text: bestTranscript.trim(),
+            isFinal: false,
+            confidence: bestConfidence,
+            source: 'webSpeech'
+          });
         }
       };
 
       this.recognition.onerror = (event: any) => {
         this.isRecording = false;
-        
-        if (event.error !== 'aborted') {
-          // Don't log common/expected errors
-          const silentErrors = ['network', 'language-not-supported', 'no-speech', 'audio-capture'];
-          if (!silentErrors.includes(event.error)) {
-            console.error('Speech recognition error:', event.error);
-          }
-          
-          this.networkErrorCount++;
-          
-          // Handle different error types - be more conservative with retries
-          const retryableErrors = ['network'];
-          
-          if (retryableErrors.includes(event.error) && this.retryAttempts < 2) { // Reduced max retries
-            console.log(`Retrying speech recognition (attempt ${this.retryAttempts + 1}/2)`);
-            this.retryAttempts++;
-            
-            // Retry after a short delay
-            setTimeout(() => {
-              if (this.recognition && this.isRecording) {
-                try {
-                  this.recognition.start();
-                } catch (retryError) {
-                  console.error('Retry failed:', retryError);
-                  this.notifyFallbackMode();
-                }
-              }
-            }, 1000 * this.retryAttempts); // Exponential backoff
-          } else {
-            // For non-retryable errors or max retries reached, switch to fallback mode
-            console.log('Speech recognition failed, switching to fallback mode');
-            setTimeout(() => this.notifyFallbackMode(), 100);
-          }
+        console.error('Speech recognition error:', event.error);
+
+        // Handle specific error types
+        if (event.error === 'not-allowed' || event.error === 'permission-denied') {
+          this.onError({
+            code: 'not-allowed',
+            message: 'Microphone access denied. Please enable in browser settings.',
+            source: 'webSpeech'
+          });
+        } else if (event.error === 'no-speech') {
+          // No speech detected - this is normal, just log it
+          console.log('No speech detected - this is normal if you paused');
+        } else if (event.error === 'audio-capture') {
+          this.onError({
+            code: 'audio-capture',
+            message: 'No microphone found. Please connect a microphone.',
+            source: 'webSpeech'
+          });
+        } else if (event.error === 'network') {
+          console.log('Network error - Chrome requires internet for speech recognition');
+          console.log('Tip: Use Safari for offline speech recognition');
+          this.onError({
+            code: 'network',
+            message: 'Network error. Try using Safari for offline speech recognition.',
+            source: 'webSpeech'
+          });
+        } else if (event.error !== 'aborted') {
+          this.onError({
+            code: event.error,
+            message: 'Speech recognition error: ' + event.error,
+            source: 'webSpeech'
+          });
         }
       };
 
       this.recognition.onend = () => {
         console.log('Speech recognition ended');
-        
-        // Only restart if we're still supposed to be recording and haven't exceeded retries
-        if (this.isRecording && this.retryAttempts < 2) {
-          console.log(`Restarting speech recognition (attempt ${this.retryAttempts + 1}/2)`);
-          this.retryAttempts++;
-          setTimeout(() => {
-            if (this.recognition && this.isRecording) {
-              try {
-                this.recognition.start();
-              } catch (error) {
-                console.error('Restart failed:', error);
-                this.isRecording = false;
-                this.notifyFallbackMode();
-              }
-            }
-          }, 1500); // Slightly longer delay
-        } else {
-          this.isRecording = false;
-          // Clean up the audio stream when completely done
-          if (this.activeStream) {
-            this.activeStream.getTracks().forEach(track => track.stop());
-            this.activeStream = null;
-          }
-          
-          // If we were trying to record but failed, notify fallback mode
-          if (this.retryAttempts >= 2) {
-            console.log('Max retries reached, switching to fallback mode');
-            this.notifyFallbackMode();
-          }
+        // Final result was already sent in onresult when isFinal=true
+        // Just clean up here
+        this.isRecording = false;
+        this.fullTranscript = '';
+
+        // Clean up the audio stream
+        if (this.activeStream) {
+          this.activeStream.getTracks().forEach(track => track.stop());
+          this.activeStream = null;
         }
       };
 
@@ -308,8 +305,8 @@ export class SpeechService {
       };
 
       this.mediaRecorder.onstop = async () => {
-        // Check if we should use Whisper for transcription
-        if (this.config.transcriptionService === 'whisper' || this.config.transcriptionService === 'hybrid') {
+        // Check if we should use cloud API for transcription
+        if (this.config.transcriptionService === 'whisper' || this.config.transcriptionService === 'groq' || this.config.transcriptionService === 'hybrid') {
           await this.sendToWhisperAPI();
         } else {
           // Provide a helpful message for other services
@@ -417,15 +414,9 @@ export class SpeechService {
         this.isRecording = true;
         this.recordingStartTime = Date.now();
         this.mediaRecorder.start();
-        console.log('Started audio recording with MediaRecorder');
-        
-        // Auto-stop after 5 seconds for better UX
-        setTimeout(() => {
-          if (this.isRecording) {
-            this.stopRecording();
-          }
-        }, 5000);
-        
+        console.log('Started audio recording with MediaRecorder - press button again to stop');
+
+        // No auto-stop - user controls when to stop recording
         return;
       }
       
@@ -450,14 +441,7 @@ export class SpeechService {
       this.isRecording = true;
       this.recordingStartTime = Date.now();
       this.mediaRecorder.start();
-      console.log('Started recording with existing MediaRecorder');
-      
-      // Auto-stop after 5 seconds
-      setTimeout(() => {
-        if (this.isRecording) {
-          this.stopRecording();
-        }
-      }, 5000);
+      console.log('Started recording with existing MediaRecorder - press button again to stop');
     }
   }
 
@@ -466,23 +450,8 @@ export class SpeechService {
       return;
     }
 
-    this.isRecording = false;
-
-    // Clear silence timeout
-    if (this.silenceTimeout) {
-      clearTimeout(this.silenceTimeout);
-      this.silenceTimeout = null;
-    }
-
-    // Send final result with accumulated transcript
-    if (this.fullTranscript.trim()) {
-      this.onResult({
-        text: this.fullTranscript.trim(),
-        isFinal: true,
-        confidence: 0.9,
-        source: 'webSpeech'
-      });
-    }
+    // Note: Don't set isRecording = false here - let onend do it
+    // This ensures the final result is sent properly
 
     if (this.usingSpeechRecognition && this.recognition) {
       try {
@@ -490,8 +459,10 @@ export class SpeechService {
         console.log('Stopped speech recognition');
       } catch (error) {
         console.error('Error stopping speech recognition:', error);
+        this.isRecording = false;
       }
     } else if (this.mediaRecorder && this.mediaRecorder.state === 'recording') {
+      this.isRecording = false;
       this.mediaRecorder.stop();
       console.log('Stopped audio recording');
     }
@@ -528,6 +499,29 @@ export class SpeechService {
       const formData = new FormData();
       formData.append('audio', audioBlob, 'recording.webm');
       formData.append('language', this.config.defaultLanguage.split('-')[0]); // Extract language code (e.g., 'en' from 'en-US')
+
+      // BYOK (Bring Your Own Key) Pattern:
+      // User's API key is stored in localStorage and sent securely over HTTPS.
+      // Server uses it for this single request only - never stored or logged.
+      // Falls back to server-side key if user hasn't configured their own.
+      const service = this.config.transcriptionService || 'whisper';
+      formData.append('service', service);
+
+      // Get user's API key from localStorage (BYOK)
+      if (typeof window !== 'undefined') {
+        const userGroqKey = localStorage.getItem('groqApiKey');
+        const userOpenAiKey = localStorage.getItem('openaiApiKey');
+        console.log('BYOK Debug:', { service, hasGroqKey: !!userGroqKey, hasOpenAiKey: !!userOpenAiKey });
+        if (service === 'groq' && userGroqKey) {
+          formData.append('apiKey', userGroqKey);
+          console.log('Sending Groq key');
+        } else if (service === 'whisper' && userOpenAiKey) {
+          formData.append('apiKey', userOpenAiKey);
+          console.log('Sending OpenAI key');
+        } else {
+          console.log('No matching key for service:', service);
+        }
+      }
 
       // Send to transcription API
       const response = await fetch('/api/transcribe', {

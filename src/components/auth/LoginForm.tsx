@@ -25,32 +25,88 @@ interface TabPanelProps {
 
 function TabPanel({ children, value, index }: TabPanelProps) {
   return (
-    <div hidden={value !== index}>
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`auth-tabpanel-${index}`}
+      aria-labelledby={`auth-tab-${index}`}
+    >
       {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
     </div>
   )
+}
+
+// Validation helpers
+const validateEmail = (email: string): boolean => {
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+  return emailRegex.test(email)
+}
+
+const validatePassword = (password: string): { valid: boolean; message: string } => {
+  if (password.length < 8) {
+    return { valid: false, message: 'Password must be at least 8 characters long' }
+  }
+  if (!/[A-Z]/.test(password)) {
+    return { valid: false, message: 'Password must contain at least one uppercase letter' }
+  }
+  if (!/[a-z]/.test(password)) {
+    return { valid: false, message: 'Password must contain at least one lowercase letter' }
+  }
+  if (!/[0-9]/.test(password)) {
+    return { valid: false, message: 'Password must contain at least one number' }
+  }
+  return { valid: true, message: '' }
 }
 
 export function LoginForm() {
   const { signIn, signUp, signInWithMagicLink } = useAuth()
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
   const [loading, setLoading] = useState(false)
   const [googleLoading, setGoogleLoading] = useState(false)
   const [message, setMessage] = useState('')
   const [error, setError] = useState('')
   const [tabValue, setTabValue] = useState(0)
+  const [emailError, setEmailError] = useState('')
+  const [passwordError, setPasswordError] = useState('')
 
-  const handleTabChange = (_: any, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue)
     setMessage('')
     setError('')
+    setEmailError('')
+    setPasswordError('')
   }
 
   const handleEmailPassword = async (isSignUp: boolean) => {
+    // Clear previous errors
+    setEmailError('')
+    setPasswordError('')
+    setError('')
+
     if (!email || !password) {
       setError('Please fill in all fields')
       return
+    }
+
+    // Validate email format
+    if (!validateEmail(email)) {
+      setEmailError('Please enter a valid email address')
+      return
+    }
+
+    // For signup, validate password strength and confirmation
+    if (isSignUp) {
+      const passwordValidation = validatePassword(password)
+      if (!passwordValidation.valid) {
+        setPasswordError(passwordValidation.message)
+        return
+      }
+      if (password !== confirmPassword) {
+        setPasswordError('Passwords do not match')
+        return
+      }
     }
 
     setLoading(true)
@@ -89,13 +145,20 @@ export function LoginForm() {
   }
 
   const handleMagicLink = async () => {
+    setEmailError('')
+    setError('')
+
     if (!email) {
       setError('Please enter your email')
       return
     }
 
+    if (!validateEmail(email)) {
+      setEmailError('Please enter a valid email address')
+      return
+    }
+
     setLoading(true)
-    setError('')
     setMessage('')
 
     try {
@@ -171,12 +234,6 @@ export function LoginForm() {
             Voice-powered task management with AI
           </Typography>
 
-          <Alert severity="info" sx={{ mb: 2, fontSize: '0.875rem' }}>
-            <strong>Test Account:</strong><br />
-            Email: test@test.com<br />
-            Password: test123456
-          </Alert>
-
           <Button
             fullWidth
             variant="outlined"
@@ -203,10 +260,15 @@ export function LoginForm() {
             </Typography>
           </Divider>
 
-          <Tabs value={tabValue} onChange={handleTabChange} centered>
-            <Tab label="Sign In" />
-            <Tab label="Sign Up" />
-            <Tab label="Magic Link" />
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
+            centered
+            aria-label="Authentication options"
+          >
+            <Tab label="Sign In" id="auth-tab-0" aria-controls="auth-tabpanel-0" />
+            <Tab label="Sign Up" id="auth-tab-1" aria-controls="auth-tabpanel-1" />
+            <Tab label="Magic Link" id="auth-tab-2" aria-controls="auth-tabpanel-2" />
           </Tabs>
 
           <TabPanel value={tabValue} index={0}>
@@ -220,6 +282,9 @@ export function LoginForm() {
                 margin="normal"
                 required
                 autoComplete="email"
+                error={!!emailError}
+                helperText={emailError}
+                aria-describedby={emailError ? 'email-error' : undefined}
               />
               <TextField
                 fullWidth
@@ -237,6 +302,7 @@ export function LoginForm() {
                 onClick={() => handleEmailPassword(false)}
                 disabled={loading}
                 sx={{ mt: 3, mb: 2 }}
+                aria-busy={loading}
               >
                 {loading ? <CircularProgress size={24} /> : 'Sign In'}
               </Button>
@@ -254,6 +320,8 @@ export function LoginForm() {
                 margin="normal"
                 required
                 autoComplete="email"
+                error={!!emailError}
+                helperText={emailError}
               />
               <TextField
                 fullWidth
@@ -264,7 +332,19 @@ export function LoginForm() {
                 margin="normal"
                 required
                 autoComplete="new-password"
-                helperText="Password should be at least 6 characters"
+                error={!!passwordError}
+                helperText={passwordError || "Min 8 chars, uppercase, lowercase, and number required"}
+              />
+              <TextField
+                fullWidth
+                label="Confirm Password"
+                type="password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                margin="normal"
+                required
+                autoComplete="new-password"
+                error={!!passwordError && password !== confirmPassword}
               />
               <Button
                 fullWidth
@@ -272,6 +352,7 @@ export function LoginForm() {
                 onClick={() => handleEmailPassword(true)}
                 disabled={loading}
                 sx={{ mt: 3, mb: 2 }}
+                aria-busy={loading}
               >
                 {loading ? <CircularProgress size={24} /> : 'Sign Up'}
               </Button>
@@ -289,7 +370,8 @@ export function LoginForm() {
                 margin="normal"
                 required
                 autoComplete="email"
-                helperText="We'll send you a magic link to sign in"
+                error={!!emailError}
+                helperText={emailError || "We'll send you a magic link to sign in"}
               />
               <Button
                 fullWidth
@@ -297,6 +379,7 @@ export function LoginForm() {
                 onClick={handleMagicLink}
                 disabled={loading}
                 sx={{ mt: 3, mb: 2 }}
+                aria-busy={loading}
               >
                 {loading ? <CircularProgress size={24} /> : 'Send Magic Link'}
               </Button>

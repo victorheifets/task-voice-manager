@@ -1,30 +1,28 @@
 'use client';
 
 import React, { useState } from 'react';
-import { 
-  Box, 
-  useTheme, 
-  useMediaQuery, 
-  TextField, 
-  InputAdornment, 
-  IconButton, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
+import {
+  Box,
+  useTheme,
+  useMediaQuery,
+  TextField,
+  InputAdornment,
+  Dialog,
+  DialogTitle,
+  DialogContent,
   DialogActions,
   Button,
-  List, 
-  ListItemButton, 
-  ListItemIcon, 
-  ListItemText, 
-  Chip, 
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Chip,
   alpha,
   Typography,
   Snackbar,
   Alert
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import FilterListIcon from '@mui/icons-material/FilterList';
 import TodayIcon from '@mui/icons-material/Today';
 import EventIcon from '@mui/icons-material/Event';
 import DateRangeIcon from '@mui/icons-material/DateRange';

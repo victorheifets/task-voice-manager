@@ -21,12 +21,14 @@ import {
 import { useTranslation } from 'react-i18next';
 import i18n from '@/i18n';
 import { useTranscriptionConfig } from '@/contexts/TranscriptionContext';
+import { useNotification } from '@/contexts/NotificationContext';
 
 export default function SettingsSection() {
   const { t } = useTranslation(['common']);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const { service: transcriptionService, setService: setTranscriptionService } = useTranscriptionConfig();
+  const { showSuccess } = useNotification();
   
   const [selectedLanguage, setSelectedLanguage] = useState(i18n.language || 'en');
   const [voiceRecognitionLanguage, setVoiceRecognitionLanguage] = useState('en');
@@ -52,7 +54,7 @@ export default function SettingsSection() {
     if (apiKey) localStorage.setItem('openaiApiKey', apiKey);
     if (azureKey) localStorage.setItem('azureApiKey', azureKey);
     if (azureRegion) localStorage.setItem('azureRegion', azureRegion);
-    alert('Settings saved successfully!');
+    showSuccess('Settings saved successfully!');
   };
 
   useEffect(() => {

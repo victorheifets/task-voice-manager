@@ -18,23 +18,22 @@ export default function Layout({ children, onTabChange, onMenuClick, isWideView,
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   
   return (
-    <Box sx={{ 
-      display: 'flex', 
-      flexDirection: 'column', 
+    <Box sx={{
+      display: 'flex',
+      flexDirection: 'column',
       height: '100vh',
       overflow: 'hidden',
       bgcolor: theme.palette.background.default
     }}>
-      <Header 
-        onTabChange={onTabChange} 
-        onMenuClick={onMenuClick} 
+      <Header
+        onTabChange={onTabChange}
+        onMenuClick={onMenuClick}
         isWideView={isWideView}
         onViewToggle={onViewToggle}
       />
       <Box sx={{
         flexGrow: 1,
-        // CRITICAL: Allow shadows to render without clipping
-        overflow: 'visible',
+        overflow: 'auto',
         display: 'flex',
         flexDirection: 'column',
         bgcolor: theme.palette.background.default,
