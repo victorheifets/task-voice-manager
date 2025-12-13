@@ -372,30 +372,49 @@ export class SpeechService {
 
     // First time initialization - choose service based on config
     if (!this.isInitialized) {
-      console.log(`Initializing transcription service: ${this.config.transcriptionService || 'browser'}`);
-      
+      const serviceToUse = this.config.transcriptionService || 'browser';
+      console.log(`🎤 Initializing transcription service: ${serviceToUse}`);
+
+      // For whisper/groq/azure, ALWAYS use MediaRecorder (skip Web Speech API)
+      if (serviceToUse === 'whisper' || serviceToUse === 'groq' || serviceToUse === 'azure') {
+        console.log(`🎤 Using cloud service (${serviceToUse}) - initializing MediaRecorder...`);
+        const mediaRecorderReady = await this.initMediaRecorder();
+
+        if (mediaRecorderReady && this.mediaRecorder) {
+          this.isRecording = true;
+          this.recordingStartTime = Date.now();
+          this.mediaRecorder.start();
+          console.log('🎤 Started audio recording with MediaRecorder for cloud transcription');
+          return;
+        }
+
+        console.error(`🎤 MediaRecorder failed for ${serviceToUse} service`);
+        this.notifyFallbackMode();
+        return;
+      }
+
       // For browser and hybrid modes, try speech recognition first
-      if (!this.config.transcriptionService || this.config.transcriptionService === 'browser' || this.config.transcriptionService === 'hybrid') {
-        console.log('Attempting to initialize speech recognition...');
-        
+      if (serviceToUse === 'browser' || serviceToUse === 'hybrid') {
+        console.log('🎤 Attempting to initialize Web Speech API...');
+
         // Check if speech recognition is supported
         const speechSupported = await this.checkSpeechRecognitionSupport();
-        
+
         if (speechSupported) {
           // Try to initialize speech recognition
           const speechInitialized = await this.initSpeechRecognition();
-          
+
           if (speechInitialized) {
-            console.log('Speech recognition ready - using Web Speech API');
+            console.log('🎤 Speech recognition ready - using Web Speech API');
             // Start speech recognition
             if (this.recognition) {
               try {
                 this.recognition.start();
                 return;
               } catch (error) {
-                console.error('Failed to start speech recognition:', error);
+                console.error('🎤 Failed to start speech recognition:', error);
                 // For hybrid mode, fall through to MediaRecorder
-                if (this.config.transcriptionService !== 'hybrid') {
+                if (serviceToUse !== 'hybrid') {
                   this.notifyFallbackMode();
                   return;
                 }
@@ -404,13 +423,9 @@ export class SpeechService {
           }
         }
       }
-      
-      // For whisper, azure, or hybrid fallback, use MediaRecorder
-      if (this.config.transcriptionService === 'whisper' || this.config.transcriptionService === 'azure' || this.config.transcriptionService === 'hybrid') {
-        console.log('Initializing MediaRecorder for cloud transcription...');
-      } else {
-        console.log('Speech recognition not available, trying MediaRecorder...');
-      }
+
+      // Fallback: try MediaRecorder for hybrid mode or when speech recognition fails
+      console.log('🎤 Falling back to MediaRecorder...');
       
       const mediaRecorderReady = await this.initMediaRecorder();
       
