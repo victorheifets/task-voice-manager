@@ -303,14 +303,21 @@ export class SpeechService {
       this.audioChunks = [];
 
       this.mediaRecorder.ondataavailable = (event) => {
+        console.log('🎤 MediaRecorder ondataavailable:', { dataSize: event.data.size });
         if (event.data.size > 0) {
           this.audioChunks.push(event.data);
+          console.log('🎤 Audio chunk added, total chunks:', this.audioChunks.length);
         }
       };
 
       this.mediaRecorder.onstop = async () => {
+        console.log('🎤 MediaRecorder onstop triggered');
+        console.log('🎤 Total audio chunks:', this.audioChunks.length);
+        console.log('🎤 Transcription service:', this.config.transcriptionService);
+
         // Check if we should use cloud API for transcription
         if (this.config.transcriptionService === 'whisper' || this.config.transcriptionService === 'groq' || this.config.transcriptionService === 'hybrid') {
+          console.log('🎤 Calling sendToWhisperAPI...');
           await this.sendToWhisperAPI();
         } else {
           // Provide a helpful message for other services
@@ -383,8 +390,10 @@ export class SpeechService {
         if (mediaRecorderReady && this.mediaRecorder) {
           this.isRecording = true;
           this.recordingStartTime = Date.now();
-          this.mediaRecorder.start();
-          console.log('🎤 Started audio recording with MediaRecorder for cloud transcription');
+          this.audioChunks = []; // Clear previous chunks
+          // Start with 1000ms timeslice to capture audio periodically
+          this.mediaRecorder.start(1000);
+          console.log('🎤 Started audio recording with MediaRecorder for cloud transcription (timeslice: 1000ms)');
           return;
         }
 
@@ -428,12 +437,13 @@ export class SpeechService {
       console.log('🎤 Falling back to MediaRecorder...');
       
       const mediaRecorderReady = await this.initMediaRecorder();
-      
+
       if (mediaRecorderReady && this.mediaRecorder) {
         this.isRecording = true;
         this.recordingStartTime = Date.now();
-        this.mediaRecorder.start();
-        console.log('Started audio recording with MediaRecorder - press button again to stop');
+        this.audioChunks = []; // Clear previous chunks
+        this.mediaRecorder.start(1000); // 1000ms timeslice
+        console.log('🎤 Started audio recording with MediaRecorder (timeslice: 1000ms)');
 
         // No auto-stop - user controls when to stop recording
         return;
@@ -459,8 +469,9 @@ export class SpeechService {
     } else if (this.mediaRecorder) {
       this.isRecording = true;
       this.recordingStartTime = Date.now();
-      this.mediaRecorder.start();
-      console.log('Started recording with existing MediaRecorder - press button again to stop');
+      this.audioChunks = []; // Clear previous chunks
+      this.mediaRecorder.start(1000); // 1000ms timeslice
+      console.log('🎤 Started recording with existing MediaRecorder (timeslice: 1000ms)');
     }
   }
 
@@ -505,14 +516,33 @@ export class SpeechService {
   }
 
   private async sendToWhisperAPI(): Promise<void> {
+    console.log('🎤 sendToWhisperAPI called');
+    console.log('🎤 Audio chunks count:', this.audioChunks.length);
+
     try {
       if (this.audioChunks.length === 0) {
-        console.log('No audio data to transcribe');
+        console.error('🎤 ERROR: No audio data to transcribe!');
+        this.onError({
+          code: 'NO_AUDIO',
+          message: 'No audio was recorded. Please try again.',
+          source: 'webSpeech'
+        });
         return;
       }
 
       // Create audio blob with the correct mime type (important for iOS which uses mp4)
       const audioBlob = new Blob(this.audioChunks, { type: this.audioMimeType });
+      console.log('🎤 Audio blob created:', { size: audioBlob.size, type: audioBlob.type });
+
+      if (audioBlob.size < 1000) {
+        console.error('🎤 ERROR: Audio blob too small, likely no audio captured');
+        this.onError({
+          code: 'AUDIO_TOO_SHORT',
+          message: 'Recording too short. Please hold the button and speak.',
+          source: 'webSpeech'
+        });
+        return;
+      }
 
       // Get correct file extension based on mime type
       const extensionMap: Record<string, string> = {
@@ -525,55 +555,62 @@ export class SpeechService {
       const extension = extensionMap[this.audioMimeType] || 'webm';
       const filename = `recording.${extension}`;
 
-      console.log('Sending audio to API:', { mimeType: this.audioMimeType, filename, blobSize: audioBlob.size });
+      console.log('🎤 Preparing to send:', { mimeType: this.audioMimeType, filename, blobSize: audioBlob.size });
 
       // Create form data
       const formData = new FormData();
       formData.append('audio', audioBlob, filename);
-      formData.append('language', this.config.defaultLanguage.split('-')[0]); // Extract language code (e.g., 'en' from 'en-US')
+      formData.append('language', this.config.defaultLanguage.split('-')[0]);
 
-      // BYOK (Bring Your Own Key) Pattern:
-      // User's API key is stored in localStorage and sent securely over HTTPS.
-      // Server uses it for this single request only - never stored or logged.
-      // Falls back to server-side key if user hasn't configured their own.
       const service = this.config.transcriptionService || 'whisper';
       formData.append('service', service);
+      console.log('🎤 Using transcription service:', service);
 
       // Get user's API key from localStorage (BYOK)
       if (typeof window !== 'undefined') {
         const userGroqKey = localStorage.getItem('groqApiKey');
         const userOpenAiKey = localStorage.getItem('openaiApiKey');
-        console.log('BYOK Debug:', { service, hasGroqKey: !!userGroqKey, hasOpenAiKey: !!userOpenAiKey });
+        console.log('🎤 BYOK Keys:', { service, hasGroqKey: !!userGroqKey, hasOpenAiKey: !!userOpenAiKey });
+
         if (service === 'groq' && userGroqKey) {
           formData.append('apiKey', userGroqKey);
-          console.log('Sending Groq key');
-        } else if (service === 'whisper' && userOpenAiKey) {
+          console.log('🎤 Using Groq API key');
+        } else if ((service === 'whisper' || service === 'hybrid') && userOpenAiKey) {
           formData.append('apiKey', userOpenAiKey);
-          console.log('Sending OpenAI key');
+          console.log('🎤 Using OpenAI API key');
         } else {
-          console.log('No matching key for service:', service);
+          console.warn('🎤 No API key found for service:', service);
         }
       }
 
       // Send to transcription API
+      console.log('🎤 Sending request to /api/transcribe...');
       const response = await fetch('/api/transcribe', {
         method: 'POST',
         body: formData,
       });
 
+      console.log('🎤 API Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`Transcription failed: ${response.statusText}`);
+        const errorText = await response.text();
+        console.error('🎤 API Error response:', errorText);
+        throw new Error(`Transcription failed: ${response.status} ${response.statusText}`);
       }
 
       const result = await response.json();
-      
+      console.log('🎤 API Result:', result);
+
       if (result.text) {
+        console.log('🎤 Transcription successful:', result.text);
         this.onResult({
           text: result.text.trim(),
           isFinal: true,
           confidence: 0.9,
           source: 'webSpeech'
         });
+      } else if (result.error) {
+        throw new Error(result.error);
       } else {
         throw new Error('No transcription result received');
       }

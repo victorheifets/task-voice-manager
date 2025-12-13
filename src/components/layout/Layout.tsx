@@ -1,8 +1,11 @@
 'use client';
 
 import React, { ReactNode } from 'react';
-import { Box, useTheme, useMediaQuery } from '@mui/material';
+import { Box, Typography, useTheme, useMediaQuery } from '@mui/material';
 import Header from './Header';
+
+// Import version from package.json
+const APP_VERSION = '1.1.0';
 
 interface LayoutProps {
   children: ReactNode;
@@ -16,7 +19,7 @@ interface LayoutProps {
 export default function Layout({ children, onTabChange, onMenuClick, isWideView, onViewToggle, activeTab }: LayoutProps) {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   return (
     <Box sx={{
       display: 'flex',
@@ -45,6 +48,23 @@ export default function Layout({ children, onTabChange, onMenuClick, isWideView,
       }}>
         {children}
       </Box>
+
+      {/* Version indicator */}
+      <Typography
+        variant="caption"
+        sx={{
+          position: 'fixed',
+          bottom: isMobile ? 62 : 8,
+          left: 8,
+          color: theme.palette.text.disabled,
+          fontSize: '0.65rem',
+          opacity: 0.6,
+          zIndex: 10,
+          userSelect: 'none',
+        }}
+      >
+        v{APP_VERSION}
+      </Typography>
     </Box>
   );
 } 
