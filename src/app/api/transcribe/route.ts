@@ -172,8 +172,30 @@ export async function POST(request: NextRequest) {
     }
     const client = new OpenAI(clientConfig);
 
-    // Create a temporary file path
-    const tempFilePath = path.join(os.tmpdir(), `audio-${Date.now()}-${Math.random().toString(36).slice(2)}.webm`);
+    // Get file extension from audio file name or mime type
+    const getExtension = (filename: string, mimeType: string): string => {
+      // Try to get from filename first
+      const nameExt = filename.split('.').pop()?.toLowerCase();
+      if (nameExt && ['webm', 'm4a', 'mp4', 'ogg', 'mp3', 'wav', 'flac'].includes(nameExt)) {
+        return nameExt;
+      }
+      // Fallback to mime type mapping
+      const mimeExtMap: Record<string, string> = {
+        'audio/webm': 'webm',
+        'audio/mp4': 'm4a',
+        'audio/x-m4a': 'm4a',
+        'audio/m4a': 'm4a',
+        'audio/ogg': 'ogg',
+        'audio/mpeg': 'mp3',
+        'audio/mp3': 'mp3',
+        'audio/wav': 'wav',
+        'audio/flac': 'flac'
+      };
+      return mimeExtMap[mimeType] || 'webm';
+    };
+
+    const fileExtension = getExtension(audioFile.name, audioFile.type);
+    const tempFilePath = path.join(os.tmpdir(), `audio-${Date.now()}-${Math.random().toString(36).slice(2)}.${fileExtension}`);
 
     try {
       // Convert the file to a buffer and write to temp file

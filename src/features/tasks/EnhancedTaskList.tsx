@@ -107,8 +107,8 @@ export function EnhancedTaskList({
     }
   };
 
-  // Real API handlers
-  const onTaskToggle = async (taskId: string, completed: boolean) => {
+  // Real API handlers - memoized to prevent stale closures in swipe handlers
+  const onTaskToggle = useCallback(async (taskId: string, completed: boolean) => {
     try {
       await updateTask(taskId, { completed });
       setTasks(prevTasks =>
@@ -120,9 +120,9 @@ export function EnhancedTaskList({
       console.error('Failed to toggle task:', error);
       setSnackbar({ open: true, message: 'Failed to update task', severity: 'error' });
     }
-  };
+  }, []);
 
-  const onTaskUpdate = async (taskId: string, updates: Partial<Task>) => {
+  const onTaskUpdate = useCallback(async (taskId: string, updates: Partial<Task>) => {
     try {
       await updateTask(taskId, updates);
       setTasks(prevTasks =>
@@ -134,9 +134,9 @@ export function EnhancedTaskList({
       console.error('Failed to update task:', error);
       setSnackbar({ open: true, message: 'Failed to update task', severity: 'error' });
     }
-  };
+  }, []);
 
-  const onTaskDelete = async (taskId: string) => {
+  const onTaskDelete = useCallback(async (taskId: string) => {
     try {
       await deleteTask(taskId);
       setTasks(prevTasks => prevTasks.filter(task => task.id !== taskId));
@@ -144,7 +144,7 @@ export function EnhancedTaskList({
       console.error('Failed to delete task:', error);
       setSnackbar({ open: true, message: 'Failed to delete task', severity: 'error' });
     }
-  };
+  }, []);
 
   const onTaskCreate = (newTask: Omit<Task, 'id'>) => {
     // This will be handled by TaskInput component
@@ -242,21 +242,42 @@ export function EnhancedTaskList({
     // Execute action based on swipe direction
     if (offset > SWIPE_THRESHOLD) {
       // Swipe right = toggle complete
-      const task = tasks.find(t => t.id === taskId);
-      if (task) {
-        await onTaskToggle(taskId, !task.completed);
-        setSnackbar({
-          open: true,
-          message: task.completed ? 'Task marked as pending' : 'Task completed!',
-          severity: 'success'
-        });
-      }
+      // Use setTasks callback to get current state, avoiding stale closure
+      setTasks(prevTasks => {
+        const task = prevTasks.find(t => t.id === taskId);
+        if (task) {
+          // Optimistically update UI immediately
+          const newCompleted = !task.completed;
+          setSnackbar({
+            open: true,
+            message: newCompleted ? 'Task completed!' : 'Task marked as pending',
+            severity: 'success'
+          });
+          // Call API in background
+          updateTask(taskId, { completed: newCompleted }).catch(error => {
+            console.error('Failed to toggle task:', error);
+            setSnackbar({ open: true, message: 'Failed to update task', severity: 'error' });
+            // Revert on error
+            setTasks(prev => prev.map(t => t.id === taskId ? { ...t, completed: task.completed } : t));
+          });
+          return prevTasks.map(t => t.id === taskId ? { ...t, completed: newCompleted } : t);
+        }
+        return prevTasks;
+      });
     } else if (offset < -SWIPE_THRESHOLD) {
       // Swipe left = delete
-      await onTaskDelete(taskId);
+      // Optimistically update UI
+      setTasks(prevTasks => prevTasks.filter(t => t.id !== taskId));
       setSnackbar({ open: true, message: 'Task deleted', severity: 'success' });
+      // Call API in background
+      deleteTask(taskId).catch(error => {
+        console.error('Failed to delete task:', error);
+        setSnackbar({ open: true, message: 'Failed to delete task', severity: 'error' });
+        // Reload tasks on error
+        loadTasks();
+      });
     }
-  }, [swipeState.taskId, swipeState.offset, swipeState.swiping, tasks, onTaskToggle, onTaskDelete]);
+  }, [swipeState.taskId, swipeState.offset, swipeState.swiping, loadTasks]);
 
   // Load tasks on mount and refresh
   useEffect(() => {
@@ -288,12 +309,33 @@ export function EnhancedTaskList({
         if (statusFilter === 'tomorrow' && task.dueDate) {
           return isTomorrow(parseISO(task.dueDate)) && !task.completed;
         }
-        if (statusFilter === 'thisWeek' && task.dueDate) {
+        // Handle both camelCase and lowercase filter IDs
+        if ((statusFilter === 'thisWeek' || statusFilter === 'thisweek') && task.dueDate) {
           return isThisWeek(parseISO(task.dueDate)) && !task.completed;
+        }
+        // Next week filter - check if due date is in next week
+        if ((statusFilter === 'nextWeek' || statusFilter === 'nextweek') && task.dueDate) {
+          const dueDate = parseISO(task.dueDate);
+          const today = new Date();
+          // Get start of next week (next Monday)
+          const dayOfWeek = today.getDay();
+          const daysUntilNextMonday = dayOfWeek === 0 ? 1 : 8 - dayOfWeek;
+          const nextWeekStart = new Date(today);
+          nextWeekStart.setDate(today.getDate() + daysUntilNextMonday);
+          nextWeekStart.setHours(0, 0, 0, 0);
+          // End of next week (next Sunday)
+          const nextWeekEnd = new Date(nextWeekStart);
+          nextWeekEnd.setDate(nextWeekStart.getDate() + 6);
+          nextWeekEnd.setHours(23, 59, 59, 999);
+          return dueDate >= nextWeekStart && dueDate <= nextWeekEnd && !task.completed;
         }
         if (statusFilter === 'overdue' && task.dueDate) {
           const dueDate = parseISO(task.dueDate);
-          return dueDate < new Date() && !task.completed;
+          // Compare dates at day level (ignore time) for accurate overdue check
+          const todayStart = new Date();
+          todayStart.setHours(0, 0, 0, 0);
+          const dueDateStart = new Date(dueDate.getFullYear(), dueDate.getMonth(), dueDate.getDate());
+          return dueDateStart < todayStart && !task.completed;
         }
         return true;
       });

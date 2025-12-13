@@ -35,6 +35,7 @@ export class SpeechService {
   private silenceTimeout: NodeJS.Timeout | null = null;
   private lastSpeechTime: number = 0;
   private fullTranscript: string = '';
+  private audioMimeType: string = 'audio/webm'; // Track actual audio format used
 
   constructor(
     config: SpeechConfig,
@@ -278,6 +279,7 @@ export class SpeechService {
       }
       
       // Check for supported audio formats with fallback
+      // iOS Safari uses audio/mp4, Chrome/Firefox use audio/webm
       let mimeType = 'audio/webm';
       if (!MediaRecorder.isTypeSupported('audio/webm')) {
         if (MediaRecorder.isTypeSupported('audio/mp4')) {
@@ -293,7 +295,9 @@ export class SpeechService {
           return false;
         }
       }
-      
+
+      // Store the actual mime type for use when creating blobs
+      this.audioMimeType = mimeType;
       console.log('Using audio format:', mimeType);
       this.mediaRecorder = new MediaRecorder(stream, { mimeType });
       this.audioChunks = [];
@@ -492,12 +496,25 @@ export class SpeechService {
         return;
       }
 
-      // Create audio blob
-      const audioBlob = new Blob(this.audioChunks, { type: 'audio/webm' });
-      
+      // Create audio blob with the correct mime type (important for iOS which uses mp4)
+      const audioBlob = new Blob(this.audioChunks, { type: this.audioMimeType });
+
+      // Get correct file extension based on mime type
+      const extensionMap: Record<string, string> = {
+        'audio/webm': 'webm',
+        'audio/mp4': 'm4a',
+        'audio/ogg': 'ogg',
+        'audio/mpeg': 'mp3',
+        'audio/wav': 'wav'
+      };
+      const extension = extensionMap[this.audioMimeType] || 'webm';
+      const filename = `recording.${extension}`;
+
+      console.log('Sending audio to API:', { mimeType: this.audioMimeType, filename, blobSize: audioBlob.size });
+
       // Create form data
       const formData = new FormData();
-      formData.append('audio', audioBlob, 'recording.webm');
+      formData.append('audio', audioBlob, filename);
       formData.append('language', this.config.defaultLanguage.split('-')[0]); // Extract language code (e.g., 'en' from 'en-US')
 
       // BYOK (Bring Your Own Key) Pattern:
