@@ -197,6 +197,22 @@ export function EnhancedTaskList({
 
   const SWIPE_THRESHOLD = 80; // px needed to trigger action
 
+  // Compact mode for mobile - stored in localStorage
+  const [compactMode, setCompactMode] = useState(() => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('taskListCompactMode') === 'true';
+    }
+    return false;
+  });
+
+  const toggleCompactMode = () => {
+    const newValue = !compactMode;
+    setCompactMode(newValue);
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('taskListCompactMode', String(newValue));
+    }
+  };
+
   // Swipe handlers for mobile
   const handleTouchStart = useCallback((taskId: string, e: React.TouchEvent) => {
     const touch = e.touches[0];
@@ -569,6 +585,99 @@ export function EnhancedTaskList({
 
     return (
       <>
+        {/* Compact Mode Toggle */}
+        <Box sx={{ px: 1, pb: 1, display: 'flex', justifyContent: 'flex-end' }}>
+          <Chip
+            label={compactMode ? 'Card View' : 'Compact'}
+            size="small"
+            onClick={toggleCompactMode}
+            sx={{
+              cursor: 'pointer',
+              bgcolor: compactMode ? 'primary.main' : 'action.selected',
+              color: compactMode ? 'white' : 'text.primary',
+              '&:hover': { opacity: 0.8 }
+            }}
+          />
+        </Box>
+
+        {/* Compact List View */}
+        {compactMode ? (
+          <Box sx={{ px: 1 }}>
+            {filteredAndSortedTasks.map((task) => (
+              <Box
+                key={task.id}
+                onClick={() => {
+                  setEditingTask(task);
+                  setEditForm({
+                    title: task.title,
+                    dueDate: task.dueDate || '',
+                    assignee: task.assignee || '',
+                    priority: task.priority || 'medium',
+                    notes: task.notes || '',
+                    tags: task.tags || []
+                  });
+                  setEditDialogOpen(true);
+                }}
+                sx={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 1,
+                  py: 1,
+                  px: 1.5,
+                  borderBottom: '1px solid',
+                  borderColor: 'divider',
+                  bgcolor: task.completed ? 'action.hover' : 'transparent',
+                  cursor: 'pointer',
+                  '&:active': { bgcolor: 'action.selected' }
+                }}
+              >
+                <Checkbox
+                  checked={task.completed}
+                  onChange={(e) => {
+                    e.stopPropagation();
+                    onTaskToggle(task.id, !task.completed);
+                  }}
+                  onClick={(e) => e.stopPropagation()}
+                  size="small"
+                  sx={{ p: 0.5 }}
+                />
+                <Box sx={{ flex: 1, minWidth: 0 }}>
+                  <Typography
+                    sx={{
+                      fontSize: '0.9rem',
+                      fontWeight: 500,
+                      textDecoration: task.completed ? 'line-through' : 'none',
+                      color: task.completed ? 'text.secondary' : 'text.primary',
+                      overflow: 'hidden',
+                      textOverflow: 'ellipsis',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {task.title}
+                  </Typography>
+                </Box>
+                {task.assignee && (
+                  <Chip
+                    label={task.assignee}
+                    size="small"
+                    sx={{ height: 20, fontSize: '0.7rem', bgcolor: 'primary.light', color: 'white' }}
+                  />
+                )}
+                {task.dueDate && (
+                  <Typography
+                    sx={{
+                      fontSize: '0.75rem',
+                      color: isToday(parseISO(task.dueDate)) ? 'warning.main' : 'text.secondary',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {format(parseISO(task.dueDate), 'MMM d')}
+                  </Typography>
+                )}
+              </Box>
+            ))}
+          </Box>
+        ) : (
         <Box sx={{ px: 1 }}>
           {filteredAndSortedTasks.map((task, index) => (
             <React.Fragment key={task.id}>
@@ -764,6 +873,7 @@ export function EnhancedTaskList({
               </React.Fragment>
             ))}
         </Box>
+        )}
 
         {/* Edit Dialog */}
         <Dialog

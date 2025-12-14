@@ -111,70 +111,37 @@ export async function POST(request: NextRequest) {
 
     console.log('🔄 Parsing task text:', taskText);
 
+    // Shorter prompt for faster response
+    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
         {
           role: "system",
-          content: `You are a task parsing assistant. Parse the user's natural language input into structured task objects.
+          content: `Parse task into JSON. Today: ${dayOfWeek}, ${todayStr}.
 
-IMPORTANT: Today is ${dayOfWeek}, ${todayStr}. Use this to calculate all relative dates like "tomorrow", "this week", "next Friday", "end of month", etc.
+Output: {"title":"string","dueDate":"YYYY-MM-DD or null","assignee":"name or null","tags":["max 3"],"priority":"low|medium|high"}
 
-If the input contains MULTIPLE tasks, return a JSON ARRAY of task objects.
-If the input contains a SINGLE task, return a single JSON object.
-
-Each task object has these fields:
-- title: string (the main task description)
-- dueDate: string (YYYY-MM-DD format, null if no date mentioned)
-- assignee: string (person's name who should do the task or is involved. Look for patterns like "for [Name]", "ask [Name]", "tell [Name]", "with [Name]", "call [Name]", "email [Name]", "remind [Name]", "@[Name]", or any proper noun that appears to be a person's name. Extract just the first name.)
-- tags: array of strings (keywords/categories, max 3)
-- priority: "low" | "medium" | "high"
-
-ASSIGNEE EXTRACTION RULES:
-- Extract ANY person's name mentioned in the task as the assignee
-- Names may be lowercase from voice input (e.g., "ilana", "katie", "john") - still extract them!
-- This includes ALL first names from any culture/language (Ilana, Katie, John, Maria, Ahmed, Yuki, Priya, Mohammad, Chen, etc.)
-- Treat family terms as assignees: "mom", "dad", "grandma", "grandpa", "sister", "brother", etc.
-- Look for words after verbs like: call, email, ask, tell, remind, meet, contact, text, message - these are likely names
-- Common patterns: "[verb] [name]", "for [name]", "with [name]", "[name] needs to...", "tell [name] about..."
-- IMPORTANT: Voice input is often all lowercase - "call ilana" should extract "Ilana" as assignee
-- When in doubt, extract the word as an assignee and capitalize it properly
-
-TASK SPLITTING RULES:
-- PREFER keeping tasks as a SINGLE task unless they are clearly unrelated
-- Only split if the user explicitly lists separate, unrelated tasks (e.g., "1. Do X, 2. Do Y" or "First do X. Then do Y.")
-- Do NOT split based on "and" - treat it as one task (e.g., "buy milk and eggs" = one task)
+Rules:
+- Extract names after: call, email, ask, tell, remind, meet (e.g., "call ilana" → assignee:"Ilana")
+- Include family terms: mom, dad, grandma as assignee
+- Lowercase names from voice → capitalize (ilana → Ilana)
+- Keep as ONE task unless explicitly numbered
+- "tomorrow" = ${tomorrowStr}
 
 Examples:
-Input: "Call John tomorrow about the marketing campaign"
-Output: {"title":"Call John about the marketing campaign","dueDate":"${new Date(Date.now() + 86400000).toISOString().split('T')[0]}","assignee":"John","tags":["marketing","call"],"priority":"medium"}
+"call john tomorrow" → {"title":"Call John","dueDate":"${tomorrowStr}","assignee":"John","tags":["call"],"priority":"medium"}
+"remind mom about dinner" → {"title":"Remind mom about dinner","dueDate":null,"assignee":"mom","tags":["reminder"],"priority":"medium"}
 
-Input: "Ask Katie to review the document"
-Output: {"title":"Ask Katie to review the document","dueDate":null,"assignee":"Katie","tags":["review","document"],"priority":"medium"}
-
-Input: "Remind Ilana about the presentation"
-Output: {"title":"Remind Ilana about the presentation","dueDate":null,"assignee":"Ilana","tags":["reminder","presentation"],"priority":"medium"}
-
-Input: "call ilana tomorrow" (lowercase voice input)
-Output: {"title":"Call Ilana","dueDate":"${new Date(Date.now() + 86400000).toISOString().split('T')[0]}","assignee":"Ilana","tags":["call"],"priority":"medium"}
-
-Input: "Call mom tomorrow"
-Output: {"title":"Call mom","dueDate":"${new Date(Date.now() + 86400000).toISOString().split('T')[0]}","assignee":"mom","tags":["call","family"],"priority":"medium"}
-
-Input: "Email David about the meeting next Monday"
-Output: {"title":"Email David about the meeting","dueDate":"${new Date(Date.now() + ((8 - new Date().getDay()) % 7 || 7) * 86400000).toISOString().split('T')[0]}","assignee":"David","tags":["email","meeting"],"priority":"medium"}
-
-Input: "Buy milk and call mom tomorrow"
-Output: {"title":"Buy milk and call mom","dueDate":"${new Date(Date.now() + 86400000).toISOString().split('T')[0]}","assignee":"mom","tags":["shopping","call"],"priority":"medium"}
-
-Be precise with dates and conservative with priorities. Return ONLY valid JSON, no extra text.`
+Return ONLY valid JSON.`
         },
         {
           role: "user",
           content: taskText
         }
       ],
-      max_tokens: 300,
+      max_tokens: 200,
       temperature: 0
     })
 
