@@ -261,8 +261,18 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Log detailed error for debugging
+    console.error('Transcription error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined
+    });
+
     return NextResponse.json(
-      { error: 'Error transcribing audio. Please try again.' },
+      {
+        error: 'Error transcribing audio. Please try again.',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     );
   }

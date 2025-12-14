@@ -2,7 +2,7 @@
 
 # Supabase configuration
 SUPABASE_URL="https://anoupmenvlacdpqcrvzw.supabase.co"
-SUPABASE_SERVICE_KEY="***REMOVED***"
+SUPABASE_SERVICE_KEY="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFub3VwbWVudmxhY2RwcWNydnp3Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1MTIwODE0NSwiZXhwIjoyMDY2Nzg0MTQ1fQ.yEuK-CUytclOmy0jCzwwuovDfPDjWcr-z9gusJqyO_I"
 
 echo "🚀 Creating user_notes table in Supabase..."
 

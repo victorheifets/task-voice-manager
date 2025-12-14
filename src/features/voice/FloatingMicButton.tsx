@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Box, Fab, Tooltip, IconButton, alpha, useTheme } from '@mui/material';
+import { Box, Fab, Tooltip, IconButton, alpha, useTheme, CircularProgress } from '@mui/material';
 import MicIcon from '@mui/icons-material/Mic';
 import StopIcon from '@mui/icons-material/Stop';
 import KeyboardIcon from '@mui/icons-material/Keyboard';
@@ -13,6 +13,9 @@ interface FloatingMicButtonProps {
   showTextOption?: boolean;
   onTextInput?: () => void;
   onRecordingStart?: () => void;
+  onRecordingStop?: () => void;
+  onProcessingStart?: () => void;
+  onProcessingEnd?: () => void;
 }
 
 const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
@@ -21,29 +24,42 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
   language = 'en',
   showTextOption = false,
   onTextInput,
-  onRecordingStart
+  onRecordingStart,
+  onRecordingStop,
+  onProcessingStart,
+  onProcessingEnd
 }) => {
   const theme = useTheme();
   const { showWarning, showError } = useNotification();
   const [currentTranscript, setCurrentTranscript] = useState('');
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [lastError, setLastError] = useState<string | null>(null);
+  const [localIsRecording, setLocalIsRecording] = useState(false); // Local backup state
 
   const {
-    isRecording,
+    isRecording: hookIsRecording,
     transcript: _transcript,
     error,
-    startRecording,
-    stopRecording,
+    startRecording: hookStartRecording,
+    stopRecording: hookStopRecording,
     isInitialized
   } = useSpeechRecognition({
     transcriptionService,
     defaultLanguage: language,
     onTranscript: (text: string) => {
+      console.log('🎤 FloatingMicButton received transcript:', text);
       setCurrentTranscript(text);
+      setIsProcessing(false);
+      onProcessingEnd?.();
       if (text.trim()) {
         onTranscript(text);
       }
     },
     onError: (voiceError) => {
+      console.log('🎤 FloatingMicButton error:', voiceError);
+      setLastError(voiceError.message);
+      setIsProcessing(false);
+      onProcessingEnd?.();
       // Show user-friendly error notifications for actionable errors
       const silentCodes = ['network', 'FALLBACK_MODE', 'USE_TEXT_INPUT', 'no-speech'];
       if (!silentCodes.includes(voiceError.code)) {
@@ -58,31 +74,74 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
     }
   });
 
+  // Use combined recording state (local OR hook state)
+  const isRecording = localIsRecording || hookIsRecording;
+
   const handleMicClick = async () => {
+    console.log('🎤 FloatingMicButton: Click! localIsRecording=', localIsRecording, 'hookIsRecording=', hookIsRecording, 'isProcessing=', isProcessing, 'isInitialized=', isInitialized);
+
     if (isRecording) {
-      await stopRecording();
-      setCurrentTranscript('');
+      console.log('🎤 FloatingMicButton: Stopping recording...');
+      setLocalIsRecording(false); // Set local state immediately
+      setIsProcessing(true);
+      onProcessingStart?.();
+      try {
+        await hookStopRecording();
+        console.log('🎤 FloatingMicButton: stopRecording() completed');
+      } catch (err) {
+        console.error('🎤 FloatingMicButton: stopRecording() error:', err);
+      }
+      onRecordingStop?.();
+      // Don't clear transcript here - wait for API response
     } else {
-      await startRecording();
+      console.log('🎤 FloatingMicButton: Starting recording...');
+      setLocalIsRecording(true); // Set local state immediately
+      setLastError(null);
+      setCurrentTranscript('');
+      try {
+        await hookStartRecording();
+        console.log('🎤 FloatingMicButton: startRecording() completed');
+      } catch (err) {
+        console.error('🎤 FloatingMicButton: startRecording() error:', err);
+        setLocalIsRecording(false); // Reset on error
+      }
       // Notify parent that recording has started (useful for opening dialogs on mobile)
       onRecordingStart?.();
     }
   };
 
+  // Expose debug info
+  const debugInfo = {
+    isRecording,
+    localIsRecording,
+    hookIsRecording,
+    isProcessing,
+    isInitialized,
+    transcriptionService,
+    language,
+    currentTranscript,
+    lastError
+  };
+
+  // Make debug info available globally for debug panel
+  if (typeof window !== 'undefined') {
+    (window as any).__voiceDebugInfo = debugInfo;
+  }
+
   return (
     <Box sx={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 1.5 }}>
-      {/* Real-time transcript display with aria-live for screen readers */}
-      {(isRecording && currentTranscript) && (
+      {/* Real-time transcript display or processing indicator */}
+      {(isRecording || isProcessing || currentTranscript) && (
         <Box
           role="status"
           aria-live="polite"
-          aria-label="Voice transcript"
+          aria-label={isProcessing ? "Processing voice input" : "Voice transcript"}
           sx={{
             position: 'absolute',
             right: showTextOption ? 112 : 72,
             top: '50%',
             transform: 'translateY(-50%)',
-            bgcolor: 'primary.main',
+            bgcolor: isProcessing ? 'warning.main' : 'primary.main',
             color: 'white',
             px: 2,
             py: 1,
@@ -93,15 +152,26 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
             whiteSpace: 'nowrap',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
-            boxShadow: `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
+            boxShadow: isProcessing
+              ? `0 4px 12px ${alpha(theme.palette.warning.main, 0.3)}`
+              : `0 4px 12px ${alpha(theme.palette.primary.main, 0.3)}`,
             animation: 'slideIn 0.3s ease-out',
             '@keyframes slideIn': {
               '0%': { opacity: 0, transform: 'translateY(-50%) translateX(20px)' },
               '100%': { opacity: 1, transform: 'translateY(-50%) translateX(0)' },
             },
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1,
           }}
         >
-          {currentTranscript}
+          {isProcessing && <CircularProgress size={16} sx={{ color: 'white' }} />}
+          {isProcessing
+            ? 'Processing...'
+            : isRecording
+              ? (currentTranscript || '🎤 Listening...')
+              : currentTranscript
+          }
         </Box>
       )}
 
@@ -132,13 +202,13 @@ const FloatingMicButton: React.FC<FloatingMicButtonProps> = ({
         </Tooltip>
       )}
 
-      <Tooltip title={!isInitialized ? "Voice not available - use keyboard" : isRecording ? "Stop Recording" : "Start Recording"}>
+      <Tooltip title={!isInitialized && !isRecording ? "Voice not available - use keyboard" : isRecording ? "Stop Recording" : "Start Recording"}>
         <span>
           <Fab
             color="primary"
             onClick={handleMicClick}
-            disabled={!isInitialized}
-            aria-label={!isInitialized ? "Voice recording not available" : isRecording ? "Stop voice recording" : "Start voice recording"}
+            disabled={!isInitialized && !isRecording}
+            aria-label={!isInitialized && !isRecording ? "Voice recording not available" : isRecording ? "Stop voice recording" : "Start voice recording"}
             aria-pressed={isRecording}
             sx={{
               width: 56,

@@ -143,18 +143,19 @@ export async function getTasks(): Promise<Task[]> {
   
   
   // Map database fields to Task interface
+  // DB uses: assigned_to, status (not assignee, completed)
   const mappedTasks = (data || []).map((dbTask: any) => {
     return {
       id: dbTask.id,
       title: dbTask.title,
       dueDate: dbTask.due_date || null,
-      assignee: dbTask.assigned_to || dbTask.assignee || null, // Handle both database column names
+      assignee: dbTask.assigned_to || null,  // Database column is 'assigned_to'
       tags: dbTask.tags || [],
-      completed: dbTask.status === 'completed', // Map status to completed boolean
+      completed: dbTask.status === 'completed',  // Database uses 'status' column
       createdAt: dbTask.created_at,
       updatedAt: dbTask.updated_at,
       priority: dbTask.priority || 'medium',
-      notes: dbTask.notes || null
+      notes: dbTask.description || null  // DB might use 'description' for notes
     };
   });
   
@@ -190,18 +191,24 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
   }
   
 
-  // Create base task data with only core columns that exist in database
+  // Create base task data with all columns
+  // Actual DB schema uses: assigned_to, status, tags, priority
   const taskData: any = {
     title: task.title,
     user_id: user.id,
     created_at: new Date().toISOString(),
-    updated_at: new Date().toISOString()
+    updated_at: new Date().toISOString(),
+    status: task.completed ? 'completed' : 'pending'
   }
 
-  // Add optional columns only if they exist in the schema (graceful handling)
+  // Add optional columns if they have values
   if (task.dueDate) taskData.due_date = task.dueDate
-  
-  
+  if (task.assignee) taskData.assigned_to = task.assignee  // Database column is 'assigned_to'
+  if (task.tags && task.tags.length > 0) taskData.tags = task.tags
+  if (task.priority) taskData.priority = task.priority
+
+  console.log('📝 Creating task with data:', JSON.stringify(taskData, null, 2));
+
   const { data, error } = await supabase
     .from('tasks')
     .insert(taskData)
@@ -212,21 +219,21 @@ export async function createTask(task: Omit<Task, 'id' | 'createdAt' | 'updatedA
     console.error('❌ Database insert error:', error);
     throw error;
   }
-  
 
   // Return task with safe property access
+  // DB uses: assigned_to, status (not assignee, completed)
   const createdTask = {
     id: data.id,
     title: data.title,
     dueDate: data.due_date || null,
-    assignee: data.assigned_to || task.assignee || null,
-    tags: data.tags || task.tags || [],
-    completed: data.status === 'completed', // Map status to completed boolean
+    assignee: data.assigned_to || null,  // Database column is 'assigned_to'
+    tags: data.tags || [],
+    completed: data.status === 'completed',  // Database uses 'status' column
     createdAt: data.created_at,
     updatedAt: data.updated_at,
-    priority: data.priority || task.priority || 'medium'
+    priority: data.priority || 'medium'
   };
-  
+
   return createdTask;
 }
 
@@ -256,6 +263,7 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
   }
 
   // Build update data with only core columns
+  // DB uses: assigned_to, status (not assignee, completed)
   const updateData: any = {
     updated_at: new Date().toISOString()
   }
@@ -264,11 +272,9 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
   if (updates.title !== undefined) updateData.title = updates.title
   // Handle dueDate - allow null to clear the date
   if ('dueDate' in updates) updateData.due_date = updates.dueDate
-  if (updates.completed !== undefined) updateData.status = updates.completed ? 'completed' : 'pending' // Map completed boolean to status
-  if (updates.notes !== undefined) updateData.notes = updates.notes
-  if (updates.assignee !== undefined) {
-    updateData.assigned_to = updates.assignee  // Database column is 'assigned_to', not 'assignee'
-  }
+  if (updates.completed !== undefined) updateData.status = updates.completed ? 'completed' : 'pending'  // Database uses 'status'
+  if (updates.notes !== undefined) updateData.description = updates.notes  // DB uses 'description'
+  if (updates.assignee !== undefined) updateData.assigned_to = updates.assignee  // Database column is 'assigned_to'
   if (updates.priority !== undefined) updateData.priority = updates.priority
   if (updates.tags !== undefined) updateData.tags = updates.tags
   
@@ -287,17 +293,18 @@ export async function updateTask(taskId: string, updates: Partial<Task>) {
   }
 
   // Return with safe property access
+  // DB uses: assigned_to, status (not assignee, completed)
   return {
     id: data.id,
     title: data.title,
     dueDate: data.due_date || null,
-    assignee: data.assigned_to || updates.assignee || null,
-    tags: data.tags || updates.tags || [],
-    completed: data.status === 'completed', // Map status to completed boolean
+    assignee: data.assigned_to || null,  // Database column is 'assigned_to'
+    tags: data.tags || [],
+    completed: data.status === 'completed',  // Database uses 'status' column
     createdAt: data.created_at,
     updatedAt: data.updated_at,
-    priority: data.priority || updates.priority || 'medium',
-    notes: data.notes || updates.notes || null
+    priority: data.priority || 'medium',
+    notes: data.description || null  // DB uses 'description'
   }
 }
 

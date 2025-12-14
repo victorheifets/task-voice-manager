@@ -37,14 +37,15 @@ yarn install
 
 3. Create a `.env.local` file in the root directory:
 ```env
-# OpenAI API Configuration
+# OpenAI API Configuration (SERVER-SIDE ONLY)
 OPENAI_API_KEY=sk-your-openai-api-key-here
-NEXT_PUBLIC_OPENAI_API_KEY=sk-your-openai-api-key-here
 
 # Supabase Configuration (optional)
 NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
 NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
 ```
+
+> **Note**: Users can also configure their own API keys via the Settings tab (BYOK pattern).
 
 4. Run the development server:
 ```bash

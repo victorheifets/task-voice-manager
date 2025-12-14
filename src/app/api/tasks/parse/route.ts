@@ -109,6 +109,8 @@ export async function POST(request: NextRequest) {
     const todayStr = today.toISOString().split('T')[0]
     const dayOfWeek = today.toLocaleDateString('en-US', { weekday: 'long' })
 
+    console.log('🔄 Parsing task text:', taskText);
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -122,18 +124,48 @@ If the input contains MULTIPLE tasks, return a JSON ARRAY of task objects.
 If the input contains a SINGLE task, return a single JSON object.
 
 Each task object has these fields:
-- title: string (the main task)
+- title: string (the main task description)
 - dueDate: string (YYYY-MM-DD format, null if no date mentioned)
-- assignee: string (person mentioned, null if none)
+- assignee: string (person's name who should do the task or is involved. Look for patterns like "for [Name]", "ask [Name]", "tell [Name]", "with [Name]", "call [Name]", "email [Name]", "remind [Name]", "@[Name]", or any proper noun that appears to be a person's name. Extract just the first name.)
 - tags: array of strings (keywords/categories, max 3)
 - priority: "low" | "medium" | "high"
+
+ASSIGNEE EXTRACTION RULES:
+- Extract ANY person's name mentioned in the task as the assignee
+- Names may be lowercase from voice input (e.g., "ilana", "katie", "john") - still extract them!
+- This includes ALL first names from any culture/language (Ilana, Katie, John, Maria, Ahmed, Yuki, Priya, Mohammad, Chen, etc.)
+- Treat family terms as assignees: "mom", "dad", "grandma", "grandpa", "sister", "brother", etc.
+- Look for words after verbs like: call, email, ask, tell, remind, meet, contact, text, message - these are likely names
+- Common patterns: "[verb] [name]", "for [name]", "with [name]", "[name] needs to...", "tell [name] about..."
+- IMPORTANT: Voice input is often all lowercase - "call ilana" should extract "Ilana" as assignee
+- When in doubt, extract the word as an assignee and capitalize it properly
+
+TASK SPLITTING RULES:
+- PREFER keeping tasks as a SINGLE task unless they are clearly unrelated
+- Only split if the user explicitly lists separate, unrelated tasks (e.g., "1. Do X, 2. Do Y" or "First do X. Then do Y.")
+- Do NOT split based on "and" - treat it as one task (e.g., "buy milk and eggs" = one task)
 
 Examples:
 Input: "Call John tomorrow about the marketing campaign"
 Output: {"title":"Call John about the marketing campaign","dueDate":"${new Date(Date.now() + 86400000).toISOString().split('T')[0]}","assignee":"John","tags":["marketing","call"],"priority":"medium"}
 
+Input: "Ask Katie to review the document"
+Output: {"title":"Ask Katie to review the document","dueDate":null,"assignee":"Katie","tags":["review","document"],"priority":"medium"}
+
+Input: "Remind Ilana about the presentation"
+Output: {"title":"Remind Ilana about the presentation","dueDate":null,"assignee":"Ilana","tags":["reminder","presentation"],"priority":"medium"}
+
+Input: "call ilana tomorrow" (lowercase voice input)
+Output: {"title":"Call Ilana","dueDate":"${new Date(Date.now() + 86400000).toISOString().split('T')[0]}","assignee":"Ilana","tags":["call"],"priority":"medium"}
+
+Input: "Call mom tomorrow"
+Output: {"title":"Call mom","dueDate":"${new Date(Date.now() + 86400000).toISOString().split('T')[0]}","assignee":"mom","tags":["call","family"],"priority":"medium"}
+
+Input: "Email David about the meeting next Monday"
+Output: {"title":"Email David about the meeting","dueDate":"${new Date(Date.now() + ((8 - new Date().getDay()) % 7 || 7) * 86400000).toISOString().split('T')[0]}","assignee":"David","tags":["email","meeting"],"priority":"medium"}
+
 Input: "Buy milk and call mom tomorrow"
-Output: [{"title":"Buy milk","dueDate":null,"assignee":null,"tags":["shopping"],"priority":"low"},{"title":"Call mom","dueDate":"${new Date(Date.now() + 86400000).toISOString().split('T')[0]}","assignee":"mom","tags":["call","family"],"priority":"medium"}]
+Output: {"title":"Buy milk and call mom","dueDate":"${new Date(Date.now() + 86400000).toISOString().split('T')[0]}","assignee":"mom","tags":["shopping","call"],"priority":"medium"}
 
 Be precise with dates and conservative with priorities. Return ONLY valid JSON, no extra text.`
         },
@@ -142,12 +174,14 @@ Be precise with dates and conservative with priorities. Return ONLY valid JSON, 
           content: taskText
         }
       ],
-      max_tokens: 500,
-      temperature: 0.1
+      max_tokens: 300,
+      temperature: 0
     })
 
     const result = completion.choices[0].message.content
     const tokensUsed = completion.usage?.total_tokens || 0
+
+    console.log('🔄 GPT Response:', result);
 
     // Track usage (skip in demo mode)
     if (!DEMO_MODE && supabase && user) {
@@ -186,6 +220,8 @@ Be precise with dates and conservative with priorities. Return ONLY valid JSON, 
     // Normalize to array
     const tasks = Array.isArray(parsedResult) ? parsedResult : [parsedResult]
 
+    console.log('🔄 Parsed tasks:', JSON.stringify(tasks, null, 2));
+
     return NextResponse.json({
       tasks,
       usage: {
@@ -199,9 +235,39 @@ Be precise with dates and conservative with priorities. Return ONLY valid JSON, 
     })
 
   } catch (error) {
-    console.error('API Error:', error)
+    // Log detailed error info for debugging
+    console.error('API Error:', {
+      message: error instanceof Error ? error.message : 'Unknown error',
+      name: error instanceof Error ? error.name : 'Unknown',
+      stack: error instanceof Error ? error.stack : undefined,
+      error: JSON.stringify(error, Object.getOwnPropertyNames(error as object))
+    })
+
+    // Return more specific error messages
+    if (error instanceof Error) {
+      if (error.message.includes('API key')) {
+        return NextResponse.json({
+          error: 'OpenAI API key issue. Please check your API key in Settings.',
+          details: error.message
+        }, { status: 503 })
+      }
+      if (error.message.includes('rate limit') || error.message.includes('429')) {
+        return NextResponse.json({
+          error: 'Rate limit exceeded. Please try again later.',
+          details: error.message
+        }, { status: 429 })
+      }
+      if (error.message.includes('insufficient_quota')) {
+        return NextResponse.json({
+          error: 'OpenAI quota exceeded. Please check your billing.',
+          details: error.message
+        }, { status: 402 })
+      }
+    }
+
     return NextResponse.json({
-      error: 'Internal server error'
+      error: 'Internal server error',
+      details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
   }
 }

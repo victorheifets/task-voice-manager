@@ -24,17 +24,20 @@ npm run lint
 
 ### Testing
 ```bash
-# Run all Python tests with HTML report generation
-python run_tests.py
+# Run Jest unit tests
+npm test
 
-# Run specific test file
-pytest tests/test_activities.py -v
+# Run tests in watch mode
+npm run test:watch
 
-# Run single test method
-pytest tests/test_activities.py::test_specific_function -v
+# Run tests with coverage
+npm run test:coverage
 
-# Run with coverage and HTML report
-pytest --cov=src tests/ --html=report.html --self-contained-html
+# Run Playwright E2E tests
+npm run test:e2e
+
+# Run E2E tests with UI
+npm run test:e2e:ui
 ```
 
 ### Voice Recognition Testing
@@ -94,15 +97,19 @@ Task Voice Manager is a Next.js 15 PWA for voice-enabled task management. The ap
 
 Required for production deployment:
 ```env
-# OpenAI Configuration
+# OpenAI Configuration (SERVER-SIDE ONLY - never use NEXT_PUBLIC_ prefix)
 OPENAI_API_KEY=sk-...
-NEXT_PUBLIC_OPENAI_API_KEY=sk-...
 
 # Supabase Configuration
 NEXT_PUBLIC_SUPABASE_URL=https://...supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_SERVICE_ROLE_KEY=eyJ... (server-side only)
 ```
+
+**SECURITY WARNING**:
+- Never use `NEXT_PUBLIC_OPENAI_API_KEY` - this exposes the key to client-side code
+- The app uses a BYOK (Bring Your Own Key) pattern where users provide their own API keys via Settings
+- User-provided keys are stored in localStorage for persistence (acceptable for personal BYOK apps)
 
 ## Important Implementation Details
 
@@ -115,7 +122,6 @@ The app uses a DesignSwitcher component to allow toggling between UI variations.
 ### Known Issues
 - Voice recognition in Hebrew: Language selection not persisting in settings
 - Mobile keyboard may interfere with voice input on some devices
-- npm audit shows 2 critical vulnerabilities in dependencies
 
 ### Performance Considerations
 - First Contentful Paint target: <2s
@@ -124,7 +130,10 @@ The app uses a DesignSwitcher component to allow toggling between UI variations.
 - Service worker for offline functionality (PWA)
 
 ### Security Notes
+- **Never** use `NEXT_PUBLIC_` prefix for API keys (e.g., `NEXT_PUBLIC_OPENAI_API_KEY`)
 - Never expose `SUPABASE_SERVICE_ROLE_KEY` to client-side code
 - API routes validate authentication before processing
 - Rate limiting enforced at API level
 - RLS policies ensure data isolation between users
+- CSRF protection via origin validation in middleware
+- User API keys stored in localStorage (BYOK pattern for personal tools)

@@ -31,6 +31,7 @@ import { ClientOnly } from '@/shared/ui';
 import { useAuth } from '@/components/auth/AuthProvider';
 import { LoginForm } from '@/components/auth/LoginForm';
 import { LAYOUT } from '@/constants';
+import VoiceDebugPanel from '@/components/debug/VoiceDebugPanel';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -72,6 +73,9 @@ function MainContent() {
   const [currentTranscript, setCurrentTranscript] = useState('');
   const [isWideView, setIsWideView] = useState(true);
   const [selectedTasks, setSelectedTasks] = useState<Set<string>>(new Set());
+  const [isVoiceRecording, setIsVoiceRecording] = useState(false);
+  const [isVoiceProcessing, setIsVoiceProcessing] = useState(false);
+  const [voiceError, setVoiceError] = useState<string | undefined>();
 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -121,7 +125,35 @@ function MainContent() {
 
   // Voice handlers
   const handleFloatingMicTranscript = useCallback((text: string) => {
+    console.log('🎤 page.tsx: Received transcript:', text);
     setCurrentTranscript(text);
+    setVoiceError(undefined);
+    // Keep dialog open - don't close it here, user can close after seeing transcript
+  }, []);
+
+  const handleRecordingStart = useCallback(() => {
+    console.log('🎤 page.tsx: Recording started, isMobile:', isMobile);
+    setIsVoiceRecording(true);
+    setVoiceError(undefined);
+    // Only open dialog on mobile - desktop doesn't need popup
+    if (isMobile) {
+      setShowMobileTextInput(true);
+    }
+  }, [isMobile]);
+
+  const handleRecordingStop = useCallback(() => {
+    console.log('🎤 page.tsx: Recording stopped');
+    setIsVoiceRecording(false);
+  }, []);
+
+  const handleProcessingStart = useCallback(() => {
+    console.log('🎤 page.tsx: Processing started');
+    setIsVoiceProcessing(true);
+  }, []);
+
+  const handleProcessingEnd = useCallback(() => {
+    console.log('🎤 page.tsx: Processing ended');
+    setIsVoiceProcessing(false);
   }, []);
 
   const handleTranscriptionServiceChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
@@ -232,7 +264,13 @@ function MainContent() {
       {/* Floating action buttons */}
       <ClientOnly>
         {isMobile ? (
-          <Box sx={{ position: 'fixed', bottom: 80, right: 16, zIndex: 1000 }}>
+          <Box sx={{
+            position: 'fixed',
+            bottom: 80,
+            right: 16,
+            // zIndex must be higher than MUI Dialog (1300) when dialog is open
+            zIndex: showMobileTextInput ? 1400 : 1000
+          }}>
             <Tooltip title="Add Task (Voice or Text)">
               <DynamicFloatingMicButton
                 onTranscript={handleFloatingMicTranscript}
@@ -240,7 +278,10 @@ function MainContent() {
                 language={voiceLanguage}
                 showTextOption={true}
                 onTextInput={() => setShowMobileTextInput(true)}
-                onRecordingStart={() => setShowMobileTextInput(true)}
+                onRecordingStart={handleRecordingStart}
+                onRecordingStop={handleRecordingStop}
+                onProcessingStart={handleProcessingStart}
+                onProcessingEnd={handleProcessingEnd}
               />
             </Tooltip>
           </Box>
@@ -251,16 +292,40 @@ function MainContent() {
                 onTranscript={handleFloatingMicTranscript}
                 transcriptionService={transcriptionService}
                 language={voiceLanguage}
+                onRecordingStart={handleRecordingStart}
+                onRecordingStop={handleRecordingStop}
+                onProcessingStart={handleProcessingStart}
+                onProcessingEnd={handleProcessingEnd}
               />
             </Box>
           )
         )}
       </ClientOnly>
 
+      {/* Mobile Voice Debug Panel */}
+      {isMobile && (
+        <ClientOnly>
+          <VoiceDebugPanel
+            isRecording={isVoiceRecording}
+            isProcessing={isVoiceProcessing}
+            transcriptionService={transcriptionService}
+            transcript={currentTranscript}
+            error={voiceError}
+            language={voiceLanguage}
+          />
+        </ClientOnly>
+      )}
+
       {/* Mobile Text Input Dialog */}
       <Dialog
         open={showMobileTextInput}
-        onClose={() => setShowMobileTextInput(false)}
+        onClose={() => {
+          // Don't close while recording or processing
+          if (!isVoiceRecording && !isVoiceProcessing) {
+            setShowMobileTextInput(false);
+            setCurrentTranscript('');
+          }
+        }}
         fullWidth
         maxWidth="sm"
         PaperProps={{
@@ -279,15 +344,52 @@ function MainContent() {
           <Typography variant="h6" gutterBottom sx={{
             fontSize: '1.1rem',
             fontWeight: 600,
-            color: 'primary.main'
+            color: 'primary.main',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 1
           }}>
-            Add Task
+            {isVoiceRecording ? (
+              <>
+                <Box
+                  component="span"
+                  sx={{
+                    width: 12,
+                    height: 12,
+                    borderRadius: '50%',
+                    bgcolor: 'error.main',
+                    animation: 'pulse 1s infinite',
+                    '@keyframes pulse': {
+                      '0%': { opacity: 1 },
+                      '50%': { opacity: 0.5 },
+                      '100%': { opacity: 1 },
+                    }
+                  }}
+                />
+                Recording...
+              </>
+            ) : isVoiceProcessing ? (
+              <>
+                <CircularProgress size={18} />
+                Processing Voice...
+              </>
+            ) : (
+              'Add Task'
+            )}
           </Typography>
           <Divider sx={{ mb: 2.5 }} />
+          {isVoiceProcessing && (
+            <Box sx={{ textAlign: 'center', py: 2, color: 'text.secondary' }}>
+              <Typography variant="body2">
+                Transcribing your voice...
+              </Typography>
+            </Box>
+          )}
           <TaskInput
             onTaskAdded={() => {
               handleTaskAdded();
               setShowMobileTextInput(false);
+              setCurrentTranscript('');
             }}
             transcript={currentTranscript}
           />
