@@ -280,9 +280,12 @@ export class SpeechService {
       
       // Check for supported audio formats with fallback
       // iOS Safari uses audio/mp4, Chrome/Firefox use audio/webm
-      let mimeType = 'audio/webm';
-      if (!MediaRecorder.isTypeSupported('audio/webm')) {
-        if (MediaRecorder.isTypeSupported('audio/mp4')) {
+      // Prefer codecs with good compression for faster uploads
+      let mimeType = 'audio/webm;codecs=opus'; // Opus is smaller/faster
+      if (!MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+        if (MediaRecorder.isTypeSupported('audio/webm')) {
+          mimeType = 'audio/webm';
+        } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
           mimeType = 'audio/mp4';
         } else if (MediaRecorder.isTypeSupported('audio/ogg')) {
           mimeType = 'audio/ogg';
@@ -297,9 +300,13 @@ export class SpeechService {
       }
 
       // Store the actual mime type for use when creating blobs
-      this.audioMimeType = mimeType;
+      this.audioMimeType = mimeType.split(';')[0]; // Store base type for blob creation
       console.log('Using audio format:', mimeType);
-      this.mediaRecorder = new MediaRecorder(stream, { mimeType });
+      // Use lower bitrate for faster uploads (48kbps is sufficient for speech)
+      this.mediaRecorder = new MediaRecorder(stream, {
+        mimeType,
+        audioBitsPerSecond: 48000 // 48kbps - good quality for voice, small file size
+      });
       this.audioChunks = [];
 
       this.mediaRecorder.ondataavailable = (event) => {
@@ -547,12 +554,15 @@ export class SpeechService {
       // Get correct file extension based on mime type
       const extensionMap: Record<string, string> = {
         'audio/webm': 'webm',
+        'audio/webm;codecs=opus': 'webm',
         'audio/mp4': 'm4a',
         'audio/ogg': 'ogg',
         'audio/mpeg': 'mp3',
         'audio/wav': 'wav'
       };
-      const extension = extensionMap[this.audioMimeType] || 'webm';
+      // Strip codec info for extension lookup
+      const baseMimeType = this.audioMimeType.split(';')[0];
+      const extension = extensionMap[this.audioMimeType] || extensionMap[baseMimeType] || 'webm';
       const filename = `recording.${extension}`;
 
       console.log('🎤 Preparing to send:', { mimeType: this.audioMimeType, filename, blobSize: audioBlob.size });

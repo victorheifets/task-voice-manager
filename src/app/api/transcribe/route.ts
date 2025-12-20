@@ -217,6 +217,8 @@ export async function POST(request: NextRequest) {
       const whisperLanguage = language === 'auto' ? undefined : (languageMap[language] || language);
 
       // Choose model based on service
+      // Groq: whisper-large-v3-turbo is fastest (195x realtime), whisper-large-v3 is most accurate
+      // OpenAI: whisper-1 is the only option
       const model = isGroq ? 'whisper-large-v3-turbo' : 'whisper-1';
 
       // Transcribe using Whisper API (OpenAI or Groq)

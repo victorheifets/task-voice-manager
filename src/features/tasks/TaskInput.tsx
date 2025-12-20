@@ -95,81 +95,86 @@ export default function TaskInput({ onTaskAdded, transcript }: TaskInputProps) {
 
   return (
     <>
-      <TextField
-        fullWidth
-        placeholder="Add a task... (e.g., 'Call John tomorrow at 3pm')"
-        value={input}
-        onChange={handleInputChange}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSubmit(e);
-          }
-        }}
-        variant="outlined"
-        size="medium"
-        className="task-input"
-        aria-label="Task input field"
-        aria-describedby="task-input-help"
-        inputProps={{
-          'aria-busy': isSubmitting,
-        }}
-        sx={{
-          borderRadius: 2,
-          '& .MuiOutlinedInput-root': {
-            minHeight: 48,
-            pr: '80px',
-            borderRadius: 2,
-            backgroundColor: 'background.paper',
-            // Match search box shadow styling
-            boxShadow: '0 0 32px rgba(128, 128, 128, 0.15), 0 0 16px rgba(128, 128, 128, 0.1)',
-            transition: 'box-shadow 0.3s ease, transform 0.2s ease, border-color 0.3s ease',
-            '&:hover': {
-              boxShadow: '0 0 40px rgba(128, 128, 128, 0.2), 0 0 20px rgba(128, 128, 128, 0.15)',
-              transform: 'translateY(-1px)',
-            },
-            '&.Mui-focused': {
-              boxShadow: '0 0 40px rgba(33, 150, 243, 0.3), 0 0 20px rgba(128, 128, 128, 0.1)',
-              transform: 'translateY(-1px)',
-            },
-            '& fieldset': {
-              borderColor: theme.palette.mode === 'dark'
-                ? 'rgba(255, 255, 255, 0.23)'
-                : 'rgba(0,0,0,0.23)',
-            },
-            '&:hover fieldset': {
-              borderColor: theme.palette.mode === 'dark'
-                ? 'rgba(255, 255, 255, 0.6)'
-                : 'rgba(0,0,0,0.4)',
-            },
-            '&.Mui-focused fieldset': {
-              borderColor: theme.palette.primary.main,
+      <Box sx={{ position: 'relative', mb: 2 }}>
+        <TextField
+          fullWidth
+          multiline
+          minRows={1}
+          maxRows={4}
+          placeholder="Add a task... (e.g., 'Call John tomorrow at 3pm')"
+          value={input}
+          onChange={handleInputChange}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+              e.preventDefault();
+              handleSubmit(e);
             }
-          },
-          mb: 2
-        }}
-        slotProps={{
-          input: {
-            endAdornment: (
-              <Box sx={{ display: 'flex', gap: 0.5 }}>
-                <IconButton
-                  size="small"
-                  color="primary"
-                  onClick={handleSubmit}
-                  disabled={!input.trim() || isSubmitting}
-                  aria-label={isSubmitting ? "Submitting task" : "Submit task"}
-                >
-                  {isSubmitting ? (
-                    <CircularProgress size={20} aria-label="Loading" />
-                  ) : (
-                    <SendIcon />
-                  )}
-                </IconButton>
-              </Box>
-            ),
-          },
-        }}
-        />
+          }}
+          variant="outlined"
+          size="medium"
+          className="task-input"
+          aria-label="Task input field"
+          aria-describedby="task-input-help"
+          inputProps={{
+            'aria-busy': isSubmitting,
+          }}
+          sx={{
+            borderRadius: 2,
+            '& .MuiOutlinedInput-root': {
+              minHeight: 48,
+              pr: '50px',
+              borderRadius: 2,
+              backgroundColor: 'background.paper',
+              // Match search box shadow styling
+              boxShadow: '0 0 32px rgba(128, 128, 128, 0.15), 0 0 16px rgba(128, 128, 128, 0.1)',
+              transition: 'box-shadow 0.3s ease, transform 0.2s ease, border-color 0.3s ease',
+              '&:hover': {
+                boxShadow: '0 0 40px rgba(128, 128, 128, 0.2), 0 0 20px rgba(128, 128, 128, 0.15)',
+                transform: 'translateY(-1px)',
+              },
+              '&.Mui-focused': {
+                boxShadow: '0 0 40px rgba(33, 150, 243, 0.3), 0 0 20px rgba(128, 128, 128, 0.1)',
+                transform: 'translateY(-1px)',
+              },
+              '& fieldset': {
+                borderColor: theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.23)'
+                  : 'rgba(0,0,0,0.23)',
+              },
+              '&:hover fieldset': {
+                borderColor: theme.palette.mode === 'dark'
+                  ? 'rgba(255, 255, 255, 0.6)'
+                  : 'rgba(0,0,0,0.4)',
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: theme.palette.primary.main,
+              }
+            },
+          }}
+          />
+        {/* Submit button positioned outside for multiline support */}
+        <Box sx={{
+          position: 'absolute',
+          right: 8,
+          bottom: 8,
+          display: 'flex',
+          alignItems: 'center'
+        }}>
+          <IconButton
+            size="small"
+            color="primary"
+            onClick={handleSubmit}
+            disabled={!input.trim() || isSubmitting}
+            aria-label={isSubmitting ? "Submitting task" : "Submit task"}
+          >
+            {isSubmitting ? (
+              <CircularProgress size={20} aria-label="Loading" />
+            ) : (
+              <SendIcon />
+            )}
+          </IconButton>
+        </Box>
+      </Box>
 
       <Dialog
         open={showNotes}
