@@ -124,16 +124,18 @@ export async function POST(request: NextRequest) {
 Output: [{"title":"string","dueDate":"YYYY-MM-DD or null","assignee":"name or null","tags":["max 3"],"priority":"low|medium|high"}]
 
 Rules:
-- Split into MULTIPLE tasks when: "and", "also", "then", comma-separated items, or different actions
-- Extract names after: call, email, ask, tell, remind, meet (e.g., "call ilana" → assignee:"Ilana")
-- Include family terms: mom, dad, grandma as assignee
+- Split into MULTIPLE tasks only when there are DIFFERENT ACTIONS (verbs) for different people/things
+- Keep as ONE task when listing items for the same action (shopping list, packing list, etc.)
+- Extract names after: call, email, ask, tell, remind, meet
 - Lowercase names from voice → capitalize (ilana → Ilana)
 - "tomorrow" = ${tomorrowStr}
 
 Examples:
-"call john and email sarah" → [{"title":"Call John","dueDate":null,"assignee":"John","tags":["call"],"priority":"medium"},{"title":"Email Sarah","dueDate":null,"assignee":"Sarah","tags":["email"],"priority":"medium"}]
-"buy milk, bread, and eggs" → [{"title":"Buy milk","dueDate":null,"assignee":null,"tags":["shopping"],"priority":"medium"},{"title":"Buy bread","dueDate":null,"assignee":null,"tags":["shopping"],"priority":"medium"},{"title":"Buy eggs","dueDate":null,"assignee":null,"tags":["shopping"],"priority":"medium"}]
-"remind mom about dinner tomorrow" → [{"title":"Remind mom about dinner","dueDate":"${tomorrowStr}","assignee":"mom","tags":["reminder"],"priority":"medium"}]
+"call john and email sarah" → 2 tasks (different actions: call, email)
+"buy milk bread and eggs" → 1 task: "Buy milk, bread, and eggs" (same action: buy)
+"call mom and dad" → 1 task: "Call mom and dad" (same action, same context)
+"call mom and buy groceries" → 2 tasks (different actions: call, buy)
+"remind john about meeting and email the report to sarah" → 2 tasks
 
 Return ONLY valid JSON array.`
         },
