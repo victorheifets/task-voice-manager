@@ -119,29 +119,30 @@ export async function POST(request: NextRequest) {
       messages: [
         {
           role: "system",
-          content: `Parse task into JSON. Today: ${dayOfWeek}, ${todayStr}.
+          content: `Parse tasks into JSON array. Today: ${dayOfWeek}, ${todayStr}.
 
-Output: {"title":"string","dueDate":"YYYY-MM-DD or null","assignee":"name or null","tags":["max 3"],"priority":"low|medium|high"}
+Output: [{"title":"string","dueDate":"YYYY-MM-DD or null","assignee":"name or null","tags":["max 3"],"priority":"low|medium|high"}]
 
 Rules:
+- Split into MULTIPLE tasks when: "and", "also", "then", comma-separated items, or different actions
 - Extract names after: call, email, ask, tell, remind, meet (e.g., "call ilana" → assignee:"Ilana")
 - Include family terms: mom, dad, grandma as assignee
 - Lowercase names from voice → capitalize (ilana → Ilana)
-- Keep as ONE task unless explicitly numbered
 - "tomorrow" = ${tomorrowStr}
 
 Examples:
-"call john tomorrow" → {"title":"Call John","dueDate":"${tomorrowStr}","assignee":"John","tags":["call"],"priority":"medium"}
-"remind mom about dinner" → {"title":"Remind mom about dinner","dueDate":null,"assignee":"mom","tags":["reminder"],"priority":"medium"}
+"call john and email sarah" → [{"title":"Call John","dueDate":null,"assignee":"John","tags":["call"],"priority":"medium"},{"title":"Email Sarah","dueDate":null,"assignee":"Sarah","tags":["email"],"priority":"medium"}]
+"buy milk, bread, and eggs" → [{"title":"Buy milk","dueDate":null,"assignee":null,"tags":["shopping"],"priority":"medium"},{"title":"Buy bread","dueDate":null,"assignee":null,"tags":["shopping"],"priority":"medium"},{"title":"Buy eggs","dueDate":null,"assignee":null,"tags":["shopping"],"priority":"medium"}]
+"remind mom about dinner tomorrow" → [{"title":"Remind mom about dinner","dueDate":"${tomorrowStr}","assignee":"mom","tags":["reminder"],"priority":"medium"}]
 
-Return ONLY valid JSON.`
+Return ONLY valid JSON array.`
         },
         {
           role: "user",
           content: taskText
         }
       ],
-      max_tokens: 200,
+      max_tokens: 500,
       temperature: 0
     })
 
