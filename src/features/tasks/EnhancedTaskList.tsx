@@ -585,24 +585,37 @@ export function EnhancedTaskList({
 
     return (
       <>
-        {/* Compact Mode Toggle */}
-        <Box sx={{ px: 1, pb: 1, display: 'flex', justifyContent: 'flex-end' }}>
+        {/* Compact Mode Toggle - positioned at top of list area */}
+        <Box sx={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          py: 1,
+          borderBottom: `1px solid ${theme.palette.divider}`,
+          bgcolor: 'background.default',
+        }}>
           <Chip
-            label={compactMode ? 'Card View' : 'Compact'}
+            label={compactMode ? 'Switch to Cards' : 'Switch to Compact'}
             size="small"
+            variant="outlined"
             onClick={toggleCompactMode}
             sx={{
               cursor: 'pointer',
-              bgcolor: compactMode ? 'primary.main' : 'action.selected',
-              color: compactMode ? 'white' : 'text.primary',
-              '&:hover': { opacity: 0.8 }
+              borderColor: theme.palette.primary.main,
+              color: theme.palette.primary.main,
+              fontSize: '0.75rem',
+              height: 24,
+              '&:hover': {
+                bgcolor: 'primary.main',
+                color: 'white',
+              }
             }}
           />
         </Box>
 
         {/* Compact List View */}
         {compactMode ? (
-          <Box sx={{ px: 1 }}>
+          <Box sx={{ px: 0.5 }}>
             {filteredAndSortedTasks.map((task) => (
               <Box
                 key={task.id}
@@ -623,7 +636,7 @@ export function EnhancedTaskList({
                   alignItems: 'center',
                   gap: 1,
                   py: 1,
-                  px: 1.5,
+                  px: 1,
                   borderBottom: '1px solid',
                   borderColor: 'divider',
                   bgcolor: task.completed ? 'action.hover' : 'transparent',
@@ -678,7 +691,7 @@ export function EnhancedTaskList({
             ))}
           </Box>
         ) : (
-        <Box sx={{ px: 1 }}>
+        <Box sx={{ px: 0.5 }}>
           {filteredAndSortedTasks.map((task, index) => (
             <React.Fragment key={task.id}>
               {/* Swipe container */}

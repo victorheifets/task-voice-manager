@@ -39,13 +39,13 @@ export default function TasksTab({
     <Box sx={{
       display: 'flex',
       flexDirection: 'column',
-      gap: { xs: SPACING.GAP_SM, sm: SPACING.GAP_LG },
+      gap: { xs: 1.5, sm: SPACING.GAP_LG }, // Symmetric gap on mobile
       flex: 1,
       minHeight: 0,
       overflow: 'hidden',
       width: '100%',
-      pt: { xs: 1, sm: SPACING.TAB_PANEL_PADDING.sm },
-      px: { xs: 1, sm: SPACING.TAB_PANEL_PADDING.sm }, // Minimal horizontal padding on mobile
+      pt: { xs: 1.5, sm: SPACING.TAB_PANEL_PADDING.sm }, // Symmetric top padding on mobile
+      px: { xs: 1, sm: SPACING.TAB_PANEL_PADDING.sm },
       pb: { xs: 0, sm: SPACING.TAB_PANEL_PADDING.sm },
       transition: 'all 0.3s ease'
     }}>
@@ -90,6 +90,7 @@ export default function TasksTab({
           flex: 1,
           minHeight: 0,
           overflow: 'auto',
+          mt: 0.5, // Symmetric spacing from filter to content
           borderTop: `1px solid ${theme.palette.divider}`,
           pb: `${LAYOUT.MOBILE_BOTTOM_PADDING}px`,
         }}>

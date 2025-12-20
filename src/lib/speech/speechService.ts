@@ -218,10 +218,10 @@ export class SpeechService {
           });
         } else if (event.error === 'network') {
           console.log('Network error - Chrome requires internet for speech recognition');
-          console.log('Tip: Use Safari for offline speech recognition');
+          console.log('Tip: Switch to Groq or Whisper in Settings for better reliability');
           this.onError({
             code: 'network',
-            message: 'Network error. Try using Safari for offline speech recognition.',
+            message: 'Browser speech unavailable. Switch to Groq or Whisper in Settings.',
             source: 'webSpeech'
           });
         } else if (event.error !== 'aborted') {

@@ -124,97 +124,99 @@ export default function TaskFilters({
   // Mobile layout
   if (isMobile) {
     return (
-      <>
-        <Box sx={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: 1,
-          mb: 1,
-          px: 0, // Remove extra horizontal padding
-        }}>
-          <TextField
-            placeholder="Search tasks..."
-            size="small"
-            value={searchFilter}
-            onChange={handleSearchChange}
-            fullWidth
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon color="action" sx={{ fontSize: 20 }} />
-                </InputAdornment>
-              ),
-            }}
-            sx={{
-              flex: 1,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: '20px',
-                height: 40,
-                bgcolor: 'background.paper',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
-                '& fieldset': {
-                  borderColor: theme.palette.mode === 'dark'
-                    ? 'rgba(255,255,255,0.12)'
-                    : 'rgba(0,0,0,0.12)',
-                },
-                '&:hover fieldset': {
-                  borderColor: theme.palette.primary.main,
-                },
-                '&.Mui-focused fieldset': {
-                  borderColor: theme.palette.primary.main,
-                  borderWidth: 1,
-                },
+      <Box sx={{
+        display: 'flex',
+        alignItems: 'center',
+        gap: 1,
+        px: 0.5,
+      }}>
+        <TextField
+          placeholder="Search tasks..."
+          size="small"
+          value={searchFilter}
+          onChange={handleSearchChange}
+          fullWidth
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <SearchIcon color="action" sx={{ fontSize: 20 }} />
+              </InputAdornment>
+            ),
+          }}
+          sx={{
+            flex: 1,
+            '& .MuiOutlinedInput-root': {
+              borderRadius: 2, // Less oval, match desktop (8px)
+              height: 40,
+              bgcolor: 'background.paper',
+              boxShadow: '0 0 16px rgba(128, 128, 128, 0.12), 0 0 8px rgba(128, 128, 128, 0.08)',
+              '& fieldset': {
+                borderColor: theme.palette.mode === 'dark'
+                  ? 'rgba(255,255,255,0.12)'
+                  : 'rgba(0,0,0,0.12)',
               },
-              '& .MuiInputBase-input': {
-                py: 1,
-                fontSize: '0.9rem',
-              }
-            }}
-          />
-          
-          <IconButton 
-            onClick={toggleMobileFilter}
-            sx={{ 
-              bgcolor: alpha(theme.palette.primary.main, 0.1),
-              color: theme.palette.primary.main,
-              '&:hover': {
-                bgcolor: alpha(theme.palette.primary.main, 0.2),
-              }
-            }}
-          >
-            <FilterListIcon />
-          </IconButton>
-        </Box>
-        
+              '&:hover fieldset': {
+                borderColor: theme.palette.primary.main,
+              },
+              '&.Mui-focused fieldset': {
+                borderColor: theme.palette.primary.main,
+                borderWidth: 1,
+              },
+            },
+            '& .MuiInputBase-input': {
+              py: 1,
+              fontSize: '0.9rem',
+            }
+          }}
+        />
+
+        <IconButton
+          onClick={toggleMobileFilter}
+          sx={{
+            bgcolor: mobileFilterOpen ? theme.palette.primary.main : alpha(theme.palette.primary.main, 0.1),
+            color: mobileFilterOpen ? 'white' : theme.palette.primary.main,
+            transition: 'all 0.3s ease',
+            '&:hover': {
+              bgcolor: mobileFilterOpen ? theme.palette.primary.dark : alpha(theme.palette.primary.main, 0.2),
+            }
+          }}
+        >
+          <FilterListIcon />
+        </IconButton>
+
         <Drawer
           anchor="bottom"
           open={mobileFilterOpen}
           onClose={() => setMobileFilterOpen(false)}
+          SlideProps={{
+            appear: true,
+            timeout: 300,
+          }}
           PaperProps={{
             sx: {
               borderTopLeftRadius: 16,
               borderTopRightRadius: 16,
               maxHeight: '70vh',
-              boxShadow: '0 0 12px rgba(128, 128, 128, 0.15), 0 0 6px rgba(128, 128, 128, 0.1)'
+              boxShadow: '0 -4px 20px rgba(0, 0, 0, 0.15)',
             }
           }}
         >
-          <Box sx={{ 
-            display: 'flex', 
-            alignItems: 'center', 
+          <Box sx={{
+            display: 'flex',
+            alignItems: 'center',
             justifyContent: 'space-between',
             p: 2,
             borderBottom: `1px solid ${theme.palette.divider}`
           }}>
             <Box sx={{ fontWeight: 600, color: theme.palette.primary.main }}>Filter Tasks</Box>
-            <IconButton 
+            <IconButton
               onClick={() => setMobileFilterOpen(false)}
               sx={{ color: theme.palette.primary.main }}
             >
               <CloseIcon />
             </IconButton>
           </Box>
-          
+
           <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2 }}>
             {filterOptions.map((filter) => (
               <Button
@@ -223,8 +225,8 @@ export default function TaskFilters({
                 onClick={() => handleStatusFilterClick(filter.id)}
                 startIcon={filter.icon}
                 sx={{
-                  color: statusFilter === filter.id ? 
-                    filter.color : 
+                  color: statusFilter === filter.id ?
+                    filter.color :
                     alpha(filter.color, 0.7),
                   '&:hover': {
                     color: filter.color,
@@ -240,7 +242,7 @@ export default function TaskFilters({
             ))}
           </Box>
         </Drawer>
-      </>
+      </Box>
     );
   }
 
