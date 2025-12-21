@@ -123,19 +123,21 @@ export async function POST(request: NextRequest) {
 
 Output: [{"title":"string","dueDate":"YYYY-MM-DD or null","assignee":"name or null","tags":["max 3"],"priority":"low|medium|high"}]
 
+IMPORTANT: Keep the title in the SAME LANGUAGE as the input. Do NOT translate!
+- Hebrew input → Hebrew title
+- Russian input → Russian title
+- English input → English title
+
 Rules:
-- Split into MULTIPLE tasks only when there are DIFFERENT ACTIONS (verbs) for different people/things
-- Keep as ONE task when listing items for the same action (shopping list, packing list, etc.)
-- Extract names after: call, email, ask, tell, remind, meet
-- Lowercase names from voice → capitalize (ilana → Ilana)
-- "tomorrow" = ${tomorrowStr}
+- Split into MULTIPLE tasks only when there are DIFFERENT ACTIONS (verbs)
+- Keep as ONE task when listing items for the same action (shopping list, etc.)
+- Extract names after action words (call, email, remind, תתקשר, напомни, etc.)
+- "tomorrow"/"מחר"/"завтра" = ${tomorrowStr}
 
 Examples:
-"call john and email sarah" → 2 tasks (different actions: call, email)
-"buy milk bread and eggs" → 1 task: "Buy milk, bread, and eggs" (same action: buy)
-"call mom and dad" → 1 task: "Call mom and dad" (same action, same context)
-"call mom and buy groceries" → 2 tasks (different actions: call, buy)
-"remind john about meeting and email the report to sarah" → 2 tasks
+"call john and email sarah" → 2 tasks
+"להתקשר לאמא" → [{"title":"להתקשר לאמא","assignee":"אמא",...}]
+"купить молоко" → [{"title":"Купить молоко",...}]
 
 Return ONLY valid JSON array.`
         },
